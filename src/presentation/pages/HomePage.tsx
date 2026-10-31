@@ -3,6 +3,8 @@ import { DeckLibrary } from "@/presentation/components/DeckLibrary";
 import { HeroReveal } from "@/presentation/components/HeroReveal";
 import { LazyAtmosphere } from "@/presentation/effects/LazyAtmosphere";
 
+const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 const foundationItems = [
   {
     title: "穩定身份",
@@ -27,7 +29,7 @@ export function HomePage() {
       <header className="site-header content-wrap">
         <a className="brand" href="#top" aria-label="Tarot Atelier 首頁">
           <Image
-            src="/brand/tarot-atelier-mark.svg"
+            src={`${publicBasePath}/brand/tarot-atelier-mark.svg`}
             alt=""
             width={38}
             height={38}
@@ -43,7 +45,7 @@ export function HomePage() {
             <div className="hero-copy">
               <Image
                 className="hero-logo"
-                src="/brand/tarot-atelier-mark.svg"
+                src={`${publicBasePath}/brand/tarot-atelier-mark.svg`}
                 alt="Tarot Atelier 原創占位標誌"
                 width={136}
                 height={136}

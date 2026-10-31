@@ -43,6 +43,10 @@ pnpm test:e2e
 
 `pnpm check` 會依序執行前五項。PR CI 不自動執行 E2E，以避免不必要費用；E2E workflow 只允許手動觸發。
 
+## 部署
+
+`master` 會透過 GitHub Actions 產生靜態輸出並發布至 [GitHub Pages](https://3pwei.github.io/tarot-atelier/)。部署建置使用 `NEXT_PUBLIC_BASE_PATH=/tarot-atelier`，確保 Next.js 路由與公開素材能在 project site 子路徑正常載入。
+
 ## 分層
 
 ```text

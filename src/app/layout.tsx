@@ -1,6 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
+
+const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const bodyStyle = {
+  "--stardust-background": `url("${publicBasePath}/art/stardust-field.svg")`,
+} as CSSProperties;
 
 export const metadata: Metadata = {
   title: "Tarot Atelier｜塔羅工坊",
@@ -18,7 +23,7 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="zh-Hant">
-      <body>{children}</body>
+      <body style={bodyStyle}>{children}</body>
     </html>
   );
 }

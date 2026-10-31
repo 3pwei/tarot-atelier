@@ -71,7 +71,7 @@ button:focus-visible {
   position: fixed;
   z-index: -2;
   inset: 0;
-  background: url("/art/stardust-field.svg") center top / 76rem auto repeat-y;
+  background: var(--stardust-background) center top / 76rem auto repeat-y;
   content: "";
   opacity: 0.48;
   pointer-events: none;
