@@ -20,6 +20,14 @@ The visual language combines midnight lacquer, restrained gold foil, moonlit typ
 
 Neither asset is final card art. No third-party tarot illustration is included.
 
+## Phase 01 procedural card system
+
+The 78 built-in card definitions render with repository-authored CSS frames,
+geometric orbits, typographic symbols, and suit marks. This system is a
+recognizable engineering and interaction placeholder, not a claim of 78
+finished card illustrations. The test deck also contains one intentional
+`missing://` reference to verify the explicit artwork fallback.
+
 ## Motion
 
 Motion begins subtly and must respect `prefers-reduced-motion`. Scene effects are decorative, skip-safe, pointer-inert, and separable from future asynchronous interpretation tasks.

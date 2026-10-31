@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "my-first-deck",
+  "name": { "zhHant": "我的第一副牌", "en": "My First Deck" },
+  "artist": "Your name",
+  "license": "All rights reserved",
+  "supportsReversals": false,
+  "cards": [
+    {
+      "id": "my-first-deck.first-light",
+      "name": { "zhHant": "初光", "en": "First Light" },
+      "artwork": {
+        "face": "https://example.com/cards/first-light.webp",
+        "back": "https://example.com/cards/back.webp"
+      },
+      "keywords": ["開始", "看見"],
+      "uprightMeaning": "讓第一道光照出此刻最值得開始的小事。",
+      "reversedMeaning": "逆位已關閉；仍保留此欄位以維持資料可攜性。",
+      "category": "custom",
+      "sequence": 0,
+      "metadata": { "collection": "sample" }
+    }
+  ]
+}

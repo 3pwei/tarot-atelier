@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tarot-atelier.example/schemas/deck-manifest-1.0.0.json",
+  "title": "Tarot Atelier Deck Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "artist",
+    "license",
+    "cards",
+    "supportsReversals"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "id": { "$ref": "#/$defs/stableId" },
+    "name": { "$ref": "#/$defs/localizedName" },
+    "artist": { "type": "string", "minLength": 1 },
+    "license": { "type": "string", "minLength": 1 },
+    "cards": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/card" }
+    },
+    "supportsReversals": { "type": "boolean" },
+    "metadata": { "type": "object" }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"
+    },
+    "localizedName": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zhHant", "en"],
+      "properties": {
+        "zhHant": { "type": "string", "minLength": 1 },
+        "en": { "type": "string", "minLength": 1 }
+      }
+    },
+    "assetReference": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(\\/(?!\\/)|https:\\/\\/|procedural:\\/\\/|missing:\\/\\/)"
+    },
+    "card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "artwork",
+        "keywords",
+        "uprightMeaning",
+        "reversedMeaning",
+        "category",
+        "sequence"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "name": { "$ref": "#/$defs/localizedName" },
+        "artwork": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["face", "back"],
+          "properties": {
+            "face": { "$ref": "#/$defs/assetReference" },
+            "back": { "$ref": "#/$defs/assetReference" }
+          }
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "uprightMeaning": { "type": "string", "minLength": 1 },
+        "reversedMeaning": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["major", "minor", "oracle", "custom"] },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "suit": { "enum": ["wands", "cups", "swords", "pentacles"] },
+        "rank": {
+          "enum": [
+            "ace",
+            "two",
+            "three",
+            "four",
+            "five",
+            "six",
+            "seven",
+            "eight",
+            "nine",
+            "ten",
+            "page",
+            "knight",
+            "queen",
+            "king"
+          ]
+        },
+        "metadata": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "category": { "const": "minor" } },
+            "required": ["category"]
+          },
+          "then": { "required": ["suit", "rank"] }
+        }
+      ]
+    }
+  }
+}
