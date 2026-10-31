@@ -2,9 +2,11 @@
 
 精美、浮誇、沉浸式，並以可存取性與工程品質為底線的繁體中文塔羅 Web App。
 
-## Phase 00 現況
+## Phase 01 現況
 
-目前完成工程底座、首頁與「靜態空牌桌」預覽。尚未實作抽牌、翻牌、自由牌位、上傳牌組或 AI 解牌，介面不會把這些功能偽裝成已可使用。
+目前完成可擴充牌組與卡牌引擎、78 張標準塔羅定義、牌組 registry、牌庫瀏覽、單卡正逆位與牌背檢視，以及明確的缺圖 fallback。尚未實作正式抽牌流程、自由牌位、上傳介面或 AI 解牌。
+
+牌面採用原創程序式卡框與符號，目的是讓 78 張定義可辨識、可測試；不宣稱為 78 張完整插畫。
 
 ## 技術棧
 
@@ -57,6 +59,8 @@ ESLint 會阻擋向外層的 import，例如 `domain` 不得 import `presentatio
 ## 素材狀態
 
 `public/brand/tarot-atelier-mark.svg` 與 `public/art/stardust-field.svg` 是本專案原創的 Phase 00 placeholder，不是正式完稿美術。完整素材紀錄見 `docs/art-direction.md`。
+
+Phase 01 的卡牌使用 CSS 程序式卡框與通用符號。牌組格式、驗證規則、JSON Schema 與最小自製牌組範例見 [`docs/deck-engine.md`](docs/deck-engine.md)。
 
 ## 安全與產品聲明
 
