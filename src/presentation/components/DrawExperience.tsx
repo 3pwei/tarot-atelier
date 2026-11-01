@@ -22,7 +22,7 @@ import { CardArtwork } from "@/presentation/components/CardArtwork";
 
 type MotionMode = "enhanced" | "css" | "reduced";
 
-const CSS_SHUFFLE_DURATION_MS = 1_500;
+const CSS_SHUFFLE_DURATION_MS = 1_450;
 const CSS_DRAW_DURATION_MS = 1_600;
 
 const jumperOptions = [
@@ -94,19 +94,9 @@ function DrawnCard({
           />
         </div>
       </div>
-      <div className="drawn-card__burn" data-fire-reveal aria-hidden="true">
-        {Array.from({ length: 7 }, (_, index) => (
-          <span
-            key={index}
-            style={
-              {
-                "--flame-left": `${2 + index * 14.5}%`,
-                "--flame-delay": `${index * -65}ms`,
-                "--flame-tilt": `${(index - 3) * 2}deg`,
-              } as React.CSSProperties
-            }
-          />
-        ))}
+      <span className="drawn-card__shine" aria-hidden="true" />
+      <div className="drawn-card__scorch" data-scorch-reveal aria-hidden="true">
+        <span />
       </div>
       <div className="drawn-card__caption">
         <strong>{card.name.zhHant}</strong>
@@ -168,30 +158,32 @@ export function DrawExperience({
           if (disposed || !root.current) return;
           const context = gsap.context(() => {
             const timeline = gsap.timeline({ onComplete: finish });
-            timeline
-              .to("[data-deck-layer='top']", {
-                x: -42,
-                rotation: -8,
-                duration: 0.56,
-                ease: "power2.out",
-              })
-              .to(
-                "[data-deck-layer='middle']",
-                {
-                  x: 36,
-                  rotation: 7,
-                  duration: 0.56,
+            for (let cycle = 0; cycle < 2; cycle += 1) {
+              timeline
+                .to("[data-deck-layer='top']", {
+                  x: -42,
+                  rotation: -8,
+                  duration: 0.28,
                   ease: "power2.out",
-                },
-                "<",
-              )
-              .to("[data-deck-layer]", {
-                x: 0,
-                rotation: 0,
-                duration: 0.84,
-                stagger: 0.1,
-                ease: "back.out(1.7)",
-              });
+                })
+                .to(
+                  "[data-deck-layer='middle']",
+                  {
+                    x: 36,
+                    rotation: 7,
+                    duration: 0.28,
+                    ease: "power2.out",
+                  },
+                  "<",
+                )
+                .to("[data-deck-layer]", {
+                  x: 0,
+                  rotation: 0,
+                  duration: 0.42,
+                  stagger: 0.05,
+                  ease: "back.out(1.7)",
+                });
+            }
           }, root);
           cleanup = () => context.revert();
         })
@@ -243,33 +235,36 @@ export function DrawExperience({
                 },
               )
               .fromTo(
-                ".drawn-card__burn",
-                { opacity: 0, scale: 0.88 },
+                ".drawn-card__scorch",
+                { opacity: 0, clipPath: "circle(0% at 50% 50%)" },
                 {
                   opacity: 1,
-                  scale: 1,
-                  duration: 0.2,
+                  clipPath: "circle(78% at 50% 50%)",
+                  duration: 0.76,
                   stagger: 0.12,
-                  ease: "power2.out",
+                  ease: "power2.inOut",
                 },
                 ">-0.08",
               )
-              .to(".drawn-card__inner", {
-                rotationY: 180,
-                duration: 0.82,
-                stagger: 0.12,
-                ease: "power3.inOut",
-              })
               .to(
-                ".drawn-card__burn",
+                ".drawn-card__inner",
+                {
+                  rotationY: 180,
+                  duration: 0.82,
+                  stagger: 0.12,
+                  ease: "power3.inOut",
+                },
+                "<-0.48",
+              )
+              .to(
+                ".drawn-card__scorch",
                 {
                   opacity: 0,
-                  scale: 1.18,
-                  duration: 0.42,
+                  duration: 0.34,
                   stagger: 0.08,
                   ease: "power2.out",
                 },
-                "<-0.28",
+                "<-0.18",
               )
               .fromTo(
                 ".drawn-card__face",
