@@ -18,12 +18,13 @@ import {
 } from "@/domain/deck/draw";
 import type { CardDefinition, CardInstance } from "@/domain/deck/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
+import { BurnRevealCanvas } from "@/presentation/components/BurnRevealCanvas";
 import { CardArtwork } from "@/presentation/components/CardArtwork";
 
 type MotionMode = "enhanced" | "css" | "reduced";
 
 const CSS_SHUFFLE_DURATION_MS = 980;
-const CSS_DRAW_DURATION_MS = 1_600;
+const CSS_DRAW_DURATION_MS = 3_850;
 
 const jumperOptions = [
   { id: "off", label: "關閉", detail: "0%" },
@@ -68,10 +69,14 @@ function subscribeToMotionPreference(onChange: () => void): () => void {
 function DrawnCard({
   card,
   instance,
+  motionMode,
+  phase,
   role,
 }: Readonly<{
   card: CardDefinition;
   instance: CardInstance;
+  motionMode: MotionMode;
+  phase: DrawState;
   role: "primary" | "jumper";
 }>) {
   const roleLabel = role === "jumper" ? "跳牌" : "主牌";
@@ -83,9 +88,6 @@ function DrawnCard({
     >
       {role === "jumper" && <span className="jumper-label">跳牌</span>}
       <div className="drawn-card__inner">
-        <div className="drawn-card__side drawn-card__back" aria-hidden="true">
-          <CardArtwork card={card} side="back" orientation="upright" />
-        </div>
         <div className="drawn-card__side drawn-card__face">
           <CardArtwork
             card={card}
@@ -93,15 +95,14 @@ function DrawnCard({
             orientation={instance.orientation}
           />
         </div>
-      </div>
-      <span className="drawn-card__shine" aria-hidden="true" />
-      <div className="drawn-card__scorch" data-scorch-reveal aria-hidden="true">
-        <span
-          style={{
-            backgroundImage: `url("${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/art/burn-ring-texture.webp")`,
-          }}
+        <BurnRevealCanvas
+          active={phase === "drawing"}
+          delayMs={role === "jumper" ? 790 : 650}
+          reducedMotion={motionMode === "reduced"}
+          seed={`${card.id}:${instance.orientation}:${role}`}
         />
       </div>
+      <span className="drawn-card__shine" aria-hidden="true" />
       <div className="drawn-card__caption">
         <strong>{card.name.zhHant}</strong>
         <span>{instance.orientation === "reversed" ? "逆位" : "正位"}</span>
@@ -135,7 +136,7 @@ export function DrawExperience({
   const [phase, setPhase] = useState<DrawState>("idle");
   const [remainingCount, setRemainingCount] = useState(deck.cards.length);
   const [result, setResult] = useState<DrawResult>();
-  const motionMode = useSyncExternalStore(
+  const motionMode = useSyncExternalStore<MotionMode>(
     subscribeToMotionPreference,
     detectMotionMode,
     () => "enhanced",
@@ -238,63 +239,7 @@ export function DrawExperience({
                   ease: "power3.out",
                 },
               )
-              .fromTo(
-                ".drawn-card__scorch",
-                { opacity: 0, clipPath: "circle(0% at 50% 50%)" },
-                {
-                  opacity: 1,
-                  clipPath: "circle(78% at 50% 50%)",
-                  duration: 1.05,
-                  stagger: 0.12,
-                  ease: "power2.inOut",
-                },
-                ">-0.08",
-              )
-              .fromTo(
-                ".drawn-card__scorch > span",
-                { scale: 0.1, rotation: -12, opacity: 0 },
-                {
-                  scale: 7.3,
-                  rotation: 20,
-                  opacity: 1,
-                  duration: 1.05,
-                  stagger: 0.12,
-                  ease: "power2.inOut",
-                },
-                "<-0.96",
-              )
-              .fromTo(
-                ".drawn-card__face",
-                { clipPath: "circle(0% at 50% 50%)" },
-                {
-                  clipPath: "circle(100% at 50% 50%)",
-                  duration: 1.05,
-                  stagger: 0.12,
-                  ease: "power2.inOut",
-                },
-                "<-1.05",
-              )
-              .to(
-                ".drawn-card__scorch",
-                {
-                  opacity: 0,
-                  duration: 0.34,
-                  stagger: 0.08,
-                  ease: "power2.out",
-                },
-                "<-0.18",
-              )
-              .fromTo(
-                ".drawn-card__face",
-                { filter: "brightness(1.45) saturate(1.28)" },
-                {
-                  filter: "brightness(1) saturate(1)",
-                  duration: 0.52,
-                  stagger: 0.1,
-                  ease: "power2.out",
-                },
-                "<-0.32",
-              );
+              .to({}, { duration: 3.15 });
           }, root);
           cleanup = () => context.revert();
         })
@@ -409,12 +354,16 @@ export function DrawExperience({
               <DrawnCard
                 card={primaryCard}
                 instance={result.primary}
+                motionMode={motionMode}
+                phase={phase}
                 role="primary"
               />
               {result.jumper && jumperCard && (
                 <DrawnCard
                   card={jumperCard}
                   instance={result.jumper}
+                  motionMode={motionMode}
+                  phase={phase}
                   role="jumper"
                 />
               )}
