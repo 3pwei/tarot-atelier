@@ -25,7 +25,7 @@ test("deck library exposes 78 definitions and has no horizontal overflow", async
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 });
 
-test("draw experience supports keyboard shuffle, draw, and reveal", async ({
+test("draw experience supports keyboard shuffle, draw, and burn reveal", async ({
   page,
 }) => {
   await page.goto("/");
@@ -37,12 +37,48 @@ test("draw experience supports keyboard shuffle, draw, and reveal", async ({
   await page.keyboard.press("Enter");
   await page.keyboard.press("Enter");
 
-  await expect(page.getByText("牌面已揭示")).toBeVisible();
+  await expect(page.getByText("點擊卡牌，以火焰揭示牌面")).toBeVisible();
   const drawnCards = page.locator("[data-draw-card]");
   const drawnCount = await drawnCards.count();
   expect(drawnCount).toBeGreaterThanOrEqual(1);
   expect(drawnCount).toBeLessThanOrEqual(2);
   await expect(
     page.getByRole("button", { name: "洗牌", exact: true }),
+  ).toBeDisabled();
+
+  for (const role of drawnCount === 2 ? ["主牌", "跳牌"] : ["主牌"]) {
+    const card = page.getByRole("button", { name: `以火焰揭示${role}` });
+    await card.focus();
+    await page.keyboard.press("Enter");
+  }
+
+  await expect(page.getByText("牌面已揭示")).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator("[data-reveal-state='revealed']")).toHaveCount(
+    drawnCount,
+  );
+  await expect(
+    page.getByRole("button", { name: "洗牌", exact: true }),
   ).toBeEnabled();
+});
+
+test("pointer reveal burns away the card back from the touched point", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await page.getByRole("button", { name: "從牌堆抽一張牌" }).click();
+
+  const card = page.getByRole("button", { name: "以火焰揭示主牌" });
+  await expect(card).toHaveAttribute("aria-disabled", "false");
+  await card.click({ position: { x: 24, y: 24 } });
+
+  await expect(page.locator("[data-burn-reveal]").first()).toBeAttached();
+  await expect(page.locator("[data-draw-card='primary']")).toHaveAttribute(
+    "data-reveal-state",
+    "revealed",
+    { timeout: 10_000 },
+  );
+  await expect(
+    page.getByRole("button", { name: /^主牌：.+，(正位|逆位)$/u }),
+  ).toBeVisible();
 });

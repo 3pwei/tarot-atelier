@@ -2,17 +2,14 @@
 
 import { useState } from "react";
 import type { CardDefinition, Orientation } from "@/domain/deck/types";
+import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
+import { ProceduralFace } from "@/presentation/components/cards/ProceduralFace";
 
 interface CardArtworkProps {
   readonly card: CardDefinition;
   readonly side: "face" | "back";
   readonly orientation: Orientation;
   readonly compact?: boolean;
-}
-
-function cardSymbol(card: CardDefinition): string {
-  const symbol = card.metadata?.symbol;
-  return typeof symbol === "string" ? symbol : "✦";
 }
 
 export function CardArtwork({
@@ -30,7 +27,7 @@ export function CardArtwork({
 
   return (
     <div
-      className={`card-artwork ${compact ? "card-artwork--compact" : ""} ${orientation === "reversed" && side === "face" ? "card-artwork--reversed" : ""}`}
+      className={`card-artwork ${compact ? "card-artwork--compact" : ""} ${orientation === "reversed" && side === "face" ? "card-artwork--reversed" : ""} ${isProcedural && side === "face" && !showFallback ? "card-artwork--kraft" : ""}`}
       data-artwork-state={showFallback ? "fallback" : "ready"}
     >
       {showFallback ? (
@@ -45,32 +42,9 @@ export function CardArtwork({
         </div>
       ) : isProcedural ? (
         side === "back" ? (
-          <div className="card-back-pattern" role="img" aria-label="星盤牌背">
-            <span aria-hidden="true">✦</span>
-          </div>
+          <ProceduralBack />
         ) : (
-          <div
-            className="procedural-card"
-            role="img"
-            aria-label={`${card.name.zhHant}程序式牌面`}
-          >
-            <span className="procedural-card__index">
-              {card.category === "major"
-                ? String(card.metadata?.numeral ?? card.sequence).padStart(
-                    2,
-                    "0",
-                  )
-                : card.rank?.toUpperCase()}
-            </span>
-            <span className="procedural-card__orbit" aria-hidden="true" />
-            <span className="procedural-card__symbol" aria-hidden="true">
-              {cardSymbol(card)}
-            </span>
-            <span className="procedural-card__name">{card.name.zhHant}</span>
-            {!compact && (
-              <span className="procedural-card__english">{card.name.en}</span>
-            )}
-          </div>
+          <ProceduralFace card={card} compact={compact} />
         )
       ) : (
         // Deck assets can be user-provided HTTPS URLs, so next/image's static
