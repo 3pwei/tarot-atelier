@@ -1174,13 +1174,11 @@ button:focus-visible {
   left: 50%;
   width: 18%;
   aspect-ratio: 1;
-  border: 0.13rem solid rgba(255, 198, 101, 0.98);
-  border-radius: 46% 54% 41% 59% / 57% 43% 61% 39%;
-  box-shadow:
-    0 0 0 0.11rem rgba(120, 48, 12, 0.92),
-    inset 0 0 0.55rem rgba(255, 151, 45, 0.92),
-    0 0 0.45rem rgba(255, 171, 65, 0.95),
-    0 0 1rem rgba(230, 105, 30, 0.72);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 0 0.18rem rgba(255, 174, 67, 0.96))
+    drop-shadow(0 0 0.55rem rgba(169, 65, 15, 0.72));
   transform: translate(-50%, -50%) scale(0.1) rotate(-12deg);
 }
 
@@ -1192,10 +1190,11 @@ button:focus-visible {
 }
 
 .drawn-card__scorch > span::before {
-  inset: -0.28rem;
-  border: 0.15rem dotted rgba(255, 218, 139, 0.86);
-  border-radius: inherit;
-  filter: drop-shadow(0 0 0.24rem rgba(255, 143, 40, 1));
+  inset: 4%;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0.7rem rgba(255, 181, 78, 0.65),
+    0 0 0.5rem rgba(126, 43, 10, 0.66);
   animation: burn-edge-flicker 110ms steps(2) infinite alternate;
 }
 
