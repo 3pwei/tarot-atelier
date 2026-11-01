@@ -246,8 +246,17 @@ export function DrawExperience({
                 },
                 ">-0.08",
               )
-              .set(".drawn-card__back", { opacity: 0 }, "<-0.4")
-              .set(".drawn-card__face", { opacity: 1 }, "<")
+              .fromTo(
+                ".drawn-card__face",
+                { clipPath: "circle(0% at 50% 50%)" },
+                {
+                  clipPath: "circle(100% at 50% 50%)",
+                  duration: 0.9,
+                  stagger: 0.12,
+                  ease: "power2.inOut",
+                },
+                "<-0.76",
+              )
               .to(
                 ".drawn-card__scorch",
                 {
