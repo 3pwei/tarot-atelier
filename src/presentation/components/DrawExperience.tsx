@@ -98,7 +98,7 @@ function DrawnCard({
       <div className="drawn-card__scorch" data-scorch-reveal aria-hidden="true">
         <span
           style={{
-            backgroundImage: `url("${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/art/burn-ring-texture.png")`,
+            backgroundImage: `url("${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/art/burn-ring-texture.webp")`,
           }}
         />
       </div>
