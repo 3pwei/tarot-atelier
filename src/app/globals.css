@@ -1096,15 +1096,12 @@ button:focus-visible {
 }
 
 .drawn-card__face {
-  opacity: 0;
-}
-
-.draw-experience[data-phase="revealed"] .drawn-card__back {
-  opacity: 0;
+  z-index: 2;
+  clip-path: circle(0% at 50% 50%);
 }
 
 .draw-experience[data-phase="revealed"] .drawn-card__face {
-  opacity: 1;
+  clip-path: circle(100% at 50% 50%);
 }
 
 .drawn-card__scorch {
@@ -1296,12 +1293,8 @@ button:focus-visible {
   animation: css-scorch-spread 900ms ease-in-out 520ms both;
 }
 
-.draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card__back {
-  animation: css-hide-card-back 1ms linear 940ms both;
-}
-
 .draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card__face {
-  animation: css-show-card-face 1ms linear 940ms both;
+  animation: css-reveal-card-face 900ms ease-in-out 520ms both;
 }
 
 @keyframes status-pulse {
@@ -1343,15 +1336,13 @@ button:focus-visible {
   }
 }
 
-@keyframes css-hide-card-back {
-  to {
-    opacity: 0;
+@keyframes css-reveal-card-face {
+  from {
+    clip-path: circle(0% at 50% 50%);
   }
-}
 
-@keyframes css-show-card-face {
   to {
-    opacity: 1;
+    clip-path: circle(100% at 50% 50%);
   }
 }
 
