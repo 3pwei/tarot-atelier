@@ -24,3 +24,23 @@ test("deck library exposes 78 definitions and has no horizontal overflow", async
 
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 });
+
+test("draw experience supports keyboard shuffle, draw, and reveal", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "洗牌" }).click();
+
+  const pile = page.getByRole("button", { name: "從牌堆抽一張牌" });
+  await expect(pile).toBeEnabled();
+  await pile.focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByText("牌面已揭示")).toBeVisible();
+  const drawnCards = page.locator("[data-draw-card]");
+  const drawnCount = await drawnCards.count();
+  expect(drawnCount).toBeGreaterThanOrEqual(1);
+  expect(drawnCount).toBeLessThanOrEqual(2);
+  await expect(page.getByRole("button", { name: "洗牌" })).toBeEnabled();
+});

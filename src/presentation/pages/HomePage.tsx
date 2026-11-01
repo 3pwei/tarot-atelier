@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { DeckLibrary } from "@/presentation/components/DeckLibrary";
+import { DrawExperience } from "@/presentation/components/DrawExperience";
 import { HeroReveal } from "@/presentation/components/HeroReveal";
 import { LazyAtmosphere } from "@/presentation/effects/LazyAtmosphere";
 
@@ -36,7 +37,7 @@ export function HomePage() {
           />
           <span className="brand-name">Tarot Atelier</span>
         </a>
-        <span className="phase-chip">Phase 01 牌組引擎</span>
+        <span className="phase-chip">Phase 02 抽牌體驗</span>
       </header>
 
       <main id="top">
@@ -61,15 +62,30 @@ export function HomePage() {
               </h1>
               <p className="hero-intro" data-reveal>
                 78
-                張標準塔羅定義已進入可擴充的牌組引擎。瀏覽大小牌、查看正逆位，並切換測試牌組驗證
-                registry。
+                張標準塔羅已進入可擴充引擎。現在可以洗牌、抽牌與翻牌，並以稀有機率看見第二張跳牌滑出。
               </p>
-              <a className="primary-link" href="#deck-library" data-reveal>
-                開啟卡牌庫
+              <a className="primary-link" href="#draw-experience" data-reveal>
+                進入抽牌儀式
               </a>
             </div>
           </section>
         </HeroReveal>
+
+        <section
+          id="draw-experience"
+          className="table-section content-wrap"
+          aria-labelledby="draw-experience-title"
+        >
+          <div className="section-heading">
+            <p className="eyebrow">Shuffle · Draw · Reveal</p>
+            <h2 id="draw-experience-title">讓牌在指尖決定出場順序</h2>
+            <p>
+              Fisher–Yates 洗牌、抽卡不放回，預設每次操作有 3%
+              機率多出一張「跳牌」。支援滑鼠、觸控與鍵盤，也會尊重減少動態效果設定。
+            </p>
+          </div>
+          <DrawExperience />
+        </section>
 
         <section
           id="deck-library"
@@ -101,7 +117,7 @@ export function HomePage() {
       </main>
 
       <footer className="site-footer content-wrap">
-        Tarot Atelier Phase 01 · 僅供娛樂與自我反思 ·
+        Tarot Atelier Phase 02 · 僅供娛樂與自我反思 ·
         程序式卡框與符號為原創開發素材
       </footer>
     </div>
