@@ -1,29 +1,25 @@
+import type { ReactElement } from "react";
 import type { TarotRank, TarotSuit } from "@/domain/deck/types";
-import { cardPalette } from "./cardPalette";
+import { INK, STAMP, starPoints } from "./inkKit";
 
 /**
- * Original suit emblems drawn on a 40×40 unit grid centred on the origin.
- * They inherit `fill` / `stroke` from the parent group so one palette can be
- * applied consistently across faces.
+ * Original suit emblems in printed ink, drawn on a 40×40 unit grid centred on
+ * the origin. They carry their own fills so they read on textured paper
+ * without relying on a background-coloured cut-out.
  */
-
-function pentagramPoints(radius: number): string {
-  return Array.from({ length: 5 }, (_, index) => {
-    const angle = -Math.PI / 2 + (index * 4 * Math.PI) / 5;
-    return `${(Math.cos(angle) * radius).toFixed(2)},${(Math.sin(angle) * radius).toFixed(2)}`;
-  }).join(" ");
-}
-
-const PENTAGRAM = pentagramPoints(12.5);
 
 function Wands() {
   return (
     <g>
-      <rect x={-2.4} y={-20} width={4.8} height={40} rx={2.4} />
-      <ellipse cx={6} cy={-11} rx={4.6} ry={2} transform="rotate(-32 6 -11)" />
-      <ellipse cx={-6} cy={-2} rx={4.6} ry={2} transform="rotate(32 -6 -2)" />
-      <ellipse cx={6} cy={8} rx={4.2} ry={1.8} transform="rotate(-32 6 8)" />
-      <circle cx={0} cy={-21} r={3} />
+      <path d="M-2.6 20 L-1.6 -18 Q0 -22 1.6 -18 L2.6 20 Z" fill={INK} />
+      <path
+        d="M-2.4 -6 l-1.6 -1.4 M2.4 6 l1.6 -1.4"
+        stroke={INK}
+        strokeWidth={1.4}
+      />
+      <path d="M1.6 -12 q8 -6 9 -1 q-4 4 -9 1 z" fill={INK} />
+      <path d="M-1.8 -2 q-8 -6 -9 -1 q4 4 9 1 z" fill={INK} />
+      <path d="M1.8 8 q7 -5 8 -1 q-4 3 -8 1 z" fill={INK} />
     </g>
   );
 }
@@ -31,8 +27,11 @@ function Wands() {
 function Cups() {
   return (
     <g>
-      <ellipse cx={0} cy={-15} rx={14} ry={3.4} />
-      <path d="M-14 -15 C-14 2 -6 7 -2.2 8.5 V14 H-8 Q-9 18 0 18.4 Q9 18 8 14 H2.2 V8.5 C6 7 14 2 14 -15 Z" />
+      <path
+        d="M-13 -16 H13 C13 0 6 6 2.2 7.5 V13 H7 Q8 18 0 18.5 Q-8 18 -7 13 H-2.2 V7.5 C-6 6 -13 0 -13 -16 Z"
+        fill={INK}
+      />
+      <path d="M-10 -10 H10" stroke={STAMP} strokeWidth={1.6} />
     </g>
   );
 }
@@ -40,10 +39,10 @@ function Cups() {
 function Swords() {
   return (
     <g>
-      <path d="M0 -21 L3.8 -14 L2.6 7 H-2.6 L-3.8 -14 Z" />
-      <rect x={-10.5} y={7} width={21} height={3.4} rx={1.7} />
-      <rect x={-1.7} y={10.4} width={3.4} height={6.6} />
-      <circle cx={0} cy={19.2} r={2.6} />
+      <path d="M0 -21 L3.6 -14 L2.4 7 H-2.4 L-3.6 -14 Z" fill={INK} />
+      <path d="M-11 7 H11 L9.5 10.5 H-9.5 Z" fill={INK} />
+      <rect x={-1.6} y={10.5} width={3.2} height={6.5} fill={INK} />
+      <circle cx={0} cy={19.2} r={2.6} fill={STAMP} />
     </g>
   );
 }
@@ -51,20 +50,18 @@ function Swords() {
 function Pentacles() {
   return (
     <g>
-      <circle cx={0} cy={0} r={18} />
-      <circle cx={0} cy={0} r={15.4} fill={cardPalette.night} />
+      <circle cx={0} cy={0} r={16.5} fill="none" stroke={INK} strokeWidth={3} />
       <polygon
-        points={PENTAGRAM}
-        fill="none"
-        stroke={cardPalette.foil}
-        strokeWidth={1.6}
-        strokeLinejoin="round"
+        points={starPoints(0, 0, 12.5, 5, 5)}
+        fill={STAMP}
+        stroke={INK}
+        strokeWidth={0.6}
       />
     </g>
   );
 }
 
-const GLYPHS: Readonly<Record<TarotSuit, () => React.JSX.Element>> = {
+const GLYPHS: Readonly<Record<TarotSuit, () => ReactElement>> = {
   wands: Wands,
   cups: Cups,
   swords: Swords,
@@ -88,30 +85,42 @@ export function SuitGlyph({
   );
 }
 
-/** Small heraldic marks that distinguish court cards above their emblem. */
+const COURT_MARKS: Readonly<Partial<Record<TarotRank, ReactElement>>> = {
+  page: <polygon points={starPoints(0, 0, 9, 3, 4)} fill={INK} />,
+  knight: (
+    <path
+      d="M-10 8 L-10 -2 Q0 -14 10 -2 L10 8 L0 12 Z M-6 -1 H6 V1.6 H-6 Z"
+      fill={INK}
+      fillRule="evenodd"
+    />
+  ),
+  queen: (
+    <g fill={INK}>
+      <path d="M-13 7 L-11 -6 L-5 1 L0 -9 L5 1 L11 -6 L13 7 Z" />
+      <circle cx={0} cy={-13} r={2.6} fill={STAMP} />
+    </g>
+  ),
+  king: (
+    <g fill={INK}>
+      <path d="M-14 8 L-13 -7 L-7 -1 L-3.5 -10 L0 -3 L3.5 -10 L7 -1 L13 -7 L14 8 Z" />
+      <path
+        d="M-1.4 -18 H1.4 V-15 H4.4 V-12.6 H1.4 V-9 H-1.4 V-12.6 H-4.4 V-15 H-1.4 Z"
+        fill={STAMP}
+      />
+    </g>
+  ),
+};
+
+/** Heraldic marks that set court cards apart above their emblem. */
 export function CourtMark({
   rank,
   x,
   y,
 }: Readonly<{ rank: TarotRank; x: number; y: number }>) {
-  const marks: Partial<Record<TarotRank, React.JSX.Element>> = {
-    page: (
-      <polygon points="0,-9 2.4,-2.4 9,0 2.4,2.4 0,9 -2.4,2.4 -9,0 -2.4,-2.4" />
-    ),
-    knight: (
-      <path d="M-10 6 L-10 -2 Q0 -12 10 -2 L10 6 L0 10 Z M-6 -1 H6 V1.4 H-6 Z" />
-    ),
-    queen: (
-      <path d="M-13 6 L-11 -6 L-5 1 L0 -9 L5 1 L11 -6 L13 6 Z M-2.4 -12.5 a2.4 2.4 0 1 0 4.8 0 a2.4 2.4 0 1 0 -4.8 0" />
-    ),
-    king: (
-      <path d="M-14 7 L-13 -7 L-7 -1 L-3.5 -10 L0 -3 L3.5 -10 L7 -1 L13 -7 L14 7 Z M-1.2 -16 H1.2 V-13 H4 V-11 H1.2 V-8 H-1.2 V-11 H-4 V-13 H-1.2 Z" />
-    ),
-  };
-  const mark = marks[rank];
+  const mark = COURT_MARKS[rank];
   if (!mark) return null;
   return (
-    <g className="court-mark" transform={`translate(${x} ${y})`}>
+    <g className="court-mark" transform={`translate(${x} ${y}) scale(1.3)`}>
       {mark}
     </g>
   );

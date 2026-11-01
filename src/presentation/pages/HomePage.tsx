@@ -80,7 +80,7 @@ export function HomePage() {
             <p className="eyebrow">Shuffle · Draw · Reveal</p>
             <h2 id="draw-experience-title">讓牌在指尖決定出場順序</h2>
             <p>
-              Fisher–Yates 洗牌、抽卡不放回，預設每次操作有 3%
+              Fisher–Yates 洗牌、抽卡不放回，每次抽牌固定有 3%
               機率多出一張「跳牌」。支援滑鼠、觸控與鍵盤，也會尊重減少動態效果設定。
             </p>
           </div>

@@ -36,16 +36,22 @@ code under `src/presentation/components/cards/`:
 - **Back**: an eight-point star inside a 32-ray sunburst, a ring of twelve
   points, mirrored finials and a deterministic star field. It is symmetric
   under a half turn, so a reversed back looks identical.
-- **Face**: a double gilt border with filigree corners, a numeral header
-  (Roman numerals for the major arcana, `ACE`–`X` and court titles for the
-  minor arcana), and a framed art window.
-  - Major arcana show their typographic symbol in a rayed medallion.
-  - Numbered minor cards lay out one original suit emblem per pip (wand,
-    chalice, sword, pentacle).
-  - Court cards pair a large emblem with a rank mark (star, helm, crown).
+- **Face**: kraft paper printed in dark-brown ink (`#2a1b10`) with an oxblood
+  stamp red (`#9b3322`) for numerals and accents. The paper is a CSS
+  background (`.card-artwork--kraft`) built from two SVG noise tiles, for
+  speckle and faint fibres, over a warm gradient. It is rasterised once and
+  shared by every card. The SVG adds a printed double rule, corner brackets,
+  diamond-tipped rules and a darkened edge.
+  - Major arcana: one original line illustration per card
+    (`MajorArt.tsx`), built around its traditional emblem (the Fool's cliff
+    and white rose, the High Priestess's pillars B and J, the Tower struck by
+    lightning, and so on), with woodcut-style hatching.
+  - Numbered minor cards lay out one ink suit emblem per pip (wand, chalice,
+    sword, pentacle); aces add a rayed ring; court cards pair a large emblem
+    with a star, helm or crown mark.
 
-All colours in these SVGs are literal values from `cardPalette.ts`, because
-the card back is rasterised for the burn reveal, where CSS variables do not
+All colours in these SVGs are literal values (`cardPalette.ts`, `inkKit.tsx`),
+because the card back is rasterised for the burn reveal, where CSS variables do not
 resolve. These remain procedural identification art, not finished
 illustrations; no third-party artwork, font glyph art or traced imagery is used.
 

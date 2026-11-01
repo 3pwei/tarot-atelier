@@ -20,10 +20,6 @@ import {
   DrawnCard,
   type CardRole,
 } from "@/presentation/components/draw/DrawnCard";
-import {
-  JUMPER_OPTIONS,
-  JumperModeControl,
-} from "@/presentation/components/draw/JumperModeControl";
 import { TableOrnament } from "@/presentation/components/draw/TableOrnament";
 import {
   useMotionMode,
@@ -34,9 +30,12 @@ import {
 const CSS_SHUFFLE_MS = 1300;
 const CSS_DRAW_MS = 950;
 
+/** Product rule: every draw has a fixed 3% chance of a second "jumper" card. */
+const JUMPER_MODE: JumperMode = "rare";
+const JUMPER_PERCENT = Math.round(JUMPER_PROBABILITIES[JUMPER_MODE] * 100);
+
 interface DrawExperienceProps {
   readonly randomSource?: RandomSource;
-  readonly initialJumperMode?: JumperMode;
 }
 
 function statusText(phase: DrawState, allRevealed: boolean): string {
@@ -105,10 +104,7 @@ function usePhaseAnimation(
   }, [active, motionMode, cssDurationMs, scope]);
 }
 
-export function DrawExperience({
-  randomSource,
-  initialJumperMode = "rare",
-}: DrawExperienceProps = {}) {
+export function DrawExperience({ randomSource }: DrawExperienceProps = {}) {
   const root = useRef<HTMLDivElement>(null);
   const flightOrigin = useRef<DOMRect | null>(null);
   const registry = useMemo(
@@ -116,7 +112,6 @@ export function DrawExperience({
     [],
   );
   const deck = registry.get("atelier-standard-tarot") ?? registry.getSelected();
-  const [jumperMode, setJumperMode] = useState<JumperMode>(initialJumperMode);
   const experience = useMemo(
     () =>
       new DrawExperienceDomain({
@@ -124,9 +119,9 @@ export function DrawExperience({
         cardIds: deck.cards.map((card) => card.id),
         supportsReversals: deck.manifest.supportsReversals,
         random: randomSource,
-        jumperMode,
+        jumperMode: JUMPER_MODE,
       }),
-    [deck, jumperMode, randomSource],
+    [deck, randomSource],
   );
   const [phase, setPhase] = useState<DrawState>("idle");
   const [remainingCount, setRemainingCount] = useState(deck.cards.length);
@@ -217,9 +212,6 @@ export function DrawExperience({
     ? deck.getCard(result.jumper.cardId)
     : undefined;
   const canShuffle = phase === "idle" || (phase === "revealed" && allRevealed);
-  const activeOption = JUMPER_OPTIONS.find(
-    (option) => option.id === jumperMode,
-  );
   const status = statusText(phase, allRevealed);
 
   return (
@@ -239,11 +231,6 @@ export function DrawExperience({
             <span>剩餘 {remainingCount} 張</span>
           </div>
           <div className="draw-table__controls">
-            <JumperModeControl
-              value={jumperMode}
-              disabled={phase !== "idle"}
-              onChange={setJumperMode}
-            />
             <button
               className="shuffle-action"
               type="button"
@@ -310,10 +297,7 @@ export function DrawExperience({
         </div>
 
         <div className="draw-table__foot">
-          <span>
-            {activeOption?.label}模式 · 每次最多一張跳牌 ·{" "}
-            {JUMPER_PROBABILITIES[jumperMode] * 100}%
-          </span>
+          <span>每次抽牌有 {JUMPER_PERCENT}% 機率多出一張跳牌</span>
           {result && allRevealed && (
             <time dateTime={result.drawnAt}>
               抽牌時間 {new Date(result.drawnAt).toLocaleTimeString("zh-TW")}

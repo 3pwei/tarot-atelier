@@ -27,7 +27,7 @@ export function CardArtwork({
 
   return (
     <div
-      className={`card-artwork ${compact ? "card-artwork--compact" : ""} ${orientation === "reversed" && side === "face" ? "card-artwork--reversed" : ""}`}
+      className={`card-artwork ${compact ? "card-artwork--compact" : ""} ${orientation === "reversed" && side === "face" ? "card-artwork--reversed" : ""} ${isProcedural && side === "face" && !showFallback ? "card-artwork--kraft" : ""}`}
       data-artwork-state={showFallback ? "fallback" : "ready"}
     >
       {showFallback ? (

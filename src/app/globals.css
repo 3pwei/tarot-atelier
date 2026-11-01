@@ -428,8 +428,19 @@ button:focus-visible {
   height: 100%;
 }
 
-.procedural-svg__symbol {
-  filter: drop-shadow(0 0 6px rgba(251, 234, 184, 0.45));
+/*
+ * Kraft paper for procedural card faces: a warm base, short fibres, longer
+ * streaks and speckle. The noise tiles are SVG data URIs, rasterised once by
+ * the browser and reused by every card.
+ */
+.card-artwork--kraft {
+  --kraft-fibres: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.18 0 0 0 0 0.08 0 0 0 1.4 -0.62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  --kraft-streaks: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.035 0.11' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.96 0 0 0 0 0.84 0 0 0 0 0.64 0 0 0 0.5 -0.22'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+  border-color: rgba(90, 52, 22, 0.55);
+  background:
+    var(--kraft-fibres) 0 0 / 160px 160px,
+    var(--kraft-streaks) 0 0 / 220px 220px,
+    linear-gradient(160deg, #d3b083 0%, #c6a174 48%, #b58f63 100%);
 }
 
 .card-artwork__fallback {

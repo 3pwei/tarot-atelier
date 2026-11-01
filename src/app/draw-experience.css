@@ -119,88 +119,6 @@
   gap: 0.75rem;
 }
 
-.jumper-control {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.jumper-control legend {
-  float: left;
-  margin-right: 0.6rem;
-  color: var(--color-gold);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-}
-
-.jumper-control__options {
-  display: inline-flex;
-  padding: 0.2rem;
-  border: 1px solid rgba(230, 197, 122, 0.2);
-  border-radius: 999px;
-  background: rgba(6, 5, 14, 0.6);
-}
-
-.jumper-control__option {
-  position: relative;
-  cursor: pointer;
-}
-
-.jumper-control__option input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.jumper-control__option span {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.25rem;
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  color: var(--color-ink-soft);
-  font-size: 0.8rem;
-  transition:
-    background 200ms ease,
-    color 200ms ease;
-}
-
-.jumper-control__option small {
-  color: rgba(207, 198, 220, 0.6);
-  font-size: 0.66rem;
-}
-
-.jumper-control__option input:checked + span {
-  color: #1a1206;
-  background: linear-gradient(135deg, #fbeab8, #e6c57a 55%, #c9a058);
-  box-shadow: 0 0 1rem rgba(230, 197, 122, 0.3);
-}
-
-.jumper-control__option input:checked + span small {
-  color: rgba(26, 18, 6, 0.7);
-}
-
-.jumper-control__option input:focus-visible + span {
-  box-shadow: var(--focus-ring);
-}
-
-.jumper-control:disabled .jumper-control__option {
-  cursor: not-allowed;
-}
-
-.jumper-control:disabled .jumper-control__option span {
-  opacity: 0.5;
-}
-
-.jumper-control:disabled .jumper-control__option input:checked + span {
-  opacity: 0.75;
-}
-
 .shuffle-action {
   position: relative;
   overflow: hidden;
@@ -804,20 +722,6 @@
 @media (max-width: 28rem) {
   .draw-experience {
     --drawn-card-width: clamp(8rem, 40vw, 10rem);
-  }
-
-  .jumper-control {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.35rem;
-  }
-
-  .jumper-control legend {
-    margin-bottom: 0.35rem;
-  }
-
-  .jumper-control__option span {
-    padding: 0.3rem 0.55rem;
   }
 
   .shuffle-action {

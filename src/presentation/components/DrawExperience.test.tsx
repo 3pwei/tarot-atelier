@@ -27,7 +27,7 @@ async function shuffleAndDraw() {
 
 describe("DrawExperience", () => {
   it("supports keyboard-focused drawing and blocks duplicate clicks", async () => {
-    render(<DrawExperience randomSource={() => 0.9} initialJumperMode="off" />);
+    render(<DrawExperience randomSource={() => 0.9} />);
 
     fireEvent.click(screen.getByRole("button", { name: "洗牌" }));
     const pile = await screen.findByRole("button", {
@@ -45,7 +45,7 @@ describe("DrawExperience", () => {
   });
 
   it("keeps the face hidden until the person reveals the card", async () => {
-    render(<DrawExperience randomSource={() => 0.9} initialJumperMode="off" />);
+    render(<DrawExperience randomSource={() => 0.9} />);
     await shuffleAndDraw();
 
     const reveal = await screen.findByRole("button", {
