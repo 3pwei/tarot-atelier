@@ -1103,6 +1103,7 @@ button:focus-visible {
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
+  isolation: isolate;
 }
 
 .drawn-card__side {
@@ -1134,6 +1135,7 @@ button:focus-visible {
   opacity: 1;
   pointer-events: none;
   transition: opacity 180ms ease-out;
+  transform: translateZ(0);
 }
 
 .drawn-card__scorch {
@@ -1327,8 +1329,8 @@ button:focus-visible {
     transform 650ms ease;
 }
 
-.drawn-card:hover .drawn-card__shine::after,
-.drawn-card:focus-within .drawn-card__shine::after {
+.drawn-card:not(:disabled):hover .drawn-card__shine::after,
+.drawn-card:not(:disabled):focus-within .drawn-card__shine::after {
   opacity: 0.82;
   transform: translateX(120%);
 }
