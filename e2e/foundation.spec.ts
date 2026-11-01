@@ -29,7 +29,9 @@ test("draw experience supports keyboard shuffle, draw, and reveal", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "洗牌" }).click();
+  await page
+    .getByRole("button", { name: "洗牌", exact: true })
+    .click();
 
   const pile = page.getByRole("button", { name: "從牌堆抽一張牌" });
   await expect(pile).toBeEnabled();
@@ -42,5 +44,7 @@ test("draw experience supports keyboard shuffle, draw, and reveal", async ({
   const drawnCount = await drawnCards.count();
   expect(drawnCount).toBeGreaterThanOrEqual(1);
   expect(drawnCount).toBeLessThanOrEqual(2);
-  await expect(page.getByRole("button", { name: "洗牌" })).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "洗牌", exact: true }),
+  ).toBeEnabled();
 });
