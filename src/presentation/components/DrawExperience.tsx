@@ -26,10 +26,10 @@ const CSS_SHUFFLE_DURATION_MS = 980;
 const CSS_DRAW_DURATION_MS = 1_600;
 
 const jumperOptions = [
-  { id: "off", label: "éé", detail: "0%" },
-  { id: "rare", label: "ç¨æ", detail: "3%" },
-  { id: "normal", label: "ä¸è¬", detail: "8%" },
-  { id: "chaos", label: "æ··æ²", detail: "15%" },
+  { id: "off", label: "關閉", detail: "0%" },
+  { id: "rare", label: "稀有", detail: "3%" },
+  { id: "normal", label: "一般", detail: "8%" },
+  { id: "chaos", label: "混沌", detail: "15%" },
 ] as const satisfies readonly {
   readonly id: JumperMode;
   readonly label: string;
@@ -37,11 +37,11 @@ const jumperOptions = [
 }[];
 
 const stateLabels: Readonly<Record<DrawState, string>> = {
-  idle: "ç­å¾æ´ç",
-  shuffling: "æå±æ­£å¨æ´ç",
-  ready: "çå å·²å°±ç·ï¼è«æ½ä¸å¼µ",
-  drawing: "å¡çæ­£å¨åå¾å¾æ¾å",
-  revealed: "çé¢å·²æ­ç¤º",
+  idle: "等待洗牌",
+  shuffling: "星屑正在洗牌",
+  ready: "牌堆已就緒，請抽一張",
+  drawing: "卡牌正在前往待放區",
+  revealed: "牌面已揭示",
 };
 
 interface DrawExperienceProps {
@@ -74,14 +74,14 @@ function DrawnCard({
   instance: CardInstance;
   role: "primary" | "jumper";
 }>) {
-  const roleLabel = role === "jumper" ? "è·³ç" : "ä¸»ç";
+  const roleLabel = role === "jumper" ? "跳牌" : "主牌";
   return (
     <article
       className={`drawn-card drawn-card--${role}`}
       data-draw-card={role}
-      aria-label={`${roleLabel}ï¼${card.name.zhHant}ï¼${instance.orientation === "reversed" ? "éä½" : "æ­£ä½"}`}
+      aria-label={`${roleLabel}：${card.name.zhHant}，${instance.orientation === "reversed" ? "逆位" : "正位"}`}
     >
-      {role === "jumper" && <span className="jumper-label">è·³ç</span>}
+      {role === "jumper" && <span className="jumper-label">跳牌</span>}
       <div className="drawn-card__inner">
         <div className="drawn-card__side drawn-card__back" aria-hidden="true">
           <CardArtwork card={card} side="back" orientation="upright" />
@@ -100,7 +100,7 @@ function DrawnCard({
       </div>
       <div className="drawn-card__caption">
         <strong>{card.name.zhHant}</strong>
-        <span>{instance.orientation === "reversed" ? "éä½" : "æ­£ä½"}</span>
+        <span>{instance.orientation === "reversed" ? "逆位" : "正位"}</span>
       </div>
     </article>
   );
@@ -316,7 +316,7 @@ export function DrawExperience({
     >
       <div className="draw-toolbar">
         <label className="jumper-mode-label" htmlFor="jumper-mode">
-          <span>è·³çé »ç</span>
+          <span>跳牌頻率</span>
           <select
             id="jumper-mode"
             value={jumperMode}
@@ -327,7 +327,7 @@ export function DrawExperience({
           >
             {jumperOptions.map((option) => (
               <option key={option.id} value={option.id}>
-                {option.label} Â· {option.detail}
+                {option.label} · {option.detail}
               </option>
             ))}
           </select>
@@ -335,7 +335,7 @@ export function DrawExperience({
         <div className="draw-status" aria-live="polite">
           <span className="draw-status__light" aria-hidden="true" />
           <strong>{stateLabels[phase]}</strong>
-          <span>å©é¤ {remainingCount} å¼µ</span>
+          <span>剩餘 {remainingCount} 張</span>
         </div>
         <button
           className="secondary-action"
@@ -343,7 +343,7 @@ export function DrawExperience({
           disabled={!canShuffle}
           onClick={shuffle}
         >
-          {remainingCount === 0 ? "éæ°è£ç" : "æ´ç"}
+          {remainingCount === 0 ? "重新裝牌" : "洗牌"}
         </button>
       </div>
 
@@ -364,19 +364,19 @@ export function DrawExperience({
           onClick={draw}
           aria-label={
             phase === "ready"
-              ? "å¾çå æ½ä¸å¼µç"
-              : `çå ç®å${stateLabels[phase]}`
+              ? "從牌堆抽一張牌"
+              : `牌堆目前${stateLabels[phase]}`
           }
         >
           <span data-deck-layer="bottom" />
           <span data-deck-layer="middle" />
           <span data-deck-layer="top" />
-          <em>{phase === "ready" ? "é»ææ½ç" : "Tarot Atelier"}</em>
+          <em>{phase === "ready" ? "點擊抽牌" : "Tarot Atelier"}</em>
         </button>
 
         <div
           className={`waiting-zone ${result ? "waiting-zone--occupied" : ""}`}
-          aria-label="å¾æ¾å"
+          aria-label="待放區"
         >
           {result && primaryCard ? (
             <div className="drawn-pair" data-card-total={result.jumper ? 2 : 1}>
@@ -395,9 +395,9 @@ export function DrawExperience({
             </div>
           ) : (
             <div className="waiting-zone__empty">
-              <span aria-hidden="true">â¦</span>
-              <strong>å¾æ¾å</strong>
-              <small>æ´çå¾ï¼ä»¥æ»é¼ ãè§¸æ§æéµç¤æ½ç</small>
+              <span aria-hidden="true">✦</span>
+              <strong>待放區</strong>
+              <small>洗牌後，以滑鼠、觸控或鍵盤抽牌</small>
             </div>
           )}
         </div>
@@ -405,12 +405,12 @@ export function DrawExperience({
 
       <div className="draw-footnote">
         <span>
-          {jumperOptions.find((option) => option.id === jumperMode)?.label}æ¨¡å¼
-          Â· æ¯æ¬¡æå¤ä¸å¼µè·³ç Â· {JUMPER_PROBABILITIES[jumperMode] * 100}%
+          {jumperOptions.find((option) => option.id === jumperMode)?.label}模式
+          · 每次最多一張跳牌 · {JUMPER_PROBABILITIES[jumperMode] * 100}%
         </span>
         {result && phase === "revealed" && (
           <time dateTime={result.drawnAt}>
-            æ½çæé {new Date(result.drawnAt).toLocaleTimeString("zh-TW")}
+            抽牌時間 {new Date(result.drawnAt).toLocaleTimeString("zh-TW")}
           </time>
         )}
       </div>
