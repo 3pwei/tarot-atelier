@@ -25,7 +25,7 @@ test("deck library exposes 78 definitions and has no horizontal overflow", async
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 });
 
-test("draw experience supports keyboard shuffle, draw, and reveal", async ({
+test("draw experience waits for the card click and can burn both ways", async ({
   page,
 }) => {
   await page.goto("/");
@@ -37,12 +37,27 @@ test("draw experience supports keyboard shuffle, draw, and reveal", async ({
   await page.keyboard.press("Enter");
   await page.keyboard.press("Enter");
 
-  await expect(page.getByText("牌面已揭示")).toBeVisible();
+  await expect(page.getByText("卡牌已就位，請點擊翻面")).toBeVisible();
   const drawnCards = page.locator("[data-draw-card]");
   const drawnCount = await drawnCards.count();
   expect(drawnCount).toBeGreaterThanOrEqual(1);
   expect(drawnCount).toBeLessThanOrEqual(2);
-  await expect(page.locator("[data-burn-reveal]")).toHaveCount(drawnCount);
+  await expect(drawnCards.first()).toHaveAttribute("data-card-side", "back");
+  await expect(page.locator("[data-burn-reveal]")).toHaveCount(0);
+
+  await drawnCards.first().click();
+  await expect(page.locator("[data-burn-reveal]")).toHaveCount(1);
+  await expect(drawnCards.first()).toHaveAttribute("data-card-side", "face");
+  await expect(page.locator("[data-burn-reveal]")).toHaveCount(0, {
+    timeout: 5_000,
+  });
+
+  await drawnCards.first().click();
+  await expect(page.locator("[data-burn-reveal]")).toHaveCount(1);
+  await expect(drawnCards.first()).toHaveAttribute("data-card-side", "back");
+  await expect(page.locator("[data-burn-reveal]")).toHaveCount(0, {
+    timeout: 5_000,
+  });
   await expect(
     page.getByRole("button", { name: "洗牌", exact: true }),
   ).toBeEnabled();
