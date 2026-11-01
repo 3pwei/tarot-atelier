@@ -1069,10 +1069,25 @@ button:focus-visible {
 }
 
 .drawn-card {
+  appearance: none;
   position: relative;
   width: clamp(9rem, 20vw, 13rem);
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
   flex: 0 0 auto;
+  font: inherit;
+  text-align: initial;
+  touch-action: manipulation;
   transform-style: preserve-3d;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drawn-card:disabled {
+  cursor: default;
 }
 
 .drawn-pair[data-card-total="2"] .drawn-card--primary {
@@ -1264,7 +1279,7 @@ button:focus-visible {
   transition: opacity 380ms ease 560ms;
 }
 
-.draw-experience[data-phase="revealed"] .drawn-card__caption {
+.drawn-card[data-card-side="face"] .drawn-card__caption {
   opacity: 1;
 }
 
@@ -1377,10 +1392,6 @@ button:focus-visible {
   animation: css-burn-front 1050ms cubic-bezier(0.28, 0.04, 0.25, 1) 540ms both;
 }
 
-.draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card__face {
-  animation: css-reveal-card-face 1050ms ease-in-out 540ms both;
-}
-
 @keyframes status-pulse {
   to {
     opacity: 0.42;
@@ -1398,7 +1409,7 @@ button:focus-visible {
 @keyframes css-card-arrival {
   from {
     opacity: 0;
-    transform: translate(5rem, 9rem) rotate(9deg) scale(0.7);
+    transform: translate(5rem, 9rem) scale(0.7);
   }
 }
 
