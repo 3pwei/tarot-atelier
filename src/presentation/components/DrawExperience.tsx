@@ -96,7 +96,11 @@ function DrawnCard({
       </div>
       <span className="drawn-card__shine" aria-hidden="true" />
       <div className="drawn-card__scorch" data-scorch-reveal aria-hidden="true">
-        <span />
+        <span
+          style={{
+            backgroundImage: `url("${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/art/burn-ring-texture.png")`,
+          }}
+        />
       </div>
       <div className="drawn-card__caption">
         <strong>{card.name.zhHant}</strong>
