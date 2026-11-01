@@ -28,6 +28,32 @@ recognizable engineering and interaction placeholder, not a claim of 78
 finished card illustrations. The test deck also contains one intentional
 `missing://` reference to verify the explicit artwork fallback.
 
+## Phase 02 procedural SVG card art
+
+Phase 02 replaces the CSS frames with repository-authored inline SVG, drawn in
+code under `src/presentation/components/cards/`:
+
+- **Back**: an eight-point star inside a 32-ray sunburst, a ring of twelve
+  points, mirrored finials and a deterministic star field. It is symmetric
+  under a half turn, so a reversed back looks identical.
+- **Face**: a double gilt border with filigree corners, a numeral header
+  (Roman numerals for the major arcana, `ACE`–`X` and court titles for the
+  minor arcana), and a framed art window.
+  - Major arcana show their typographic symbol in a rayed medallion.
+  - Numbered minor cards lay out one original suit emblem per pip (wand,
+    chalice, sword, pentacle).
+  - Court cards pair a large emblem with a rank mark (star, helm, crown).
+
+All colours in these SVGs are literal values from `cardPalette.ts`, because
+the card back is rasterised for the burn reveal, where CSS variables do not
+resolve. These remain procedural identification art, not finished
+illustrations; no third-party artwork, font glyph art or traced imagery is used.
+
+| Asset                         | Author                                      | License / source                           | Status                  |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------ | ----------------------- |
+| Procedural SVG card back/face | Tarot Atelier project, authored in code     | Original project asset; no external source | Phase 02 procedural art |
+| Burn reveal (canvas)          | Tarot Atelier project, generated at runtime | Original; no texture files                 | Phase 02 effect         |
+
 ## Motion
 
 Motion begins subtly and must respect `prefers-reduced-motion`. Scene effects are decorative, skip-safe, pointer-inert, and separable from future asynchronous interpretation tasks.
