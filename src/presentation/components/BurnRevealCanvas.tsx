@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 const WIDTH = 220;
 const HEIGHT = 330;
@@ -147,15 +147,15 @@ function buildFaceTexture(
       const offset = index * 4;
       const paper = fractalNoise(x, y * 1.08, seed);
       const grain = hash(x, y, seed + 53) - 0.5;
-      pixels[offset] = 205 + paper * 35 + grain * 8;
-      pixels[offset + 1] = 178 + paper * 39 + grain * 7;
-      pixels[offset + 2] = 112 + paper * 34 + grain * 6;
+      pixels[offset] = 18 + paper * 28 + grain * 8;
+      pixels[offset + 1] = 15 + paper * 22 + grain * 7;
+      pixels[offset + 2] = 31 + paper * 35 + grain * 9;
       pixels[offset + 3] = 255;
     }
   }
   context.putImageData(image, 0, 0);
   context.save();
-  context.strokeStyle = "rgba(78, 43, 72, 0.86)";
+  context.strokeStyle = "rgba(230, 197, 122, 0.86)";
   context.lineWidth = 4;
   context.roundRect(8, 8, WIDTH - 16, HEIGHT - 16, 10);
   context.stroke();
@@ -163,16 +163,16 @@ function buildFaceTexture(
   context.roundRect(15, 15, WIDTH - 30, HEIGHT - 30, 7);
   context.stroke();
   context.translate(WIDTH / 2, HEIGHT / 2);
-  context.strokeStyle = "rgba(96, 53, 88, 0.7)";
+  context.strokeStyle = "rgba(230, 197, 122, 0.42)";
   context.beginPath();
   context.arc(0, -12, 55, 0, Math.PI * 2);
   context.stroke();
-  context.fillStyle = "rgba(79, 42, 72, 0.9)";
+  context.fillStyle = "rgba(245, 221, 162, 0.94)";
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.font = "700 42px Georgia, serif";
   context.fillText("✦", 0, -12);
-  context.font = "700 16px system-ui, sans-serif";
+  context.font = "700 16px Georgia, serif";
   context.fillText(cardLabel.slice(0, 10), 0, 76);
   context.restore();
   return context.getImageData(0, 0, WIDTH, HEIGHT);
@@ -275,7 +275,7 @@ export function BurnRevealCanvas({
 }: BurnRevealCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (reducedMotion) {
       if (canvas) canvas.style.opacity = "0";
