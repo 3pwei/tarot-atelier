@@ -22,6 +22,9 @@ import { CardArtwork } from "@/presentation/components/CardArtwork";
 
 type MotionMode = "enhanced" | "css" | "reduced";
 
+const CSS_SHUFFLE_DURATION_MS = 1_500;
+const CSS_DRAW_DURATION_MS = 1_600;
+
 const jumperOptions = [
   { id: "off", label: "關閉", detail: "0%" },
   { id: "rare", label: "稀有", detail: "3%" },
@@ -91,6 +94,20 @@ function DrawnCard({
           />
         </div>
       </div>
+      <div className="drawn-card__burn" data-fire-reveal aria-hidden="true">
+        {Array.from({ length: 7 }, (_, index) => (
+          <span
+            key={index}
+            style={
+              {
+                "--flame-left": `${2 + index * 14.5}%`,
+                "--flame-delay": `${index * -65}ms`,
+                "--flame-tilt": `${(index - 3) * 2}deg`,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </div>
       <div className="drawn-card__caption">
         <strong>{card.name.zhHant}</strong>
         <span>{instance.orientation === "reversed" ? "逆位" : "正位"}</span>
@@ -144,7 +161,7 @@ export function DrawExperience({
     if (motionMode === "reduced") {
       finish();
     } else if (motionMode === "css") {
-      timer = setTimeout(finish, 720);
+      timer = setTimeout(finish, CSS_SHUFFLE_DURATION_MS);
     } else {
       void import("gsap")
         .then(({ gsap }) => {
@@ -155,7 +172,7 @@ export function DrawExperience({
               .to("[data-deck-layer='top']", {
                 x: -42,
                 rotation: -8,
-                duration: 0.28,
+                duration: 0.56,
                 ease: "power2.out",
               })
               .to(
@@ -163,7 +180,7 @@ export function DrawExperience({
                 {
                   x: 36,
                   rotation: 7,
-                  duration: 0.28,
+                  duration: 0.56,
                   ease: "power2.out",
                 },
                 "<",
@@ -171,8 +188,8 @@ export function DrawExperience({
               .to("[data-deck-layer]", {
                 x: 0,
                 rotation: 0,
-                duration: 0.42,
-                stagger: 0.05,
+                duration: 0.84,
+                stagger: 0.1,
                 ease: "back.out(1.7)",
               });
           }, root);
@@ -202,7 +219,7 @@ export function DrawExperience({
     if (motionMode === "reduced") {
       finish();
     } else if (motionMode === "css") {
-      timer = setTimeout(finish, 900);
+      timer = setTimeout(finish, CSS_DRAW_DURATION_MS);
     } else {
       void import("gsap")
         .then(({ gsap }) => {
@@ -225,12 +242,46 @@ export function DrawExperience({
                   ease: "power3.out",
                 },
               )
+              .fromTo(
+                ".drawn-card__burn",
+                { opacity: 0, scale: 0.88 },
+                {
+                  opacity: 1,
+                  scale: 1,
+                  duration: 0.2,
+                  stagger: 0.12,
+                  ease: "power2.out",
+                },
+                ">-0.08",
+              )
               .to(".drawn-card__inner", {
                 rotationY: 180,
-                duration: 0.72,
+                duration: 0.82,
                 stagger: 0.12,
-                ease: "power2.inOut",
-              });
+                ease: "power3.inOut",
+              })
+              .to(
+                ".drawn-card__burn",
+                {
+                  opacity: 0,
+                  scale: 1.18,
+                  duration: 0.42,
+                  stagger: 0.08,
+                  ease: "power2.out",
+                },
+                "<-0.28",
+              )
+              .fromTo(
+                ".drawn-card__face",
+                { filter: "brightness(1.45) saturate(1.28)" },
+                {
+                  filter: "brightness(1) saturate(1)",
+                  duration: 0.52,
+                  stagger: 0.1,
+                  ease: "power2.out",
+                },
+                "<-0.32",
+              );
           }, root);
           cleanup = () => context.revert();
         })
