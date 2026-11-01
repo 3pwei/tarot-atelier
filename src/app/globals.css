@@ -1106,95 +1106,85 @@ button:focus-visible {
   transform: rotateY(180deg);
 }
 
-.drawn-card__burn {
+.drawn-card__scorch {
   position: absolute;
   z-index: 6;
-  inset: -0.8rem -0.65rem 1.4rem;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-radius: 1.25rem;
-  filter: drop-shadow(0 0 0.8rem rgba(255, 84, 13, 0.75));
+  border-radius: 0.85rem;
+  clip-path: circle(0% at 50% 50%);
+  filter: drop-shadow(0 0 0.65rem rgba(132, 60, 19, 0.58));
   opacity: 0;
   pointer-events: none;
-  transform-origin: 50% 72%;
 }
 
-.drawn-card__burn::before,
-.drawn-card__burn::after {
+.drawn-card__scorch::before,
+.drawn-card__scorch::after {
   position: absolute;
   content: "";
   pointer-events: none;
 }
 
-.drawn-card__burn::before {
-  inset: 4% 3% 5%;
-  border: 2px solid rgba(255, 198, 63, 0.86);
-  border-radius: 1rem;
+.drawn-card__scorch::before {
+  inset: 0;
   background:
     radial-gradient(
-      circle at 50% 88%,
-      rgba(255, 248, 171, 0.9),
-      transparent 18%
+      circle at 50% 50%,
+      rgba(15, 6, 3, 0.98) 0 13%,
+      rgba(57, 24, 10, 0.96) 22%,
+      rgba(181, 83, 24, 0.78) 34%,
+      rgba(218, 156, 72, 0.58) 42%,
+      rgba(74, 37, 18, 0.84) 53%,
+      rgba(25, 11, 6, 0.94) 67%,
+      transparent 73%
     ),
-    linear-gradient(
-      to top,
-      rgba(255, 59, 0, 0.42),
-      rgba(255, 142, 15, 0.18) 46%,
-      transparent 72%
+    repeating-radial-gradient(
+      ellipse at 48% 52%,
+      rgba(236, 194, 124, 0.22) 0 1px,
+      rgba(38, 17, 8, 0.28) 1px 3px,
+      transparent 3px 7px
+    ),
+    repeating-linear-gradient(
+      17deg,
+      rgba(238, 207, 154, 0.14) 0 1px,
+      transparent 1px 5px
     );
+  background-color: rgba(37, 16, 8, 0.82);
+  mix-blend-mode: multiply;
+}
+
+.drawn-card__scorch::after {
+  top: 50%;
+  left: 50%;
+  width: 62%;
+  aspect-ratio: 1;
+  border: 0.18rem solid rgba(88, 39, 14, 0.78);
+  border-radius: 47% 53% 42% 58% / 55% 45% 57% 43%;
   box-shadow:
-    inset 0 0 1.2rem rgba(255, 47, 0, 0.74),
-    0 0 1.4rem rgba(255, 104, 8, 0.66);
-  mix-blend-mode: screen;
+    0 0 0 0.18rem rgba(215, 137, 55, 0.42),
+    inset 0 0 1.25rem rgba(7, 3, 2, 0.9),
+    0 0 1.4rem rgba(62, 28, 11, 0.72);
+  transform: translate(-50%, -50%) rotate(-8deg);
 }
 
-.drawn-card__burn::after {
-  inset: 8% 7% 9%;
-  border-radius: 0.8rem;
-  background:
-    radial-gradient(circle at 18% 74%, #fff5a8 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 68% 36%, #ff9d1c 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 84% 67%, #ff4c0a 0 2px, transparent 3px),
-    radial-gradient(circle at 38% 20%, #ffd15a 0 1px, transparent 2px);
-  background-size:
-    2.5rem 3rem,
-    3.1rem 2.7rem,
-    2.8rem 3.4rem,
-    2.2rem 2.9rem;
-  box-shadow: inset 0 0 2.2rem rgba(18, 4, 2, 0.88);
-  animation: ember-drift 520ms linear infinite;
-}
-
-.drawn-card__burn > span {
-  --flame-delay: 0ms;
-  --flame-left: 2%;
-  --flame-tilt: 0deg;
+.drawn-card__scorch > span {
   position: absolute;
   z-index: 2;
-  bottom: 0;
-  left: var(--flame-left);
-  width: 22%;
-  height: 38%;
-  border-radius: 58% 42% 64% 36% / 74% 62% 38% 26%;
+  inset: 10%;
   background:
-    radial-gradient(ellipse at 50% 86%, #fffbd1 0 13%, transparent 38%),
-    linear-gradient(to top, #ff2b04 8%, #ffaf1a 58%, rgba(255, 225, 79, 0.12));
-  box-shadow: 0 0 1rem rgba(255, 83, 6, 0.7);
-  mix-blend-mode: screen;
-  transform: scaleY(0.55) rotate(var(--flame-tilt));
-  transform-origin: 50% 100%;
-}
-
-.drawn-card__burn > span:nth-child(3n + 2) {
-  height: 47%;
-}
-
-.drawn-card__burn > span:nth-child(3n) {
-  height: 54%;
-}
-
-.draw-experience[data-phase="drawing"] .drawn-card__burn > span {
-  animation: flame-lick 430ms ease-in-out infinite alternate;
-  animation-delay: var(--flame-delay);
+    radial-gradient(circle at 22% 68%, #1a0904 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 67% 31%, #7b3515 0 1px, transparent 2px),
+    radial-gradient(circle at 82% 72%, #241008 0 2px, transparent 3px),
+    radial-gradient(circle at 39% 18%, #aa602b 0 1px, transparent 2px);
+  background-size:
+    2.4rem 3.2rem,
+    3rem 2.8rem,
+    2.7rem 3.5rem,
+    2.1rem 2.9rem;
+  mix-blend-mode: multiply;
 }
 
 .drawn-card__caption {
@@ -1227,11 +1217,21 @@ button:focus-visible {
   font-weight: 800;
 }
 
-.drawn-card::after {
+.drawn-card__shine {
   position: absolute;
   z-index: 4;
-  inset: 0 0 2.2rem;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
   border-radius: 0.85rem;
+  pointer-events: none;
+}
+
+.drawn-card__shine::after {
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     115deg,
     transparent 24%,
@@ -1240,17 +1240,16 @@ button:focus-visible {
   );
   content: "";
   opacity: 0;
-  pointer-events: none;
-  transform: translateX(-70%);
+  transform: translateX(-120%);
   transition:
     opacity 240ms ease,
     transform 650ms ease;
 }
 
-.drawn-card:hover::after,
-.drawn-card:focus-within::after {
+.drawn-card:hover .drawn-card__shine::after,
+.drawn-card:focus-within .drawn-card__shine::after {
   opacity: 0.82;
-  transform: translateX(65%);
+  transform: translateX(120%);
 }
 
 .jumper-label {
@@ -1285,13 +1284,13 @@ button:focus-visible {
 }
 
 .draw-experience[data-motion="css"][data-phase="shuffling"] .draw-pile > span {
-  animation: css-shuffle 1360ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: css-shuffle 680ms cubic-bezier(0.34, 1.56, 0.64, 1) 2 both;
 }
 
 .draw-experience[data-motion="css"][data-phase="shuffling"]
   .draw-pile
   > span:nth-child(2) {
-  animation-delay: 140ms;
+  animation-delay: 70ms;
 }
 
 .draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card {
@@ -1302,12 +1301,12 @@ button:focus-visible {
   animation-delay: 120ms;
 }
 
-.draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card__burn {
-  animation: css-fire-curtain 900ms ease-in-out 560ms both;
+.draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card__scorch {
+  animation: css-scorch-spread 900ms ease-in-out 520ms both;
 }
 
 .draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card__inner {
-  animation: css-fire-flip 820ms cubic-bezier(0.65, 0, 0.35, 1) 650ms both;
+  animation: css-scorch-flip 820ms cubic-bezier(0.65, 0, 0.35, 1) 650ms both;
 }
 
 @keyframes status-pulse {
@@ -1331,46 +1330,27 @@ button:focus-visible {
   }
 }
 
-@keyframes css-fire-curtain {
+@keyframes css-scorch-spread {
   0% {
+    clip-path: circle(0% at 50% 50%);
     opacity: 0;
-    transform: scale(0.86);
   }
-  28%,
-  66% {
+  18% {
     opacity: 1;
-    transform: scale(1);
+  }
+  74% {
+    clip-path: circle(78% at 50% 50%);
+    opacity: 1;
   }
   100% {
+    clip-path: circle(78% at 50% 50%);
     opacity: 0;
-    transform: scale(1.18);
   }
 }
 
-@keyframes css-fire-flip {
+@keyframes css-scorch-flip {
   to {
     transform: rotateY(180deg);
-  }
-}
-
-@keyframes flame-lick {
-  from {
-    filter: brightness(0.9) blur(0.4px);
-    transform: scaleY(0.52) scaleX(0.82) rotate(-4deg);
-  }
-  to {
-    filter: brightness(1.35) blur(0);
-    transform: scaleY(1.08) scaleX(1.04) rotate(5deg);
-  }
-}
-
-@keyframes ember-drift {
-  to {
-    background-position:
-      0 -1.4rem,
-      0.8rem -1.8rem,
-      -0.5rem -1.2rem,
-      1rem -2rem;
   }
 }
 
