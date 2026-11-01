@@ -240,22 +240,35 @@ export function DrawExperience({
                 {
                   opacity: 1,
                   clipPath: "circle(78% at 50% 50%)",
-                  duration: 0.76,
+                  duration: 1.05,
                   stagger: 0.12,
                   ease: "power2.inOut",
                 },
                 ">-0.08",
               )
               .fromTo(
+                ".drawn-card__scorch > span",
+                { scale: 0.1, rotation: -12, opacity: 0 },
+                {
+                  scale: 7.3,
+                  rotation: 20,
+                  opacity: 1,
+                  duration: 1.05,
+                  stagger: 0.12,
+                  ease: "power2.inOut",
+                },
+                "<-0.96",
+              )
+              .fromTo(
                 ".drawn-card__face",
                 { clipPath: "circle(0% at 50% 50%)" },
                 {
                   clipPath: "circle(100% at 50% 50%)",
-                  duration: 0.9,
+                  duration: 1.05,
                   stagger: 0.12,
                   ease: "power2.inOut",
                 },
-                "<-0.76",
+                "<-1.05",
               )
               .to(
                 ".drawn-card__scorch",
