@@ -22,7 +22,7 @@ import { CardArtwork } from "@/presentation/components/CardArtwork";
 
 type MotionMode = "enhanced" | "css" | "reduced";
 
-const CSS_SHUFFLE_DURATION_MS = 1_450;
+const CSS_SHUFFLE_DURATION_MS = 760;
 const CSS_DRAW_DURATION_MS = 1_600;
 
 const jumperOptions = [
@@ -158,12 +158,12 @@ export function DrawExperience({
           if (disposed || !root.current) return;
           const context = gsap.context(() => {
             const timeline = gsap.timeline({ onComplete: finish });
-            for (let cycle = 0; cycle < 2; cycle += 1) {
+            for (let cycle = 0; cycle < 4; cycle += 1) {
               timeline
                 .to("[data-deck-layer='top']", {
                   x: -42,
                   rotation: -8,
-                  duration: 0.28,
+                  duration: 0.07,
                   ease: "power2.out",
                 })
                 .to(
@@ -171,7 +171,7 @@ export function DrawExperience({
                   {
                     x: 36,
                     rotation: 7,
-                    duration: 0.28,
+                    duration: 0.07,
                     ease: "power2.out",
                   },
                   "<",
@@ -179,8 +179,8 @@ export function DrawExperience({
                 .to("[data-deck-layer]", {
                   x: 0,
                   rotation: 0,
-                  duration: 0.42,
-                  stagger: 0.05,
+                  duration: 0.105,
+                  stagger: 0.0125,
                   ease: "back.out(1.7)",
                 });
             }
