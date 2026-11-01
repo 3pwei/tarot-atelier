@@ -47,7 +47,13 @@ pnpm test:e2e
 
 ## 部署
 
-`master` 會透過 GitHub Actions 產生靜態輸出並發布至 [GitHub Pages](https://3pwei.github.io/tarot-atelier/)。部署建置使用 `NEXT_PUBLIC_BASE_PATH=/tarot-atelier`，確保 Next.js 路由與公開素材能在 project site 子路徑正常載入。
+正式版部署於 [https://games.milespapa.com/tarot/](https://games.milespapa.com/tarot/)，並與其他 Milespapa 遊戲共用 Sites 專案。產生可發布的靜態輸出時使用：
+
+```bash
+NEXT_PUBLIC_BASE_PATH=/tarot pnpm check
+```
+
+將 `out/` 內容發布到遊戲站的 `dist/tarot/`；此 repository 不使用 GitHub Pages。
 
 ## 分層
 
