@@ -1065,7 +1065,6 @@ button:focus-visible {
   width: min(100%, 28rem);
   align-items: center;
   justify-content: center;
-  perspective: 1300px;
 }
 
 .drawn-card {
@@ -1081,7 +1080,6 @@ button:focus-visible {
   font: inherit;
   text-align: initial;
   touch-action: manipulation;
-  transform-style: preserve-3d;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -1109,6 +1107,10 @@ button:focus-visible {
 .drawn-card__side {
   position: absolute;
   inset: 0;
+}
+
+.drawn-card .card-artwork {
+  transition: none;
 }
 
 .drawn-card__face {
