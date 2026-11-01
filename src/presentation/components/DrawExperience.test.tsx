@@ -33,10 +33,17 @@ describe("DrawExperience", () => {
     fireEvent.click(pile);
 
     await waitFor(() =>
-      expect(screen.getByText("牌面已揭示")).toBeInTheDocument(),
+      expect(screen.getByText("卡牌已就位，請點擊翻面")).toBeInTheDocument(),
     );
     expect(document.querySelectorAll("[data-draw-card]")).toHaveLength(1);
     expect(screen.getByText("剩餘 77 張")).toBeInTheDocument();
+
+    const card = screen.getByRole("button", { name: /目前為牌背/ });
+    expect(card).toHaveAttribute("data-card-side", "back");
+    fireEvent.click(card);
+    await waitFor(() => expect(card).toHaveAttribute("data-card-side", "face"));
+    fireEvent.click(card);
+    await waitFor(() => expect(card).toHaveAttribute("data-card-side", "back"));
   });
 
   it("shows the jumper role and removes two cards when rare mode hits", async () => {
@@ -53,7 +60,7 @@ describe("DrawExperience", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByText("牌面已揭示")).toBeInTheDocument(),
+      expect(screen.getByText("卡牌已就位，請點擊翻面")).toBeInTheDocument(),
     );
     expect(document.querySelectorAll("[data-draw-card]")).toHaveLength(2);
     expect(screen.getByText("跳牌")).toBeInTheDocument();
