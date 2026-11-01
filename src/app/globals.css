@@ -1116,8 +1116,7 @@ button:focus-visible {
   overflow: hidden;
   border-radius: 0.85rem;
   clip-path: circle(0% at 50% 50%);
-  filter:
-    drop-shadow(0 0 0.72rem rgba(132, 75, 32, 0.48))
+  filter: drop-shadow(0 0 0.72rem rgba(132, 75, 32, 0.48))
     drop-shadow(0 0 1rem rgba(230, 197, 122, 0.16));
   opacity: 0;
   pointer-events: none;
@@ -1143,11 +1142,31 @@ button:focus-visible {
   z-index: 2;
   inset: 7%;
   background:
-    radial-gradient(circle at 22% 68%, rgba(230, 197, 122, 0.95) 0 1px, transparent 2.5px),
-    radial-gradient(circle at 67% 31%, rgba(255, 224, 157, 0.9) 0 1.2px, transparent 2.4px),
-    radial-gradient(circle at 82% 72%, rgba(190, 112, 46, 0.8) 0 1.5px, transparent 3px),
-    radial-gradient(circle at 39% 18%, rgba(242, 194, 105, 0.86) 0 1px, transparent 2px),
-    radial-gradient(circle at 56% 82%, rgba(255, 236, 188, 0.72) 0 0.8px, transparent 2px);
+    radial-gradient(
+      circle at 22% 68%,
+      rgba(230, 197, 122, 0.95) 0 1px,
+      transparent 2.5px
+    ),
+    radial-gradient(
+      circle at 67% 31%,
+      rgba(255, 224, 157, 0.9) 0 1.2px,
+      transparent 2.4px
+    ),
+    radial-gradient(
+      circle at 82% 72%,
+      rgba(190, 112, 46, 0.8) 0 1.5px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 39% 18%,
+      rgba(242, 194, 105, 0.86) 0 1px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at 56% 82%,
+      rgba(255, 236, 188, 0.72) 0 0.8px,
+      transparent 2px
+    );
   background-size:
     2.4rem 3.2rem,
     3rem 2.8rem,
