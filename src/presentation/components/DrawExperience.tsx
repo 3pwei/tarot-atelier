@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -24,7 +25,7 @@ import { CardArtwork } from "@/presentation/components/CardArtwork";
 type MotionMode = "enhanced" | "css" | "reduced";
 
 const CSS_SHUFFLE_DURATION_MS = 980;
-const CSS_DRAW_DURATION_MS = 3_850;
+const CSS_DRAW_DURATION_MS = 850;
 
 const jumperOptions = [
   { id: "off", label: "關閉", detail: "0%" },
@@ -42,7 +43,7 @@ const stateLabels: Readonly<Record<DrawState, string>> = {
   shuffling: "星屑正在洗牌",
   ready: "牌堆已就緒，請抽一張",
   drawing: "卡牌正在前往待放區",
-  revealed: "牌面已揭示",
+  revealed: "卡牌已就位，請點擊翻面",
 };
 
 interface DrawExperienceProps {
@@ -80,34 +81,65 @@ function DrawnCard({
   role: "primary" | "jumper";
 }>) {
   const roleLabel = role === "jumper" ? "跳牌" : "主牌";
+  const [side, setSide] = useState<"back" | "face">("back");
+  const [burn, setBurn] = useState<{
+    from: "back" | "face";
+    to: "back" | "face";
+    nonce: number;
+  }>();
+  const displayedSide = burn?.to ?? side;
+  const completeBurn = useCallback(() => {
+    if (!burn) return;
+    setSide(burn.to);
+    setBurn(undefined);
+  }, [burn]);
+
+  function toggleSide() {
+    if (phase !== "revealed" || burn) return;
+    setBurn({
+      from: side,
+      to: side === "back" ? "face" : "back",
+      nonce: Date.now(),
+    });
+  }
+
   return (
-    <article
+    <button
+      type="button"
       className={`drawn-card drawn-card--${role}`}
       data-draw-card={role}
-      aria-label={`${roleLabel}：${card.name.zhHant}，${instance.orientation === "reversed" ? "逆位" : "正位"}`}
+      data-card-side={displayedSide}
+      disabled={phase !== "revealed" || Boolean(burn)}
+      onClick={toggleSide}
+      aria-label={`${roleLabel}：${card.name.zhHant}，目前為${displayedSide === "back" ? "牌背" : "牌面"}，點擊以燃燒揭示另一面`}
     >
       {role === "jumper" && <span className="jumper-label">跳牌</span>}
       <div className="drawn-card__inner">
         <div className="drawn-card__side drawn-card__face">
           <CardArtwork
             card={card}
-            side="face"
+            side={displayedSide}
             orientation={instance.orientation}
           />
         </div>
-        <BurnRevealCanvas
-          active={phase === "drawing"}
-          delayMs={role === "jumper" ? 790 : 650}
-          reducedMotion={motionMode === "reduced"}
-          seed={`${card.id}:${instance.orientation}:${role}`}
-        />
+        {burn && (
+          <BurnRevealCanvas
+            key={burn.nonce}
+            active
+            cardLabel={card.name.zhHant}
+            onComplete={completeBurn}
+            reducedMotion={motionMode === "reduced"}
+            seed={`${card.id}:${instance.orientation}:${role}:${burn.from}:${burn.nonce}`}
+            surface={burn.from}
+          />
+        )}
       </div>
       <span className="drawn-card__shine" aria-hidden="true" />
       <div className="drawn-card__caption">
         <strong>{card.name.zhHant}</strong>
         <span>{instance.orientation === "reversed" ? "逆位" : "正位"}</span>
       </div>
-    </article>
+    </button>
   );
 }
 
@@ -227,11 +259,10 @@ export function DrawExperience({
             timeline
               .fromTo(
                 cards,
-                { y: 150, x: 70, rotation: 10, scale: 0.7, opacity: 0 },
+                { y: 150, x: 70, scale: 0.7, opacity: 0 },
                 {
                   y: 0,
                   x: 0,
-                  rotation: 0,
                   scale: 1,
                   opacity: 1,
                   duration: 0.72,
@@ -239,7 +270,7 @@ export function DrawExperience({
                   ease: "power3.out",
                 },
               )
-              .to({}, { duration: 3.15 });
+              .to({}, { duration: 0.12 });
           }, root);
           cleanup = () => context.revert();
         })
