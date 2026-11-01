@@ -42,7 +42,7 @@ test("draw experience supports keyboard shuffle, draw, and reveal", async ({
   const drawnCount = await drawnCards.count();
   expect(drawnCount).toBeGreaterThanOrEqual(1);
   expect(drawnCount).toBeLessThanOrEqual(2);
-  await expect(page.locator("[data-fire-reveal]")).toHaveCount(drawnCount);
+  await expect(page.locator("[data-scorch-reveal]")).toHaveCount(drawnCount);
   await expect(
     page.getByRole("button", { name: "洗牌", exact: true }),
   ).toBeEnabled();
