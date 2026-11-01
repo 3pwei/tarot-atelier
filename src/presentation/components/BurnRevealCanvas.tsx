@@ -8,9 +8,11 @@ const BURN_DURATION_MS = 3_000;
 
 interface BurnRevealCanvasProps {
   readonly active: boolean;
-  readonly delayMs?: number;
+  readonly cardLabel: string;
+  readonly onComplete: () => void;
   readonly reducedMotion?: boolean;
   readonly seed: string;
+  readonly surface: "back" | "face";
 }
 
 interface Particle {
@@ -133,6 +135,49 @@ function buildBackTexture(
   return context.getImageData(0, 0, WIDTH, HEIGHT);
 }
 
+function buildFaceTexture(
+  context: CanvasRenderingContext2D,
+  seed: number,
+  cardLabel: string,
+): ImageData {
+  const image = context.createImageData(WIDTH, HEIGHT);
+  const pixels = image.data;
+  for (let y = 0, index = 0; y < HEIGHT; y += 1) {
+    for (let x = 0; x < WIDTH; x += 1, index += 1) {
+      const offset = index * 4;
+      const paper = fractalNoise(x, y * 1.08, seed);
+      const grain = hash(x, y, seed + 53) - 0.5;
+      pixels[offset] = 205 + paper * 35 + grain * 8;
+      pixels[offset + 1] = 178 + paper * 39 + grain * 7;
+      pixels[offset + 2] = 112 + paper * 34 + grain * 6;
+      pixels[offset + 3] = 255;
+    }
+  }
+  context.putImageData(image, 0, 0);
+  context.save();
+  context.strokeStyle = "rgba(78, 43, 72, 0.86)";
+  context.lineWidth = 4;
+  context.roundRect(8, 8, WIDTH - 16, HEIGHT - 16, 10);
+  context.stroke();
+  context.lineWidth = 1;
+  context.roundRect(15, 15, WIDTH - 30, HEIGHT - 30, 7);
+  context.stroke();
+  context.translate(WIDTH / 2, HEIGHT / 2);
+  context.strokeStyle = "rgba(96, 53, 88, 0.7)";
+  context.beginPath();
+  context.arc(0, -12, 55, 0, Math.PI * 2);
+  context.stroke();
+  context.fillStyle = "rgba(79, 42, 72, 0.9)";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = "700 42px Georgia, serif";
+  context.fillText("✦", 0, -12);
+  context.font = "700 16px system-ui, sans-serif";
+  context.fillText(cardLabel.slice(0, 10), 0, 76);
+  context.restore();
+  return context.getImageData(0, 0, WIDTH, HEIGHT);
+}
+
 function buildNoise(seed: number): Float32Array {
   const noise = new Float32Array(WIDTH * HEIGHT);
   for (let y = 0, index = 0; y < HEIGHT; y += 1) {
@@ -222,18 +267,28 @@ function drawParticles(
 
 export function BurnRevealCanvas({
   active,
-  delayMs = 650,
+  cardLabel,
+  onComplete,
   reducedMotion = false,
   seed: seedText,
+  surface,
 }: BurnRevealCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (reducedMotion) {
+      if (canvas) canvas.style.opacity = "0";
+      queueMicrotask(onComplete);
+      return;
+    }
     const context = canvas?.getContext("2d", { alpha: true });
     if (!canvas || !context) return;
     const seed = seedFromText(seedText);
-    const back = buildBackTexture(context, seed).data;
+    const source =
+      surface === "back"
+        ? buildBackTexture(context, seed).data
+        : buildFaceTexture(context, seed, cardLabel).data;
     const noise = buildNoise(seed + 73);
     const frame = context.createImageData(WIDTH, HEIGHT);
     const particles: Particle[] = [];
@@ -241,16 +296,12 @@ export function BurnRevealCanvas({
     let disposed = false;
     canvas.style.opacity = "1";
     context.putImageData(
-      new ImageData(new Uint8ClampedArray(back), WIDTH, HEIGHT),
+      new ImageData(new Uint8ClampedArray(source), WIDTH, HEIGHT),
       0,
       0,
     );
 
-    if (!active || reducedMotion) {
-      canvas.style.opacity = reducedMotion ? "0" : "1";
-      return;
-    }
-
+    if (!active) return;
     const delayTimer = setTimeout(() => {
       const startedAt = performance.now();
       const maximumRadius = Math.hypot(WIDTH / 2, HEIGHT / 2) + 36;
@@ -266,9 +317,9 @@ export function BurnRevealCanvas({
             const offset = index * 4;
             const distance = Math.hypot(x - WIDTH / 2, y - HEIGHT / 2);
             const signedDistance = radius - distance - (noise[index] ?? 0);
-            let red = back[offset] ?? 0;
-            let green = back[offset + 1] ?? 0;
-            let blue = back[offset + 2] ?? 0;
+            let red = source[offset] ?? 0;
+            let green = source[offset + 1] ?? 0;
+            let blue = source[offset + 2] ?? 0;
             let alpha = 255;
 
             if (signedDistance >= -8 && signedDistance < 0) {
@@ -317,17 +368,18 @@ export function BurnRevealCanvas({
           context.clearRect(0, 0, WIDTH, HEIGHT);
           canvas.style.opacity = "0";
           canvas.dataset.burnComplete = "true";
+          onComplete();
         }
       };
       animationFrame = requestAnimationFrame(render);
-    }, delayMs);
+    }, 0);
 
     return () => {
       disposed = true;
       clearTimeout(delayTimer);
       cancelAnimationFrame(animationFrame);
     };
-  }, [active, delayMs, reducedMotion, seedText]);
+  }, [active, cardLabel, onComplete, reducedMotion, seedText, surface]);
 
   return (
     <canvas
