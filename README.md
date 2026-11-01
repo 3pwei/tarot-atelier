@@ -4,11 +4,11 @@
 
 ## Phase 02 現況
 
-目前完成可擴充牌組與卡牌引擎、78 張標準塔羅定義、牌組 registry，以及完整的洗牌、抽牌、翻牌體驗。抽牌不放回，預設每次操作有 3% 機率額外出現一張「跳牌」，逆位機率預設 50%；牌組若關閉逆位則一律正位。尚未實作自由牌位、上傳介面或 AI 解牌。
+目前完成可擴充牌組與卡牌引擎、78 張標準塔羅定義、牌組 registry，以及完整的洗牌、抽牌、燒牌揭示體驗：兩輪 riffle 洗牌、卡牌沿弧線飛向祭壇，落定後由使用者點擊，火焰從觸碰點燒開牌背、露出牌面。抽牌不放回，預設每次操作有 3% 機率額外出現一張「跳牌」，逆位機率預設 50%；牌組若關閉逆位則一律正位。尚未實作自由牌位、上傳介面或 AI 解牌。
 
 跳牌模式與 UI 命名固定為 `off=0`、`rare=0.03`、`normal=0.08`、`chaos=0.15`，每次最多額外一張。domain 可注入 `RandomSource`；固定種子只供測試與可重現 demo，不是安全亂數。
 
-牌面採用原創程序式卡框與符號，目的是讓 78 張定義可辨識、可測試；不宣稱為 78 張完整插畫。
+牌面與牌背採用程式繪製的原創 SVG（燙金框、羅馬數字、依點數排列的花色紋章、宮廷牌標記），目的是讓 78 張定義可辨識、可測試；不宣稱為 78 張完整插畫。
 
 ## 技術棧
 
@@ -66,7 +66,7 @@ ESLint 會阻擋向外層的 import，例如 `domain` 不得 import `presentatio
 
 `public/brand/tarot-atelier-mark.svg` 與 `public/art/stardust-field.svg` 是本專案原創的 Phase 00 placeholder，不是正式完稿美術。完整素材紀錄見 `docs/art-direction.md`。
 
-Phase 01 起的卡牌使用 CSS 程序式卡框與通用符號。牌組格式、驗證規則、JSON Schema 與最小自製牌組範例見 [`docs/deck-engine.md`](docs/deck-engine.md)。
+Phase 02 起的卡牌使用 `src/presentation/components/cards/` 中的程序式 SVG。牌組格式、驗證規則、JSON Schema 與最小自製牌組範例見 [`docs/deck-engine.md`](docs/deck-engine.md)。
 
 ## 安全與產品聲明
 
