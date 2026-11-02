@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary";
 import {
   DrawExperience as DrawExperienceDomain,
-  JUMPER_PROBABILITIES,
   type DrawResult,
   type DrawState,
   type JumperMode,
@@ -30,9 +29,11 @@ import {
 const CSS_SHUFFLE_MS = 1300;
 const CSS_DRAW_MS = 950;
 
-/** Product rule: every draw has a fixed 3% chance of a second "jumper" card. */
+/**
+ * Product rule: every draw uses the fixed `rare` jumper rate. The rate is a
+ * deliberate surprise and is never shown to players.
+ */
 const JUMPER_MODE: JumperMode = "rare";
-const JUMPER_PERCENT = Math.round(JUMPER_PROBABILITIES[JUMPER_MODE] * 100);
 
 interface DrawExperienceProps {
   readonly randomSource?: RandomSource;
@@ -297,7 +298,7 @@ export function DrawExperience({ randomSource }: DrawExperienceProps = {}) {
         </div>
 
         <div className="draw-table__foot">
-          <span>每次抽牌有 {JUMPER_PERCENT}% 機率多出一張跳牌</span>
+          <span>牌堆偶爾會多送出一張跳牌</span>
           {result && allRevealed && (
             <time dateTime={result.drawnAt}>
               抽牌時間 {new Date(result.drawnAt).toLocaleTimeString("zh-TW")}

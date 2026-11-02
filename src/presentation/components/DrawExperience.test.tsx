@@ -89,4 +89,13 @@ describe("DrawExperience", () => {
       expect(screen.getByText("牌面已揭示")).toBeInTheDocument(),
     );
   });
+
+  it("never shows players the jumper probability", async () => {
+    const { container } = render(<DrawExperience randomSource={() => 0.9} />);
+    expect(container.textContent).not.toMatch(/\d+(\.\d+)?\s*%/u);
+
+    await shuffleAndDraw();
+    await screen.findByText("點擊卡牌，以火焰揭示牌面");
+    expect(container.textContent).not.toMatch(/\d+(\.\d+)?\s*%/u);
+  });
 });
