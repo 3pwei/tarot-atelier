@@ -25,7 +25,13 @@ interface DrawnCardProps {
   /** The card has landed and may be revealed. */
   readonly interactive: boolean;
   readonly motionMode: MotionMode;
-  readonly onRevealed: (role: CardRole) => void;
+  /** Cards restored from a saved session may already be face up. */
+  readonly initiallyRevealed?: boolean;
+  /** The card is flying in from the deck right now. */
+  readonly inFlight?: boolean;
+  /** Spread position number, used in the accessible name. */
+  readonly positionIndex?: number;
+  readonly onRevealed: (instanceId: string) => void;
 }
 
 function ignitionFromPointer(
@@ -48,12 +54,20 @@ export function DrawnCard({
   role,
   interactive,
   motionMode,
+  initiallyRevealed = false,
+  inFlight = false,
+  positionIndex,
   onRevealed,
 }: DrawnCardProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState<RevealState>("sealed");
+  const [state, setState] = useState<RevealState>(
+    initiallyRevealed ? "revealed" : "sealed",
+  );
   const [ignition, setIgnition] = useState<IgnitionPoint>(KEYBOARD_IGNITION);
-  const roleLabel = ROLE_LABELS[role];
+  const roleLabel =
+    positionIndex === undefined
+      ? ROLE_LABELS[role]
+      : `牌位 ${positionIndex} ${ROLE_LABELS[role]}`;
   const orientationLabel =
     instance.orientation === "reversed" ? "逆位" : "正位";
   const isRevealed = state === "revealed";
@@ -67,8 +81,8 @@ export function DrawnCard({
 
   const finish = useCallback(() => {
     setState("revealed");
-    onRevealed(role);
-  }, [onRevealed, role]);
+    onRevealed(instance.instanceId);
+  }, [instance.instanceId, onRevealed]);
   const markBurning = useCallback(() => setState("burning"), []);
   const getSource = useCallback(
     () =>
@@ -92,6 +106,8 @@ export function DrawnCard({
       className={`drawn-card drawn-card--${role}`}
       data-draw-card={role}
       data-reveal-state={state}
+      data-flight={inFlight ? "pending" : undefined}
+      data-interactive={canReveal || undefined}
     >
       {role === "jumper" && <span className="drawn-card__badge">跳牌</span>}
       <button

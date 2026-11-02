@@ -93,10 +93,40 @@ export function buildShuffleTimeline(
     });
 }
 
+/**
+ * The landing slot's frame on screen. Cards inside a rotated position on a
+ * zoomed table are animated in that slot's local coordinates.
+ */
+export interface FlightFrame {
+  /** Slot rotation in degrees. */
+  readonly rotation: number;
+  /** Table zoom factor. */
+  readonly scale: number;
+}
+
+const SCREEN_FRAME: FlightFrame = { rotation: 0, scale: 1 };
+
 interface FlightPlan {
   readonly element: HTMLElement;
   readonly from: DOMRect;
   readonly role: "primary" | "jumper";
+  readonly frame?: FlightFrame;
+}
+
+/** Converts a screen-space offset into the slot's local (unrotated, unzoomed) space. */
+export function toLocalOffset(
+  dx: number,
+  dy: number,
+  frame: FlightFrame,
+): { readonly x: number; readonly y: number } {
+  const radians = (-frame.rotation * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const scale = Math.max(frame.scale, 1e-6);
+  return {
+    x: (dx * cos - dy * sin) / scale,
+    y: (dx * sin + dy * cos) / scale,
+  };
 }
 
 function quadratic(
@@ -112,7 +142,9 @@ function quadratic(
 /**
  * Each drawn card lifts from the deck, sails on a curved path to its slot and
  * settles. The jumper bursts out a beat later with a spin, as if the deck
- * pushed it out on its own.
+ * pushed it out on its own. The path is planned on screen and converted into
+ * the slot's frame, so it lands exactly on a rotated position of a zoomed
+ * table.
  */
 export function buildDrawTimeline(
   gsap: Gsap,
@@ -121,26 +153,32 @@ export function buildDrawTimeline(
 ): Timeline {
   const timeline = gsap.timeline({ onComplete });
 
-  flights.forEach(({ element, from, role }) => {
+  flights.forEach(({ element, from, role, frame = SCREEN_FRAME }) => {
     const to = element.getBoundingClientRect();
+    // Screen-space offsets from the landing point.
     const startX = from.left + from.width / 2 - (to.left + to.width / 2);
     const startY = from.top + from.height / 2 - (to.top + to.height / 2);
-    const startScale = from.width / Math.max(1, to.width);
+    const landedWidth = Math.max(1, element.offsetWidth * frame.scale);
+    const startScale = from.width / landedWidth;
     const isJumper = role === "jumper";
+    const liftY = startY - 18;
     const controlX = startX * 0.45;
     const controlY = Math.min(startY, 0) - to.height * (isJumper ? 0.9 : 0.55);
-    const startRotation = isJumper ? -220 : -6;
+    // Leave the deck upright on screen, whatever the slot's rotation.
+    const startRotation = (isJumper ? -220 : -6) - frame.rotation;
     // The jumper's resting tilt lives on its inner button in CSS.
     const endRotation = 0;
     const path = { t: 0 };
     const at = isJumper ? 0.42 : 0;
+    const start = toLocalOffset(startX, startY, frame);
+    const lifted = toLocalOffset(startX, liftY, frame);
 
     timeline
       .set(
         element,
         {
-          x: startX,
-          y: startY,
+          x: start.x,
+          y: start.y,
           scale: startScale,
           rotation: startRotation,
           opacity: 1,
@@ -152,7 +190,8 @@ export function buildDrawTimeline(
       .to(
         element,
         {
-          y: startY - 18,
+          x: lifted.x,
+          y: lifted.y,
           scale: startScale * 1.06,
           "--lift": 1,
           duration: isJumper ? 0.12 : 0.22,
@@ -167,9 +206,14 @@ export function buildDrawTimeline(
           duration: isJumper ? 0.62 : 0.78,
           ease: "power3.inOut",
           onUpdate() {
+            const local = toLocalOffset(
+              quadratic(startX, controlX, 0, path.t),
+              quadratic(liftY, controlY, 0, path.t),
+              frame,
+            );
             gsap.set(element, {
-              x: quadratic(startX, controlX, 0, path.t),
-              y: quadratic(startY - 18, controlY, 0, path.t),
+              x: local.x,
+              y: local.y,
               scale: startScale * 1.06 + (1.04 - startScale * 1.06) * path.t,
               rotation: startRotation + (endRotation - startRotation) * path.t,
             });

@@ -37,7 +37,7 @@ export function HomePage() {
           />
           <span className="brand-name">Tarot Atelier</span>
         </a>
-        <span className="phase-chip">Phase 02 抽牌體驗</span>
+        <span className="phase-chip">Phase 03 自由牌桌</span>
       </header>
 
       <main id="top">
@@ -61,8 +61,8 @@ export function HomePage() {
                 <span className="gold-text">鋪開你的牌桌</span>
               </h1>
               <p className="hero-intro" data-reveal>
-                78
-                張標準塔羅已進入可擴充引擎。現在可以洗牌、抽牌與翻牌，並以稀有機率看見第二張跳牌滑出。
+                在牌桌上自由擺放 1–12
+                個牌位，為每個位置寫下自己的問題，再看牌一張張落進你指定的位置。
               </p>
               <a className="primary-link" href="#draw-experience" data-reveal>
                 進入抽牌儀式
@@ -77,11 +77,10 @@ export function HomePage() {
           aria-labelledby="draw-experience-title"
         >
           <div className="section-heading">
-            <p className="eyebrow">Shuffle · Draw · Reveal</p>
-            <h2 id="draw-experience-title">讓牌在指尖決定出場順序</h2>
+            <p className="eyebrow">Arrange · Ask · Draw</p>
+            <h2 id="draw-experience-title">把每個問題放在它該在的位置</h2>
             <p>
-              Fisher–Yates 洗牌、抽卡不放回，每次抽牌固定有 3%
-              機率多出一張「跳牌」。支援滑鼠、觸控與鍵盤，也會尊重減少動態效果設定。
+              從經典三張、五張十字、圓環開始，或完全自訂。拖曳、方向鍵或數字鍵盤都能移動牌位；每個牌位都要有自己的問題才能開始抽牌，牌堆偶爾還會多送出一張「跳牌」，與主牌落在同一個位置。牌陣會自動保存在這台裝置。
             </p>
           </div>
           <DrawExperience />
@@ -117,7 +116,7 @@ export function HomePage() {
       </main>
 
       <footer className="site-footer content-wrap">
-        Tarot Atelier Phase 02 · 僅供娛樂與自我反思 ·
+        Tarot Atelier Phase 03 · 僅供娛樂與自我反思 ·
         程序式卡框與符號為原創開發素材
       </footer>
     </div>

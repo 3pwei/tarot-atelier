@@ -1,308 +1,278 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
+import type { SpreadSessionStorage } from "@/application/ports/spreadSessionStorage";
 import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary";
-import {
-  DrawExperience as DrawExperienceDomain,
-  JUMPER_PROBABILITIES,
-  type DrawResult,
-  type DrawState,
-  type JumperMode,
-  type RandomSource,
-} from "@/domain/deck/draw";
+import type { RandomSource } from "@/domain/deck/draw";
+import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
+import { LocalStorageSpreadSessionStorage } from "@/infrastructure/persistence/localStorageSpreadSessionStorage";
 import { DeckStack } from "@/presentation/components/draw/DeckStack";
+import { DrawnCard } from "@/presentation/components/draw/DrawnCard";
+import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
+import { MainQuestionField } from "@/presentation/components/spread/MainQuestionField";
+import { PositionInspector } from "@/presentation/components/spread/PositionInspector";
+import { PositionList } from "@/presentation/components/spread/PositionList";
 import {
-  buildDrawTimeline,
-  buildShuffleTimeline,
-} from "@/presentation/components/draw/drawTimelines";
+  SpreadBoard,
+  visibleCenter,
+} from "@/presentation/components/spread/SpreadBoard";
+import { SpreadToolbar } from "@/presentation/components/spread/SpreadToolbar";
+import { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
 import {
-  DrawnCard,
-  type CardRole,
-} from "@/presentation/components/draw/DrawnCard";
-import { TableOrnament } from "@/presentation/components/draw/TableOrnament";
+  dealerStatus,
+  useSpreadDealer,
+} from "@/presentation/components/spread/useSpreadDealer";
 import {
-  useMotionMode,
-  type MotionMode,
-} from "@/presentation/components/draw/useMotionMode";
+  createClientId,
+  useSpreadSession,
+} from "@/presentation/components/spread/useSpreadSession";
 
-/** Matches the CSS keyframe lengths used when GSAP is not loaded. */
-const CSS_SHUFFLE_MS = 1300;
-const CSS_DRAW_MS = 950;
-
-/** Product rule: every draw has a fixed 3% chance of a second "jumper" card. */
-const JUMPER_MODE: JumperMode = "rare";
-const JUMPER_PERCENT = Math.round(JUMPER_PROBABILITIES[JUMPER_MODE] * 100);
+const STANDARD_DECK_ID = "atelier-standard-tarot";
 
 interface DrawExperienceProps {
   readonly randomSource?: RandomSource;
-}
-
-function statusText(phase: DrawState, allRevealed: boolean): string {
-  switch (phase) {
-    case "idle":
-      return "等待洗牌";
-    case "shuffling":
-      return "正在洗牌";
-    case "ready":
-      return "牌堆已就緒，請抽一張";
-    case "drawing":
-      return "卡牌正飛向祭壇";
-    case "revealed":
-      return allRevealed ? "牌面已揭示" : "點擊卡牌，以火焰揭示牌面";
-  }
+  readonly storage?: SpreadSessionStorage;
+  readonly createId?: () => string;
 }
 
 /**
- * Runs a phase transition: GSAP on capable devices, a fixed CSS duration on
- * low-concurrency devices, and instantly when motion is reduced.
+ * The spread table: arrange 1–12 numbered positions, give each its own
+ * question, then deal cards from one pile into them in number order.
  */
-function usePhaseAnimation(
-  active: boolean,
-  motionMode: MotionMode,
-  cssDurationMs: number,
-  finish: () => void,
-  animate: (gsap: typeof import("gsap").gsap, done: () => void) => void,
-  scope: React.RefObject<HTMLElement | null>,
-) {
-  const latest = useRef({ finish, animate });
-  useEffect(() => {
-    latest.current = { finish, animate };
-  });
-
-  useEffect(() => {
-    if (!active) return;
-    let disposed = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let revert: () => void = () => undefined;
-    const done = () => {
-      if (!disposed) latest.current.finish();
-    };
-
-    if (motionMode === "reduced") {
-      done();
-    } else if (motionMode === "css") {
-      timer = setTimeout(done, cssDurationMs);
-    } else {
-      void import("gsap")
-        .then(({ gsap }) => {
-          if (disposed || !scope.current) return;
-          const context = gsap.context(
-            () => latest.current.animate(gsap, done),
-            scope.current,
-          );
-          revert = () => context.revert();
-        })
-        .catch(done);
-    }
-
-    return () => {
-      disposed = true;
-      if (timer) clearTimeout(timer);
-      revert();
-    };
-  }, [active, motionMode, cssDurationMs, scope]);
-}
-
-export function DrawExperience({ randomSource }: DrawExperienceProps = {}) {
+export function DrawExperience({
+  randomSource,
+  storage: storageOverride,
+  createId = createClientId,
+}: DrawExperienceProps = {}) {
   const root = useRef<HTMLDivElement>(null);
-  const flightOrigin = useRef<DOMRect | null>(null);
-  const registry = useMemo(
-    () => registerBuiltInDecks(new InMemoryDeckRegistry()),
-    [],
-  );
-  const deck = registry.get("atelier-standard-tarot") ?? registry.getSelected();
-  const experience = useMemo(
-    () =>
-      new DrawExperienceDomain({
-        deckId: deck.id,
-        cardIds: deck.cards.map((card) => card.id),
-        supportsReversals: deck.manifest.supportsReversals,
-        random: randomSource,
-        jumperMode: JUMPER_MODE,
-      }),
-    [deck, randomSource],
-  );
-  const [phase, setPhase] = useState<DrawState>("idle");
-  const [remainingCount, setRemainingCount] = useState(deck.cards.length);
-  const [result, setResult] = useState<DrawResult>();
-  const [revealedRoles, setRevealedRoles] = useState<ReadonlySet<CardRole>>(
-    new Set(),
-  );
-  const motionMode = useMotionMode();
-
-  const cardTotal = result ? (result.jumper ? 2 : 1) : 0;
-  const allRevealed = cardTotal > 0 && revealedRoles.size === cardTotal;
-
-  usePhaseAnimation(
-    phase === "shuffling",
-    motionMode,
-    CSS_SHUFFLE_MS,
-    () => {
-      experience.completeShuffle();
-      setPhase(experience.state);
-    },
-    (gsap, done) => {
-      const cards = gsap.utils.toArray<HTMLElement>("[data-shuffle-card]");
-      const width = cards[0]?.offsetWidth ?? 160;
-      if (cards.length < 2) done();
-      else buildShuffleTimeline(gsap, cards, width, done);
-    },
-    root,
-  );
-
-  usePhaseAnimation(
-    phase === "drawing",
-    motionMode,
-    CSS_DRAW_MS,
-    () => {
-      experience.reveal();
-      setPhase(experience.state);
-    },
-    (gsap, done) => {
-      const from = flightOrigin.current;
-      const elements = gsap.utils.toArray<HTMLElement>("[data-draw-card]");
-      if (!from) {
-        done();
-        return;
-      }
-      buildDrawTimeline(
-        gsap,
-        elements.map((element) => ({
-          element,
-          from,
-          role: element.dataset.drawCard === "jumper" ? "jumper" : "primary",
-        })),
-        done,
-      );
-    },
-    root,
-  );
-
-  const handleRevealed = useCallback((role: CardRole) => {
-    setRevealedRoles((current) => new Set(current).add(role));
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const deck = useMemo(() => {
+    const registry = registerBuiltInDecks(new InMemoryDeckRegistry());
+    return registry.get(STANDARD_DECK_ID) ?? registry.getSelected();
   }, []);
+  const storage = useMemo(
+    () => storageOverride ?? new LocalStorageSpreadSessionStorage(),
+    [storageOverride],
+  );
+  const session = useSpreadSession(deck, storage, createId);
+  const { state, dispatch, generation } = session;
+  const { spread, revealedInstanceIds, selectedId } = state;
+  const loading = session.status === "loading";
+  const viewport = useBoardViewport(viewportRef);
+  const motionMode = useMotionMode();
+  const dealer = useSpreadDealer({
+    deck,
+    spread,
+    revealedInstanceIds,
+    generation,
+    loading,
+    randomSource,
+    motionMode,
+    root,
+    tableScale: viewport.view.scale,
+    dispatch,
+  });
+  const status = dealerStatus({
+    loading,
+    phase: dealer.phase,
+    blocker: dealer.blocker,
+    next: dealer.next,
+    flyingTo: dealer.flyingPosition?.index,
+    allRevealed: dealer.allRevealed,
+    remaining: dealer.remaining,
+  });
+  const selected = spread.positions.find((p) => p.id === selectedId);
+  const filled = spread.positions.filter((p) => p.drawResult).length;
 
-  function shuffle() {
-    if (phase === "revealed" && remainingCount === 0) {
-      experience.reset();
-      setRemainingCount(deck.cards.length);
-    }
-    setResult(undefined);
-    setRevealedRoles(new Set());
-    experience.beginShuffle();
-    setPhase(experience.state);
+  const handleRevealed = useCallback(
+    (instanceId: string) => dispatch({ type: "revealed", instanceId }),
+    [dispatch],
+  );
+  const handleSelect = useCallback(
+    (positionId?: string) => dispatch({ type: "select", positionId }),
+    [dispatch],
+  );
+  const handleMove = useCallback(
+    (positionId: string, point: TablePoint) =>
+      dispatch({ type: "move", positionId, point }),
+    [dispatch],
+  );
+  const handleNudge = useCallback(
+    (positionId: string, delta: TablePoint) =>
+      dispatch({ type: "nudge", positionId, delta }),
+    [dispatch],
+  );
+  const handleRotate = useCallback(
+    (positionId: string, degrees: number) =>
+      dispatch({ type: "rotate", positionId, degrees }),
+    [dispatch],
+  );
+
+  function renderCards(position: SpreadPosition) {
+    const result = position.drawResult;
+    if (!result) return null;
+    const inFlight =
+      dealer.phase === "drawing" && position.id === dealer.flyingPosition?.id;
+    const cards = result.jumper
+      ? ([
+          ["primary", result.primary],
+          ["jumper", result.jumper],
+        ] as const)
+      : ([["primary", result.primary]] as const);
+
+    return cards.map(([role, instance]) => {
+      const card = deck.getCard(instance.cardId);
+      return card ? (
+        <DrawnCard
+          key={instance.instanceId}
+          card={card}
+          instance={instance}
+          role={role}
+          positionIndex={position.index}
+          interactive={!inFlight}
+          inFlight={inFlight}
+          initiallyRevealed={revealedInstanceIds.has(instance.instanceId)}
+          motionMode={motionMode}
+          onRevealed={handleRevealed}
+        />
+      ) : null;
+    });
   }
-
-  function draw() {
-    if (phase !== "ready") return;
-    flightOrigin.current =
-      root.current?.querySelector("[data-deck-top]")?.getBoundingClientRect() ??
-      null;
-    const nextResult = experience.draw();
-    if (!nextResult) return;
-    setResult(nextResult);
-    setRevealedRoles(new Set());
-    setRemainingCount(experience.remainingCount);
-    setPhase(experience.state);
-  }
-
-  const primaryCard = result ? deck.getCard(result.primary.cardId) : undefined;
-  const jumperCard = result?.jumper
-    ? deck.getCard(result.jumper.cardId)
-    : undefined;
-  const canShuffle = phase === "idle" || (phase === "revealed" && allRevealed);
-  const status = statusText(phase, allRevealed);
 
   return (
     <div
       ref={root}
       className="draw-experience"
-      data-phase={phase}
+      data-phase={dealer.phase}
       data-motion={motionMode}
-      data-card-total={cardTotal}
-      data-all-revealed={allRevealed || undefined}
+      data-all-revealed={dealer.allRevealed || undefined}
+      aria-busy={loading || undefined}
     >
       <div className="draw-table">
         <div className="draw-table__bar">
-          <div className="draw-status" aria-live="polite">
+          <div className="draw-status">
             <span className="draw-status__light" aria-hidden="true" />
-            <strong>{status}</strong>
-            <span>剩餘 {remainingCount} 張</span>
+            <strong aria-live="polite">{status}</strong>
+            <span>剩餘 {dealer.remaining} 張</span>
           </div>
           <div className="draw-table__controls">
             <button
               className="shuffle-action"
               type="button"
-              disabled={!canShuffle}
-              onClick={shuffle}
+              disabled={!dealer.canShuffle}
+              onClick={dealer.shuffle}
             >
-              {remainingCount === 0 ? "重新裝牌" : "洗牌"}
+              洗牌
             </button>
           </div>
         </div>
 
-        <div className="draw-table__stage">
-          <DeckStack
-            remaining={remainingCount}
-            total={deck.cards.length}
-            canDraw={phase === "ready" && remainingCount > 0}
-            label={phase === "ready" ? "從牌堆抽一張牌" : `牌堆：${status}`}
-            hint={
-              phase === "ready"
-                ? "點擊牌堆抽牌"
-                : `${remainingCount} / ${deck.cards.length}`
+        <p className="spread-notice" role="status">
+          {state.notice?.text}
+        </p>
+
+        <div className="spread-setup">
+          <MainQuestionField
+            value={spread.mainQuestion}
+            onChange={(text) => dispatch({ type: "main-question", text })}
+          />
+          <SpreadToolbar
+            presetId={spread.presetId}
+            positionCount={spread.positions.length}
+            presetsLocked={filled > 0}
+            layoutLocked={dealer.layoutLocked}
+            zoom={viewport.view.scale}
+            canZoomIn={viewport.canZoomIn}
+            canZoomOut={viewport.canZoomOut}
+            onPreset={(presetId) => dispatch({ type: "preset", presetId })}
+            onAdd={() =>
+              dispatch({
+                type: "add",
+                near: visibleCenter(viewportRef.current, fieldRef.current),
+              })
             }
-            onDraw={draw}
+            onZoomIn={viewport.zoomIn}
+            onZoomOut={viewport.zoomOut}
+            onZoomReset={viewport.reset}
+            onClear={session.clear}
+          />
+        </div>
+
+        <div className="draw-table__stage spread-stage">
+          <DeckStack
+            remaining={dealer.remaining}
+            total={dealer.total}
+            canDraw={dealer.canDraw}
+            label={
+              dealer.canDraw && dealer.next
+                ? `從牌堆為牌位 ${dealer.next.index} 抽牌`
+                : `牌堆：${status}`
+            }
+            hint={
+              dealer.canDraw && dealer.next
+                ? `點擊牌堆，抽給牌位 ${dealer.next.index}`
+                : `${dealer.remaining} / ${dealer.total}`
+            }
+            onDraw={dealer.draw}
           />
 
-          <section className="altar" aria-label="待放區">
-            <TableOrnament />
-            {result && primaryCard ? (
-              <div className="altar__cards">
-                <DrawnCard
-                  key={result.primary.instanceId}
-                  card={primaryCard}
-                  instance={result.primary}
-                  role="primary"
-                  interactive={phase === "revealed"}
-                  motionMode={motionMode}
-                  onRevealed={handleRevealed}
-                />
-                {result.jumper && jumperCard && (
-                  <DrawnCard
-                    key={result.jumper.instanceId}
-                    card={jumperCard}
-                    instance={result.jumper}
-                    role="jumper"
-                    interactive={phase === "revealed"}
-                    motionMode={motionMode}
-                    onRevealed={handleRevealed}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="altar__slot">
-                <span className="altar__slot-mark" aria-hidden="true">
-                  ✦
-                </span>
-                <small>
-                  {phase === "ready"
-                    ? "等待你抽出的牌"
-                    : "洗牌後，牌會落在這裡"}
-                </small>
-              </div>
-            )}
-          </section>
+          <SpreadBoard
+            spread={spread}
+            selectedId={selectedId}
+            locked={dealer.layoutLocked}
+            viewport={viewport}
+            viewportRef={viewportRef}
+            fieldRef={fieldRef}
+            renderCards={renderCards}
+            onSelect={handleSelect}
+            onMove={handleMove}
+            onNudge={handleNudge}
+            onRotate={handleRotate}
+          />
+        </div>
+
+        <div className="spread-details">
+          {selected ? (
+            <PositionInspector
+              key={selected.id}
+              position={selected}
+              total={spread.positions.length}
+              locked={dealer.layoutLocked}
+              onQuestion={(text) =>
+                dispatch({ type: "question", positionId: selected.id, text })
+              }
+              onRotate={(degrees) => handleRotate(selected.id, degrees)}
+              onMove={(point) => handleMove(selected.id, point)}
+              onReorder={(index) =>
+                dispatch({ type: "reorder", positionId: selected.id, index })
+              }
+              onRemove={() =>
+                dispatch({ type: "remove", positionId: selected.id })
+              }
+              onClose={() => handleSelect(undefined)}
+            />
+          ) : (
+            <p className="spread-details__hint">
+              點選牌位即可編輯問題、旋轉、排序或刪除；也可以直接拖曳，或聚焦號碼後用方向鍵、數字鍵盤移動。
+            </p>
+          )}
+          <PositionList
+            positions={spread.positions}
+            deck={deck}
+            selectedId={selectedId}
+            revealedInstanceIds={revealedInstanceIds}
+            nextPositionId={dealer.next?.id}
+            onSelect={handleSelect}
+          />
         </div>
 
         <div className="draw-table__foot">
-          <span>每次抽牌有 {JUMPER_PERCENT}% 機率多出一張跳牌</span>
-          {result && allRevealed && (
-            <time dateTime={result.drawnAt}>
-              抽牌時間 {new Date(result.drawnAt).toLocaleTimeString("zh-TW")}
-            </time>
-          )}
+          <span>
+            已抽 {filled} / {spread.positions.length} 個牌位
+          </span>
+          <span>牌陣自動保存在這台裝置</span>
         </div>
       </div>
     </div>

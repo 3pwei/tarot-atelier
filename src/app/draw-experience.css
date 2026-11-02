@@ -1,4 +1,4 @@
-/* Phase 02 draw table: deck, altar, drawn cards and the burn reveal. */
+/* Draw table: deck, drawn cards and the burn reveal. The spread board lives in spread-table.css. */
 
 .draw-experience {
   --deck-card-width: clamp(6.5rem, 15vw, 10.5rem);
@@ -284,74 +284,6 @@
   color: var(--color-gold);
 }
 
-/* Altar */
-
-.altar {
-  position: relative;
-  display: grid;
-  min-height: calc(var(--drawn-card-width) * 1.5 + 4rem);
-  place-items: center;
-}
-
-.table-ornament {
-  position: absolute;
-  z-index: -1;
-  top: 50%;
-  left: 50%;
-  width: min(34rem, 120%);
-  color: rgba(230, 197, 122, 0.16);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.draw-experience[data-phase="shuffling"] .table-ornament,
-.draw-experience[data-phase="drawing"] .table-ornament {
-  animation: ornament-turn 6s linear infinite;
-}
-
-.altar__slot {
-  display: grid;
-  width: var(--drawn-card-width);
-  aspect-ratio: 2 / 3;
-  align-content: center;
-  justify-items: center;
-  gap: 0.8rem;
-  padding: 1rem;
-  border: 1px solid rgba(230, 197, 122, 0.3);
-  border-radius: 6% / 4%;
-  background: radial-gradient(
-    circle at 50% 45%,
-    rgba(230, 197, 122, 0.08),
-    transparent 70%
-  );
-  box-shadow:
-    inset 0 0 0 0.45rem rgba(6, 5, 14, 0.4),
-    inset 0 0 0 calc(0.45rem + 1px) rgba(230, 197, 122, 0.14),
-    0 0 3rem rgba(114, 84, 163, 0.25);
-  color: var(--color-ink-soft);
-  text-align: center;
-}
-
-.altar__slot-mark {
-  color: var(--color-gold);
-  font-size: 1.8rem;
-  text-shadow: 0 0 1.2rem rgba(230, 197, 122, 0.7);
-}
-
-.altar__slot small {
-  max-width: 9rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
-  opacity: 0.8;
-}
-
-.altar__cards {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(0.5rem, 3vw, 2.25rem);
-}
-
 /* Drawn cards */
 
 .drawn-card {
@@ -451,15 +383,11 @@
 }
 
 /* An unrevealed card that can be lit glows like a held candle. */
-.draw-experience[data-phase="revealed"]
-  .drawn-card[data-reveal-state="sealed"]
-  .drawn-card__button {
+.drawn-card[data-interactive] .drawn-card__button {
   cursor: pointer;
 }
 
-.draw-experience[data-phase="revealed"]
-  .drawn-card[data-reveal-state="sealed"]
-  .drawn-card__body::after {
+.drawn-card[data-interactive] .drawn-card__body::after {
   position: absolute;
   z-index: -1;
   inset: -14% -18%;
@@ -473,10 +401,7 @@
   animation: candle 2.4s ease-in-out infinite;
 }
 
-.draw-experience[data-phase="revealed"]
-  .drawn-card[data-reveal-state="sealed"]
-  .drawn-card__button:hover
-  .drawn-card__body {
+.drawn-card[data-interactive] .drawn-card__button:hover .drawn-card__body {
   transform: translateY(-6px) rotate(-0.6deg);
 }
 
@@ -553,7 +478,7 @@
 }
 
 /* Hidden until GSAP (or the CSS fallback) brings cards in from the deck. */
-.draw-experience[data-motion="enhanced"][data-phase="drawing"] .drawn-card {
+.draw-experience[data-motion="enhanced"] .drawn-card[data-flight="pending"] {
   opacity: 0;
 }
 
@@ -613,11 +538,11 @@
   animation: css-riffle-right 650ms ease-in-out 2;
 }
 
-.draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card {
+.draw-experience[data-motion="css"] .drawn-card[data-flight="pending"] {
   animation: css-card-arrive 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.draw-experience[data-motion="css"][data-phase="drawing"] .drawn-card--jumper {
+.draw-experience[data-motion="css"] .drawn-card--jumper[data-flight="pending"] {
   animation-delay: 220ms;
 }
 
@@ -726,10 +651,6 @@
 
   .shuffle-action {
     width: 100%;
-  }
-
-  .altar__cards {
-    gap: 0.4rem;
   }
 }
 
