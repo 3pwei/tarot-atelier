@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useReducer, useRef, type Dispatch } from "react";
-import type { SpreadSessionStorage } from "@/application/ports/spreadSessionStorage";
+import type {
+  SpreadSessionStorage,
+  SpreadTemplateStorage,
+} from "@/application/ports/textStorage";
 import {
   clearSpreadSession,
   restoreSpreadSession,
   saveSpreadSession,
 } from "@/application/use-cases/spreadSession";
+import {
+  loadTemplateLibrary,
+  saveTemplateLibrary,
+} from "@/application/use-cases/templateLibrary";
 import type { Deck } from "@/domain/deck/deck";
 import {
   createHydrationIds,
@@ -46,6 +53,7 @@ export interface SpreadSessionHandle {
 export function useSpreadSession(
   deck: Deck,
   storage: SpreadSessionStorage,
+  templateStorage: SpreadTemplateStorage,
   createId: () => string = createClientId,
 ): SpreadSessionHandle {
   const reducer = useMemo(() => createSpreadReducer(createId), [createId]);
@@ -54,26 +62,41 @@ export function useSpreadSession(
   );
   const status: SessionStatus = state.hydrated ? "ready" : "loading";
   const warnedAboutStorage = useRef(false);
+  /** The library as loaded; it is only written once the person changes it. */
+  const loadedLibrary = useRef<unknown>(null);
 
   // Storage only exists in the browser, so restore after hydration.
   useEffect(() => {
+    const templates = loadTemplateLibrary(templateStorage);
+    loadedLibrary.current = templates.library;
     const restored = restoreSpreadSession(storage, deck);
-    if (restored.status === "restored") {
+    const notices = [
+      restored.status === "restored" ? "已載入上次的牌陣。" : undefined,
+      restored.status === "discarded"
+        ? "本機儲存的牌陣無法讀取，已重新開始。"
+        : undefined,
+      templates.status === "discarded"
+        ? "本機的牌陣庫無法讀取，已換回預設範例。"
+        : undefined,
+    ].filter(Boolean);
+    dispatch({
+      type: "hydrate",
+      library: templates.library,
+      ...(restored.status === "restored" ? { restored: restored.session } : {}),
+      ...(notices.length > 0 ? { notice: notices.join("") } : {}),
+    });
+  }, [deck, storage, templateStorage]);
+
+  useEffect(() => {
+    if (status !== "ready" || state.library === loadedLibrary.current) return;
+    loadedLibrary.current = state.library;
+    if (!saveTemplateLibrary(templateStorage, state.library).ok) {
       dispatch({
-        type: "hydrate",
-        restored: restored.session,
-        notice: "已載入上次的牌陣。",
-      });
-    } else {
-      dispatch({
-        type: "hydrate",
-        notice:
-          restored.status === "discarded"
-            ? "本機儲存的牌陣無法讀取，已重新開始。"
-            : undefined,
+        type: "announce",
+        text: "瀏覽器無法儲存牌陣庫，重新整理後將不會保留。",
       });
     }
-  }, [deck, storage]);
+  }, [state.library, status, templateStorage]);
 
   useEffect(() => {
     if (status !== "ready") return;

@@ -3,7 +3,10 @@ import {
   atelierStandardDeck,
   phaseOneTestDeck,
 } from "@/domain/deck/builtinDecks";
-import { createSpreadFromPreset } from "@/domain/spread/presets";
+import {
+  BUILT_IN_TEMPLATES,
+  createSpreadFromTemplate,
+} from "@/domain/spread/templates";
 import {
   assignDraw,
   movePosition,
@@ -12,10 +15,10 @@ import {
 import {
   parseSpreadSnapshot,
   serializeSpreadSession,
+  SPREAD_SNAPSHOT_MIGRATIONS,
   SPREAD_SNAPSHOT_VERSION,
   SpreadSnapshotError,
   verifySessionDeck,
-  type SnapshotMigrations,
   type SpreadSession,
 } from "@/domain/spread/spreadSnapshot";
 import type { Spread } from "@/domain/spread/types";
@@ -29,8 +32,8 @@ function counter() {
 }
 
 function drawnSession(): SpreadSession {
-  let spread: Spread = createSpreadFromPreset({
-    presetId: "three-card",
+  let spread: Spread = createSpreadFromTemplate({
+    template: BUILT_IN_TEMPLATES[0]!,
     createId: counter(),
     mainQuestion: "這個月的方向？",
   });
@@ -238,64 +241,57 @@ describe("spread snapshot validation", () => {
 });
 
 describe("spread snapshot migration", () => {
-  /**
-   * A hypothetical v2 that renamed `question` to `prompt`, used to prove the
-   * migration path end to end without inventing a production schema.
-   */
-  function toV2(raw: Record<string, unknown>) {
+  /** The stored shape before named templates: a fixed `presetId`. */
+  function asVersion1(presetId: string): Record<string, unknown> {
+    const raw = storedJson();
     const session = raw.session as Record<string, unknown>;
-    const spread = session.spread as Record<string, unknown>;
+    const { templateId: _unused, ...spread } = session.spread as Record<
+      string,
+      unknown
+    >;
+    void _unused;
     return {
       ...raw,
-      schemaVersion: 2,
-      session: {
-        ...session,
-        spread: {
-          ...spread,
-          positions: (spread.positions as Record<string, unknown>[]).map(
-            ({ question, ...rest }) => ({ ...rest, prompt: question }),
-          ),
-        },
-      },
+      schemaVersion: 1,
+      session: { ...session, spread: { ...spread, presetId } },
     };
   }
 
-  const v2Migrations: SnapshotMigrations = {
-    1: (raw) => toV2({ ...raw }),
-    2: (raw) => {
-      const session = raw.session as Record<string, unknown>;
-      const spread = session.spread as Record<string, unknown>;
-      return {
-        ...raw,
-        session: {
-          ...session,
-          spread: {
-            ...spread,
-            positions: (spread.positions as Record<string, unknown>[]).map(
-              ({ prompt, ...rest }) => ({ ...rest, question: prompt }),
-            ),
-          },
-        },
-      };
-    },
-  };
-
-  it("upgrades older snapshots step by step and reports the source version", () => {
-    const parsed = parseSpreadSnapshot(storedJson(), v2Migrations, 3);
+  it("upgrades a v1 preset into a template link", () => {
+    const parsed = parseSpreadSnapshot(asVersion1("three-card"));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.migratedFrom).toBe(1);
-    expect(parsed.session).toEqual(drawnSession());
+    expect(parsed.session.spread.templateId).toBe("three-card");
+    expect(parsed.session.spread.positions).toEqual(
+      drawnSession().spread.positions,
+    );
+  });
+
+  it("drops the v1 custom marker instead of inventing a template", () => {
+    const parsed = parseSpreadSnapshot(asVersion1("custom"));
+    expect(parsed.ok && parsed.session.spread.templateId).toBeUndefined();
+    expect(parsed.ok && "presetId" in parsed.session.spread).toBe(false);
+  });
+
+  it("chains several steps and reports the source version", () => {
+    const parsed = parseSpreadSnapshot(
+      asVersion1("five-card"),
+      { ...SPREAD_SNAPSHOT_MIGRATIONS, 2: (raw) => ({ ...raw, extra: true }) },
+      3,
+    );
+    expect(parsed.ok && parsed.migratedFrom).toBe(1);
+    expect(parsed.ok && parsed.session.spread.templateId).toBe("five-card");
   });
 
   it("fails safely when a migration step is missing or throws", () => {
-    expect(parseSpreadSnapshot(storedJson(), {}, 2)).toMatchObject({
+    expect(parseSpreadSnapshot(storedJson(), {}, 3)).toMatchObject({
       ok: false,
       reason: "unsupported-version",
     });
     expect(
       parseSpreadSnapshot(
-        storedJson(),
+        asVersion1("three-card"),
         {
           1: () => {
             throw new Error("bad");

@@ -1,22 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { SPREAD_PRESETS } from "@/domain/spread/presets";
-import {
-  MAX_SPREAD_POSITIONS,
-  type SpreadPresetId,
-} from "@/domain/spread/types";
+import { MAX_SPREAD_POSITIONS } from "@/domain/spread/types";
 
 interface SpreadToolbarProps {
-  readonly presetId: SpreadPresetId;
   readonly positionCount: number;
-  readonly presetsLocked: boolean;
   readonly layoutLocked: boolean;
   /** Table zoom factor; shown as ×1.25 rather than a percentage. */
   readonly zoom: number;
   readonly canZoomIn: boolean;
   readonly canZoomOut: boolean;
-  readonly onPreset: (presetId: SpreadPresetId) => void;
   readonly onAdd: () => void;
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
@@ -25,14 +18,11 @@ interface SpreadToolbarProps {
 }
 
 export function SpreadToolbar({
-  presetId,
   positionCount,
-  presetsLocked,
   layoutLocked,
   zoom,
   canZoomIn,
   canZoomOut,
-  onPreset,
   onAdd,
   onZoomIn,
   onZoomOut,
@@ -45,26 +35,6 @@ export function SpreadToolbar({
 
   return (
     <div className="spread-toolbar">
-      <div
-        className="spread-toolbar__presets"
-        role="group"
-        aria-label="牌陣範例"
-      >
-        {SPREAD_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className="preset-chip"
-            aria-pressed={preset.id === presetId}
-            disabled={presetsLocked || layoutLocked}
-            title={preset.description}
-            onClick={() => onPreset(preset.id)}
-          >
-            {preset.name}
-          </button>
-        ))}
-      </div>
-
       <div className="spread-toolbar__row">
         <button
           type="button"

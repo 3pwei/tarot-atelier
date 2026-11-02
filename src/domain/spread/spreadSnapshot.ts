@@ -8,14 +8,13 @@ import {
   MAX_SPREAD_POSITIONS,
   type Spread,
   type SpreadPosition,
-  type SpreadPresetId,
 } from "@/domain/spread/types";
 
 /**
  * Version of the persisted spread session. Bump it whenever the stored shape
  * changes and register a migration from the previous version.
  */
-export const SPREAD_SNAPSHOT_VERSION = 1;
+export const SPREAD_SNAPSHOT_VERSION = 2;
 
 /** Everything needed to restore a reading after a reload. */
 export interface SpreadSession {
@@ -34,8 +33,29 @@ type UnknownRecord = Readonly<Record<string, unknown>>;
 export type SnapshotMigration = (snapshot: UnknownRecord) => UnknownRecord;
 export type SnapshotMigrations = Readonly<Record<number, SnapshotMigration>>;
 
-/** Version 1 is the first persisted shape, so nothing needs upgrading yet. */
-export const SPREAD_SNAPSHOT_MIGRATIONS: SnapshotMigrations = Object.freeze({});
+/**
+ * v1 → v2: the fixed `presetId` ("custom" meaning none) became an optional
+ * `templateId`, because people can now save and delete their own templates.
+ */
+function migrateV1ToV2(snapshot: UnknownRecord): UnknownRecord {
+  const session = snapshot.session;
+  if (!isRecord(session) || !isRecord(session.spread)) return snapshot;
+  const { presetId, ...spread } = session.spread;
+  return {
+    ...snapshot,
+    session: {
+      ...session,
+      spread:
+        typeof presetId === "string" && presetId !== "custom"
+          ? { ...spread, templateId: presetId }
+          : spread,
+    },
+  };
+}
+
+export const SPREAD_SNAPSHOT_MIGRATIONS: SnapshotMigrations = Object.freeze({
+  1: migrateV1ToV2,
+});
 
 export type SnapshotParseResult =
   | {
@@ -50,12 +70,6 @@ export type SnapshotParseResult =
       readonly issues: readonly string[];
     };
 
-const PRESET_IDS = new Set<SpreadPresetId>([
-  "three-card",
-  "five-card",
-  "circle",
-  "custom",
-]);
 const ORIENTATIONS = new Set<Orientation>(["upright", "reversed"]);
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
 
@@ -200,10 +214,10 @@ function readSpread(
     issues.add("spread", "must be an object");
     return undefined;
   }
-  const { id, presetId, mainQuestion, positions } = value;
+  const { id, templateId, mainQuestion, positions } = value;
   if (!isId(id)) issues.add("spread.id", "invalid ID");
-  if (!PRESET_IDS.has(presetId as SpreadPresetId)) {
-    issues.add("spread.presetId", "unknown preset");
+  if (templateId !== undefined && !isId(templateId)) {
+    issues.add("spread.templateId", "invalid ID");
   }
   if (
     typeof mainQuestion !== "string" ||
@@ -255,7 +269,7 @@ function readSpread(
   if (issues.list.length > 0) return undefined;
   return Object.freeze({
     id: id as string,
-    presetId: presetId as SpreadPresetId,
+    ...(isId(templateId) ? { templateId } : {}),
     mainQuestion: mainQuestion as string,
     positions: Object.freeze(sorted),
   });

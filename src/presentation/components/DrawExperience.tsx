@@ -1,12 +1,19 @@
 "use client";
 
 import { useCallback, useMemo, useRef } from "react";
-import type { SpreadSessionStorage } from "@/application/ports/spreadSessionStorage";
+import type {
+  SpreadSessionStorage,
+  SpreadTemplateStorage,
+} from "@/application/ports/textStorage";
 import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary";
 import type { RandomSource } from "@/domain/deck/draw";
 import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
-import { LocalStorageSpreadSessionStorage } from "@/infrastructure/persistence/localStorageSpreadSessionStorage";
+import {
+  LocalStorageTextStorage,
+  SPREAD_SESSION_STORAGE_KEY,
+  SPREAD_TEMPLATE_STORAGE_KEY,
+} from "@/infrastructure/persistence/localStorageTextStorage";
 import { DeckStack } from "@/presentation/components/draw/DeckStack";
 import { DrawnCard } from "@/presentation/components/draw/DrawnCard";
 import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
@@ -18,6 +25,7 @@ import {
   visibleCenter,
 } from "@/presentation/components/spread/SpreadBoard";
 import { SpreadToolbar } from "@/presentation/components/spread/SpreadToolbar";
+import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
 import { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
 import {
   dealerStatus,
@@ -33,16 +41,19 @@ const STANDARD_DECK_ID = "atelier-standard-tarot";
 interface DrawExperienceProps {
   readonly randomSource?: RandomSource;
   readonly storage?: SpreadSessionStorage;
+  readonly templateStorage?: SpreadTemplateStorage;
   readonly createId?: () => string;
 }
 
 /**
  * The spread table: arrange 1–12 numbered positions, give each its own
- * question, then deal cards from one pile into them in number order.
+ * question, then deal every empty position from one pile in a single
+ * motion and reveal the cards one by one.
  */
 export function DrawExperience({
   randomSource,
   storage: storageOverride,
+  templateStorage: templateStorageOverride,
   createId = createClientId,
 }: DrawExperienceProps = {}) {
   const root = useRef<HTMLDivElement>(null);
@@ -53,10 +64,18 @@ export function DrawExperience({
     return registry.get(STANDARD_DECK_ID) ?? registry.getSelected();
   }, []);
   const storage = useMemo(
-    () => storageOverride ?? new LocalStorageSpreadSessionStorage(),
+    () =>
+      storageOverride ??
+      new LocalStorageTextStorage(SPREAD_SESSION_STORAGE_KEY),
     [storageOverride],
   );
-  const session = useSpreadSession(deck, storage, createId);
+  const templateStorage = useMemo(
+    () =>
+      templateStorageOverride ??
+      new LocalStorageTextStorage(SPREAD_TEMPLATE_STORAGE_KEY),
+    [templateStorageOverride],
+  );
+  const session = useSpreadSession(deck, storage, templateStorage, createId);
   const { state, dispatch, generation } = session;
   const { spread, revealedInstanceIds, selectedId } = state;
   const loading = session.status === "loading";
@@ -78,8 +97,8 @@ export function DrawExperience({
     loading,
     phase: dealer.phase,
     blocker: dealer.blocker,
-    next: dealer.next,
-    flyingTo: dealer.flyingPosition?.index,
+    emptyCount: dealer.emptyCount,
+    flyingCount: dealer.flyingIds.length,
     allRevealed: dealer.allRevealed,
     remaining: dealer.remaining,
   });
@@ -113,8 +132,8 @@ export function DrawExperience({
   function renderCards(position: SpreadPosition) {
     const result = position.drawResult;
     if (!result) return null;
-    const inFlight =
-      dealer.phase === "drawing" && position.id === dealer.flyingPosition?.id;
+    const dealOrder = dealer.flyingIds.indexOf(position.id);
+    const inFlight = dealer.phase === "drawing" && dealOrder >= 0;
     const cards = result.jumper
       ? ([
           ["primary", result.primary],
@@ -133,6 +152,7 @@ export function DrawExperience({
           positionIndex={position.index}
           interactive={!inFlight}
           inFlight={inFlight}
+          dealOrder={Math.max(0, dealOrder)}
           initiallyRevealed={revealedInstanceIds.has(instance.instanceId)}
           motionMode={motionMode}
           onRevealed={handleRevealed}
@@ -178,15 +198,27 @@ export function DrawExperience({
             value={spread.mainQuestion}
             onChange={(text) => dispatch({ type: "main-question", text })}
           />
+          <TemplateShelf
+            library={state.library}
+            activeTemplateId={spread.templateId}
+            applyLocked={filled > 0}
+            busy={dealer.layoutLocked}
+            onApply={(templateId) =>
+              dispatch({ type: "apply-template", templateId })
+            }
+            onBlank={() => dispatch({ type: "blank" })}
+            onSave={(name) => dispatch({ type: "save-template", name })}
+            onDelete={(templateId) =>
+              dispatch({ type: "delete-template", templateId })
+            }
+            onRestore={() => dispatch({ type: "restore-templates" })}
+          />
           <SpreadToolbar
-            presetId={spread.presetId}
             positionCount={spread.positions.length}
-            presetsLocked={filled > 0}
             layoutLocked={dealer.layoutLocked}
             zoom={viewport.view.scale}
             canZoomIn={viewport.canZoomIn}
             canZoomOut={viewport.canZoomOut}
-            onPreset={(presetId) => dispatch({ type: "preset", presetId })}
             onAdd={() =>
               dispatch({
                 type: "add",
@@ -206,16 +238,16 @@ export function DrawExperience({
             total={dealer.total}
             canDraw={dealer.canDraw}
             label={
-              dealer.canDraw && dealer.next
-                ? `從牌堆為牌位 ${dealer.next.index} 抽牌`
+              dealer.canDraw
+                ? `從牌堆發牌到 ${dealer.emptyCount} 個牌位`
                 : `牌堆：${status}`
             }
             hint={
-              dealer.canDraw && dealer.next
-                ? `點擊牌堆，抽給牌位 ${dealer.next.index}`
+              dealer.canDraw
+                ? `點擊牌堆，一次發完 ${dealer.emptyCount} 個牌位`
                 : `${dealer.remaining} / ${dealer.total}`
             }
-            onDraw={dealer.draw}
+            onDraw={dealer.deal}
           />
 
           <SpreadBoard

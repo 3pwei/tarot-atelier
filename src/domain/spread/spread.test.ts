@@ -34,7 +34,6 @@ function unwrap(update: SpreadUpdate): Spread {
 function spreadOf(count: number, question = "問題"): Spread {
   return createSpread({
     id: "spread",
-    presetId: "custom",
     positions: Array.from({ length: count }, (_, order) => ({
       id: `p${order + 1}`,
       question,
@@ -80,7 +79,7 @@ describe("spread numbering", () => {
       ["p2", 2],
       ["new", 3],
     ]);
-    expect(spread.presetId).toBe("custom");
+    expect(spread.templateId).toBeUndefined();
   });
 
   it("closes gaps in order and reports every renumbered position", () => {
@@ -135,6 +134,28 @@ describe("spread numbering", () => {
   });
 });
 
+describe("template link", () => {
+  it("keeps the template through edits but drops it when positions change", () => {
+    const fromTemplate = createSpread({
+      id: "s",
+      templateId: "three-card",
+      positions: [
+        { id: "a", question: "q", x: 0.2, y: 0.5 },
+        { id: "b", question: "q", x: 0.8, y: 0.5 },
+      ],
+    });
+    const moved = unwrap(movePosition(fromTemplate, "a", { x: 0.3, y: 0.4 }));
+    expect(moved.templateId).toBe("three-card");
+
+    const added = unwrap(
+      addPosition(fromTemplate, { id: "c", question: "", x: 0.5, y: 0.1 }),
+    );
+    expect(added.templateId).toBeUndefined();
+    const removed = removePosition(fromTemplate, "b");
+    expect(removed.ok && removed.spread.templateId).toBeUndefined();
+  });
+});
+
 describe("spread limits", () => {
   it(`allows up to ${MAX_SPREAD_POSITIONS} positions and refuses the next`, () => {
     const full = spreadOf(MAX_SPREAD_POSITIONS);
@@ -150,7 +171,6 @@ describe("spread limits", () => {
     expect(() =>
       createSpread({
         id: "s",
-        presetId: "custom",
         positions: [
           { id: "a", question: "", x: 0, y: 0 },
           { id: "a", question: "", x: 0, y: 0 },
@@ -283,7 +303,6 @@ describe("suggestPlacement", () => {
   it("moves off an occupied point and stays on the table", () => {
     const spread = createSpread({
       id: "s",
-      presetId: "custom",
       positions: [{ id: "a", question: "q", x: 0.5, y: 0.5 }],
     });
     const point = suggestPlacement(spread, { x: 0.5, y: 0.5 });
@@ -298,7 +317,7 @@ describe("suggestPlacement", () => {
   });
 
   it("places twelve positions without any two overlapping", () => {
-    let spread = createSpread({ id: "s", presetId: "custom", positions: [] });
+    let spread = createSpread({ id: "s", positions: [] });
     for (let count = 1; count <= MAX_SPREAD_POSITIONS; count += 1) {
       spread = unwrap(
         addPosition(spread, {

@@ -218,6 +218,135 @@
   box-shadow: var(--focus-ring);
 }
 
+/* ── Template library ────────────────────────────────── */
+
+.template-shelf {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.template-shelf__list,
+.template-shelf__actions,
+.template-shelf__save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.template-chip {
+  display: inline-flex;
+  min-height: 2.4rem;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgba(230, 197, 122, 0.3);
+  border-radius: 999px;
+  background: rgba(16, 13, 34, 0.7);
+}
+
+.template-chip[data-active] {
+  border-color: var(--color-gold);
+  background: linear-gradient(135deg, #fbeab8, #e6c57a 55%, #c69a4f);
+}
+
+.template-chip button {
+  border: 0;
+  color: var(--color-moon);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.template-chip[data-active] button {
+  color: #1a1206;
+}
+
+.template-chip__apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.4rem 0.3rem 1rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.template-chip[data-active] .template-chip__apply {
+  font-weight: 700;
+}
+
+.template-chip__apply small {
+  display: inline-grid;
+  min-width: 1.3rem;
+  height: 1.3rem;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(230, 197, 122, 0.16);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.template-chip__delete {
+  width: 2.2rem;
+  border-left: 1px solid rgba(230, 197, 122, 0.2) !important;
+  font-size: 1.05rem;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.template-chip__delete:not(:disabled):hover {
+  color: #ffc6b4;
+  opacity: 1;
+}
+
+.template-chip button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.template-chip button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-gold);
+}
+
+.template-shelf__save input {
+  min-width: 0;
+  flex: 1 1 12rem;
+  min-height: 2.4rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(230, 197, 122, 0.4);
+  border-radius: 0.7rem;
+  color: var(--color-moon);
+  background: rgba(8, 8, 20, 0.62);
+  font: inherit;
+}
+
+.template-shelf__save input:focus-visible {
+  border-color: var(--color-gold);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.template-shelf__save small {
+  color: rgba(207, 198, 220, 0.62);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.template-shelf__save small[data-invalid] {
+  color: #ffb877;
+}
+
+.ghost-action--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ghost-action--icon svg {
+  font-size: 1.1rem;
+}
+
 /* ── Stage and board ─────────────────────────────────── */
 
 /* The deck yields width to the table, where the cards now land. */
@@ -382,6 +511,38 @@
   /* Stays upright and readable whatever the position's rotation. */
   transform: translate(-40%, -40%) rotate(calc(var(--rot) * -1));
   cursor: inherit;
+}
+
+/* One-tap rotation, shown on the selected position. */
+.spread-slot__rotate {
+  position: absolute;
+  z-index: 8;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  width: max(1.9rem, calc(var(--slot-w) * 0.32));
+  aspect-ratio: 1;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(251, 234, 184, 0.8);
+  border-radius: 50%;
+  color: var(--color-gold);
+  background: rgba(14, 11, 30, 0.92);
+  box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.5);
+  font-size: max(1rem, calc(var(--slot-w) * 0.18));
+  transform: translate(40%, 40%) rotate(calc(var(--rot) * -1));
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.spread-slot__rotate:hover {
+  color: #1a1206;
+  background: var(--color-gold);
+}
+
+.spread-slot__rotate:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .spread-slot[data-missing-question] .spread-slot__handle {

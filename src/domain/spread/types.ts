@@ -11,7 +11,9 @@ export const MAX_QUESTION_LENGTH = 300;
 /** The optional overall question shares the per-position length ceiling. */
 export const MAX_MAIN_QUESTION_LENGTH = MAX_QUESTION_LENGTH;
 
-export type SpreadPresetId = "three-card" | "five-card" | "circle" | "custom";
+/** Template names are 1–30 characters; the library keeps up to 30 templates. */
+export const MAX_TEMPLATE_NAME_LENGTH = 30;
+export const MAX_SAVED_TEMPLATES = 30;
 
 /**
  * A place on the table. `x`/`y` are table-relative centre coordinates in
@@ -31,7 +33,11 @@ export interface SpreadPosition {
 
 export interface Spread {
   readonly id: string;
-  readonly presetId: SpreadPresetId;
+  /**
+   * The template this layout came from, until positions are added or
+   * removed. Used only to highlight the template in the library.
+   */
+  readonly templateId?: string;
   readonly mainQuestion: string;
   /** Always sorted by `index`; indexes are exactly 1..n. */
   readonly positions: readonly SpreadPosition[];

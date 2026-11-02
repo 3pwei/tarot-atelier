@@ -6,7 +6,6 @@ import {
   MIN_QUESTION_LENGTH,
   type Spread,
   type SpreadPosition,
-  type SpreadPresetId,
   type TablePoint,
 } from "@/domain/spread/types";
 
@@ -131,9 +130,17 @@ function createPosition(draft: PositionDraft, index: number): SpreadPosition {
   });
 }
 
+/** Adding or removing positions makes the layout the person's own. */
+function detachTemplate(spread: Spread): Spread {
+  if (spread.templateId === undefined) return spread;
+  const detached: { -readonly [K in keyof Spread]: Spread[K] } = { ...spread };
+  delete detached.templateId;
+  return detached;
+}
+
 export function createSpread(options: {
   readonly id: string;
-  readonly presetId: SpreadPresetId;
+  readonly templateId?: string;
   readonly positions: readonly PositionDraft[];
   readonly mainQuestion?: string;
 }): Spread {
@@ -151,7 +158,7 @@ export function createSpread(options: {
 
   return Object.freeze({
     id: options.id,
-    presetId: options.presetId,
+    ...(options.templateId ? { templateId: options.templateId } : {}),
     mainQuestion: truncateCharacters(
       options.mainQuestion ?? "",
       MAX_MAIN_QUESTION_LENGTH,
@@ -178,8 +185,7 @@ export function addPosition(
   return {
     ok: true,
     spread: Object.freeze({
-      ...spread,
-      presetId: "custom",
+      ...detachTemplate(spread),
       positions: Object.freeze([
         ...spread.positions,
         createPosition(draft, spread.positions.length + 1),
@@ -214,7 +220,7 @@ export function removePosition(
 
   return {
     ok: true,
-    spread: Object.freeze({ ...next, presetId: "custom" }),
+    spread: Object.freeze(detachTemplate(next)),
     removedIndex: target.index,
     renumbered,
   };

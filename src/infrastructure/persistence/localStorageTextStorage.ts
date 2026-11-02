@@ -1,18 +1,19 @@
-import type { SpreadSessionStorage } from "@/application/ports/spreadSessionStorage";
+import type { TextStorage } from "@/application/ports/textStorage";
 
-/** The schema version lives inside the value; the key stays stable. */
+/** Schema versions live inside each value; the keys stay stable. */
 export const SPREAD_SESSION_STORAGE_KEY = "tarot-atelier:spread-session";
+export const SPREAD_TEMPLATE_STORAGE_KEY = "tarot-atelier:spread-templates";
 
 /**
  * Browser `localStorage` adapter. Access can throw in private windows or when
  * site data is blocked, so every read degrades to "nothing stored".
  */
-export class LocalStorageSpreadSessionStorage implements SpreadSessionStorage {
+export class LocalStorageTextStorage implements TextStorage {
   readonly #key: string;
   readonly #getStorage: () => Storage | undefined;
 
   constructor(
-    key: string = SPREAD_SESSION_STORAGE_KEY,
+    key: string,
     getStorage: () => Storage | undefined = () =>
       typeof window === "undefined" ? undefined : window.localStorage,
   ) {

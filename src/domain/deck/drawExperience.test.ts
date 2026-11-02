@@ -254,4 +254,47 @@ describe("jumper statistics", () => {
         }),
     ).toThrow(RangeError);
   });
+
+  it("deals a whole series from one shuffle with unique cards", () => {
+    const experience = readyExperience({
+      cardIds: ["a", "b", "c", "d", "e"],
+      random: () => 0.9,
+    });
+
+    const results = experience.drawSeries(3);
+
+    expect(results).toHaveLength(3);
+    expect(new Set(results.map((r) => r.primary.cardId)).size).toBe(3);
+    expect(results.map((r) => r.primary.instanceId)).toEqual([
+      "test-deck:draw-1:primary",
+      "test-deck:draw-2:primary",
+      "test-deck:draw-3:primary",
+    ]);
+    expect(experience.state).toBe("drawing");
+    expect(experience.remainingCount).toBe(2);
+  });
+
+  it("gives every draw in a series its own jumper chance", () => {
+    const experience = readyExperience({
+      cardIds: ["a", "b", "c", "d"],
+      // shuffle ×3, then per draw: jumper gate, orientations
+      random: sequenceRandom(0.9, 0.9, 0.9, 0.9, 0.9, 0.01, 0.9, 0.9),
+    });
+
+    const [first, second] = experience.drawSeries(2);
+
+    expect(first?.jumper).toBeUndefined();
+    expect(second?.jumper).toBeDefined();
+    expect(experience.remainingCount).toBe(1);
+  });
+
+  it("stops a series early when the pile runs out", () => {
+    const experience = readyExperience({
+      cardIds: ["a", "b"],
+      random: () => 0.9,
+    });
+    expect(experience.drawSeries(5)).toHaveLength(2);
+    expect(experience.remainingCount).toBe(0);
+    expect(() => experience.drawSeries(1)).toThrow(InvalidDrawTransitionError);
+  });
 });

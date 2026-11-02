@@ -8,12 +8,13 @@ import {
   type JumperMode,
   type RandomSource,
 } from "@/domain/deck/draw";
-import { nextPositionToDraw, validateSpread } from "@/domain/spread/spread";
+import { validateSpread } from "@/domain/spread/spread";
 import { collectDrawnInstances } from "@/domain/spread/spreadSnapshot";
-import type { Spread, SpreadPosition } from "@/domain/spread/types";
+import type { Spread } from "@/domain/spread/types";
 import {
   buildDrawTimeline,
   buildShuffleTimeline,
+  DEAL_STAGGER_MS,
 } from "@/presentation/components/draw/drawTimelines";
 import type { MotionMode } from "@/presentation/components/draw/useMotionMode";
 import { usePhaseAnimation } from "@/presentation/components/draw/usePhaseAnimation";
@@ -107,13 +108,14 @@ export function useSpreadDealer({
     createPile(deck, spread, randomSource, generation),
   );
   const [phase, setPhase] = useState<DrawState>("idle");
-  const [flyingPositionId, setFlyingPositionId] = useState<string>();
+  /** Positions whose cards are in flight, in dealing order. */
+  const [flyingIds, setFlyingIds] = useState<readonly string[]>([]);
 
   // A restored or cleared spread gets a fresh pile without its table cards.
   if (pile.generation !== generation) {
     setPile(createPile(deck, spread, randomSource, generation));
     setPhase("idle");
-    setFlyingPositionId(undefined);
+    setFlyingIds([]);
   }
 
   const experience = pile.experience;
@@ -121,11 +123,10 @@ export function useSpreadDealer({
   const allRevealed = collectDrawnInstances(spread).every((card) =>
     revealedInstanceIds.has(card.instanceId),
   );
-  const next = nextPositionToDraw(spread);
+  /** Every empty position, in number order: one deck click deals them all. */
+  const empty = spread.positions.filter((position) => !position.drawResult);
+  const next = empty[0];
   const blocker = spreadBlocker(spread);
-  const flyingPosition = spread.positions.find(
-    (position) => position.id === flyingPositionId,
-  );
   const dealable =
     !loading && !blocker && Boolean(next) && remaining > 0 && allRevealed;
   const canShuffle = dealable && (phase === "idle" || phase === "revealed");
@@ -151,11 +152,11 @@ export function useSpreadDealer({
   usePhaseAnimation(
     phase === "drawing",
     motionMode,
-    CSS_DRAW_MS,
+    CSS_DRAW_MS + Math.max(0, flyingIds.length - 1) * DEAL_STAGGER_MS,
     () => {
       experience.reveal();
       setPhase(experience.state);
-      setFlyingPositionId(undefined);
+      setFlyingIds([]);
     },
     (gsap, done) => {
       const from = flightOrigin.current;
@@ -166,18 +167,20 @@ export function useSpreadDealer({
         done();
         return;
       }
-      const frame = {
-        rotation: flyingPosition?.rotation ?? 0,
-        scale: tableScale,
-      };
       buildDrawTimeline(
         gsap,
-        elements.map((element) => ({
-          element,
-          from,
-          frame,
-          role: element.dataset.drawCard === "jumper" ? "jumper" : "primary",
-        })),
+        elements.map((element) => {
+          const slotId =
+            element.closest<HTMLElement>("[data-slot]")?.dataset.slot;
+          const position = spread.positions.find((p) => p.id === slotId);
+          return {
+            element,
+            from,
+            frame: { rotation: position?.rotation ?? 0, scale: tableScale },
+            order: Math.max(0, flyingIds.indexOf(slotId ?? "")),
+            role: element.dataset.drawCard === "jumper" ? "jumper" : "primary",
+          };
+        }),
         done,
       );
     },
@@ -190,16 +193,27 @@ export function useSpreadDealer({
     setPhase(experience.state);
   }
 
-  function draw() {
-    if (!canDraw || !next) return;
+  /** Deals every empty position at once; the person then reveals each card. */
+  function deal() {
+    if (!canDraw || empty.length === 0) return;
     if (experience.state === "revealed") experience.continueDrawing();
     flightOrigin.current =
       root.current?.querySelector("[data-deck-top]")?.getBoundingClientRect() ??
       null;
-    const result = experience.draw();
-    if (!result) return;
-    dispatch({ type: "draw", positionId: next.id, result });
-    setFlyingPositionId(next.id);
+    const results = experience.drawSeries(empty.length);
+    if (results.length === 0) return;
+    const dealt = results.flatMap((result, order) => {
+      const position = empty[order];
+      return position ? [{ positionId: position.id, result }] : [];
+    });
+    dispatch({ type: "deal", dealt });
+    if (dealt.length < empty.length) {
+      dispatch({
+        type: "announce",
+        text: `牌堆只剩 ${dealt.length} 次可發，其餘牌位暫時留空。`,
+      });
+    }
+    setFlyingIds(dealt.map((item) => item.positionId));
     setPhase(experience.state);
   }
 
@@ -209,13 +223,14 @@ export function useSpreadDealer({
     total: deck.cards.length,
     allRevealed,
     next,
+    emptyCount: empty.length,
     blocker,
-    flyingPosition,
+    flyingIds,
     canShuffle,
     canDraw,
     layoutLocked: loading || phase === "shuffling" || phase === "drawing",
     shuffle,
-    draw,
+    deal,
   };
 }
 
@@ -223,20 +238,27 @@ export function dealerStatus(options: {
   readonly loading: boolean;
   readonly phase: DrawState;
   readonly blocker?: string;
-  readonly next?: SpreadPosition;
-  readonly flyingTo?: number;
+  readonly emptyCount: number;
+  readonly flyingCount: number;
   readonly allRevealed: boolean;
   readonly remaining: number;
 }): string {
-  const { loading, phase, blocker, next, flyingTo, allRevealed, remaining } =
-    options;
+  const {
+    loading,
+    phase,
+    blocker,
+    emptyCount,
+    flyingCount,
+    allRevealed,
+    remaining,
+  } = options;
   if (loading) return "正在讀取牌陣";
   if (phase === "shuffling") return "正在洗牌";
-  if (phase === "drawing") return `卡牌正飛向牌位 ${flyingTo ?? ""}`;
-  if (!allRevealed) return "點擊卡牌，以火焰揭示牌面";
+  if (phase === "drawing") return `正在發牌到 ${flyingCount} 個牌位`;
+  if (!allRevealed) return "點擊卡牌，以火焰逐一揭示牌面";
   if (blocker) return blocker;
-  if (!next) return "牌陣已完成";
+  if (emptyCount === 0) return "牌陣已完成";
   if (remaining === 0) return "牌堆已用盡";
   if (phase === "idle") return "準備好了，請洗牌";
-  return `請為牌位 ${next.index} 抽牌`;
+  return `點擊牌堆，一次發完 ${emptyCount} 個牌位`;
 }

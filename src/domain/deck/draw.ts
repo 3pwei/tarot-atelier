@@ -203,6 +203,31 @@ export class DrawExperience {
   }
 
   /**
+   * Deals up to `count` draws in one go from the same shuffled pile, each with
+   * its own jumper chance, the way a reader lays out a whole spread before
+   * turning any card. Stops early when the pile runs out and ends in
+   * `drawing` while the cards are in flight.
+   */
+  drawSeries(count: number): readonly DrawResult[] {
+    if (this.#state !== "ready") {
+      throw new InvalidDrawTransitionError(this.#state, "draw");
+    }
+    if (!Number.isInteger(count) || count < 1) {
+      throw new RangeError("count must be a positive integer");
+    }
+    const results: DrawResult[] = [];
+    while (results.length < count && this.#remainingCardIds.length > 0) {
+      if (results.length > 0) {
+        this.reveal();
+        this.continueDrawing();
+      }
+      const result = this.draw();
+      if (result) results.push(result);
+    }
+    return Object.freeze(results);
+  }
+
+  /**
    * Deals the next card from the same shuffled pile, the way a reader lays out
    * a spread without reshuffling between positions.
    */

@@ -17,7 +17,9 @@ import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
 const DRAG_THRESHOLD_PX = 5;
 export const KEY_STEP = 0.01;
 export const KEY_STEP_LARGE = 0.05;
+/** `[` and `]` fine-tune; the rotate buttons turn in bigger steps. */
 export const ROTATE_STEP = 15;
+export const ROTATE_BUTTON_STEP = 45;
 
 /** Arrow keys and the numeric keypad (with or without Num Lock). */
 const KEY_DIRECTIONS: Readonly<Record<string, TablePoint>> = {
@@ -60,6 +62,37 @@ interface PositionSlotProps {
   readonly onNudge: (positionId: string, delta: TablePoint) => void;
   readonly onRotate: (positionId: string, degrees: number) => void;
   readonly children?: ReactNode;
+}
+
+/** A clockwise turning arrow, drawn to read at small sizes. */
+export function RotateIcon({
+  direction = "clockwise",
+}: {
+  readonly direction?: "clockwise" | "counterclockwise";
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
+      aria-hidden="true"
+      focusable="false"
+      style={
+        direction === "counterclockwise"
+          ? { transform: "scaleX(-1)" }
+          : undefined
+      }
+    >
+      <path
+        d="M19 12a7 7 0 1 1-2.05-4.95"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path d="M20.5 3.5v5.5H15z" fill="currentColor" />
+    </svg>
+  );
 }
 
 function percent(value: number): number {
@@ -211,6 +244,22 @@ export function PositionSlot({
       >
         {position.index}
       </button>
+      {selected && !locked && (
+        <button
+          type="button"
+          className="spread-slot__rotate"
+          aria-label={`牌位 ${position.index} 順時針轉 ${ROTATE_BUTTON_STEP}°`}
+          title={`順時針轉 ${ROTATE_BUTTON_STEP}°`}
+          // Rotating must not start a drag or toggle the selection.
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRotate(position.id, position.rotation + ROTATE_BUTTON_STEP);
+          }}
+        >
+          <RotateIcon />
+        </button>
+      )}
       <span id={hintId} className="sr-only">
         {`位置：橫向 ${percent(position.x)}、縱向 ${percent(position.y)}（0–100），旋轉 ${position.rotation} 度。`}
         方向鍵或數字鍵盤移動，Shift 加大步幅；[ 與 ] 旋轉；Enter 編輯。

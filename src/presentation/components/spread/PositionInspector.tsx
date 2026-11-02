@@ -7,7 +7,10 @@ import {
   type SpreadPosition,
   type TablePoint,
 } from "@/domain/spread/types";
-import { ROTATE_STEP } from "@/presentation/components/spread/PositionSlot";
+import {
+  ROTATE_BUTTON_STEP,
+  RotateIcon,
+} from "@/presentation/components/spread/PositionSlot";
 
 interface PositionInspectorProps {
   readonly position: SpreadPosition;
@@ -157,19 +160,21 @@ export function PositionInspector({
       <div className="position-inspector__actions">
         <button
           type="button"
-          className="ghost-action"
+          className="ghost-action ghost-action--icon"
           disabled={locked}
-          onClick={() => onRotate(position.rotation - ROTATE_STEP)}
+          aria-label={`逆時針轉 ${ROTATE_BUTTON_STEP}°`}
+          onClick={() => onRotate(position.rotation - ROTATE_BUTTON_STEP)}
         >
-          向左轉 {ROTATE_STEP}°
+          <RotateIcon direction="counterclockwise" /> {ROTATE_BUTTON_STEP}°
         </button>
         <button
           type="button"
-          className="ghost-action"
+          className="ghost-action ghost-action--icon"
           disabled={locked}
-          onClick={() => onRotate(position.rotation + ROTATE_STEP)}
+          aria-label={`順時針轉 ${ROTATE_BUTTON_STEP}°`}
+          onClick={() => onRotate(position.rotation + ROTATE_BUTTON_STEP)}
         >
-          向右轉 {ROTATE_STEP}°
+          <RotateIcon /> {ROTATE_BUTTON_STEP}°
         </button>
         <button
           type="button"

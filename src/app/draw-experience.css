@@ -540,10 +540,12 @@
 
 .draw-experience[data-motion="css"] .drawn-card[data-flight="pending"] {
   animation: css-card-arrive 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  /* Matches DEAL_STAGGER_MS when a whole spread is dealt. */
+  animation-delay: calc(var(--deal-order, 0) * 180ms);
 }
 
 .draw-experience[data-motion="css"] .drawn-card--jumper[data-flight="pending"] {
-  animation-delay: 220ms;
+  animation-delay: calc(var(--deal-order, 0) * 180ms + 220ms);
 }
 
 /* ── Keyframes ───────────────────────────────────────── */

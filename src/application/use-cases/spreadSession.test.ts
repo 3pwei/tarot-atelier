@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SpreadSessionStorage } from "@/application/ports/spreadSessionStorage";
+import type { SpreadSessionStorage } from "@/application/ports/textStorage";
 import {
   clearSpreadSession,
   restoreSpreadSession,
@@ -9,7 +9,10 @@ import {
   atelierStandardDeck,
   phaseOneTestDeck,
 } from "@/domain/deck/builtinDecks";
-import { createSpreadFromPreset } from "@/domain/spread/presets";
+import {
+  BUILT_IN_TEMPLATES,
+  createSpreadFromTemplate,
+} from "@/domain/spread/templates";
 import type { SpreadSession } from "@/domain/spread/spreadSnapshot";
 
 class MemoryStorage implements SpreadSessionStorage {
@@ -34,8 +37,8 @@ function session(deckId = atelierStandardDeck.id): SpreadSession {
   let next = 0;
   return {
     deckId,
-    spread: createSpreadFromPreset({
-      presetId: "five-card",
+    spread: createSpreadFromTemplate({
+      template: BUILT_IN_TEMPLATES[1]!,
       createId: () => `id-${(next += 1)}`,
     }),
     revealedInstanceIds: [],

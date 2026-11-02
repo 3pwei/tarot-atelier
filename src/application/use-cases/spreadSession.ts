@@ -1,4 +1,4 @@
-import type { SpreadSessionStorage } from "@/application/ports/spreadSessionStorage";
+import type { SpreadSessionStorage } from "@/application/ports/textStorage";
 import type { Deck } from "@/domain/deck/deck";
 import {
   parseSpreadSnapshot,
