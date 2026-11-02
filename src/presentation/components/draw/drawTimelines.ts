@@ -93,10 +93,45 @@ export function buildShuffleTimeline(
     });
 }
 
+/**
+ * The landing slot's frame on screen. Cards inside a rotated position on a
+ * zoomed table are animated in that slot's local coordinates.
+ */
+export interface FlightFrame {
+  /** Slot rotation in degrees. */
+  readonly rotation: number;
+  /** Table zoom factor. */
+  readonly scale: number;
+}
+
+const SCREEN_FRAME: FlightFrame = { rotation: 0, scale: 1 };
+
+/** Gap between consecutive positions when a whole spread is dealt. */
+export const DEAL_STAGGER_MS = 180;
+
 interface FlightPlan {
   readonly element: HTMLElement;
   readonly from: DOMRect;
   readonly role: "primary" | "jumper";
+  readonly frame?: FlightFrame;
+  /** Dealing order; each step leaves the deck `DEAL_STAGGER_MS` later. */
+  readonly order?: number;
+}
+
+/** Converts a screen-space offset into the slot's local (unrotated, unzoomed) space. */
+export function toLocalOffset(
+  dx: number,
+  dy: number,
+  frame: FlightFrame,
+): { readonly x: number; readonly y: number } {
+  const radians = (-frame.rotation * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const scale = Math.max(frame.scale, 1e-6);
+  return {
+    x: (dx * cos - dy * sin) / scale,
+    y: (dx * sin + dy * cos) / scale,
+  };
 }
 
 function quadratic(
@@ -112,7 +147,9 @@ function quadratic(
 /**
  * Each drawn card lifts from the deck, sails on a curved path to its slot and
  * settles. The jumper bursts out a beat later with a spin, as if the deck
- * pushed it out on its own.
+ * pushed it out on its own. The path is planned on screen and converted into
+ * the slot's frame, so it lands exactly on a rotated position of a zoomed
+ * table.
  */
 export function buildDrawTimeline(
   gsap: Gsap,
@@ -121,70 +158,86 @@ export function buildDrawTimeline(
 ): Timeline {
   const timeline = gsap.timeline({ onComplete });
 
-  flights.forEach(({ element, from, role }) => {
-    const to = element.getBoundingClientRect();
-    const startX = from.left + from.width / 2 - (to.left + to.width / 2);
-    const startY = from.top + from.height / 2 - (to.top + to.height / 2);
-    const startScale = from.width / Math.max(1, to.width);
-    const isJumper = role === "jumper";
-    const controlX = startX * 0.45;
-    const controlY = Math.min(startY, 0) - to.height * (isJumper ? 0.9 : 0.55);
-    const startRotation = isJumper ? -220 : -6;
-    // The jumper's resting tilt lives on its inner button in CSS.
-    const endRotation = 0;
-    const path = { t: 0 };
-    const at = isJumper ? 0.42 : 0;
+  flights.forEach(
+    ({ element, from, role, frame = SCREEN_FRAME, order = 0 }) => {
+      const to = element.getBoundingClientRect();
+      // Screen-space offsets from the landing point.
+      const startX = from.left + from.width / 2 - (to.left + to.width / 2);
+      const startY = from.top + from.height / 2 - (to.top + to.height / 2);
+      const landedWidth = Math.max(1, element.offsetWidth * frame.scale);
+      const startScale = from.width / landedWidth;
+      const isJumper = role === "jumper";
+      const liftY = startY - 18;
+      const controlX = startX * 0.45;
+      const controlY =
+        Math.min(startY, 0) - to.height * (isJumper ? 0.9 : 0.55);
+      // Leave the deck upright on screen, whatever the slot's rotation.
+      const startRotation = (isJumper ? -220 : -6) - frame.rotation;
+      // The jumper's resting tilt lives on its inner button in CSS.
+      const endRotation = 0;
+      const path = { t: 0 };
+      const at = (order * DEAL_STAGGER_MS) / 1000 + (isJumper ? 0.42 : 0);
+      const start = toLocalOffset(startX, startY, frame);
+      const lifted = toLocalOffset(startX, liftY, frame);
 
-    timeline
-      .set(
-        element,
-        {
-          x: startX,
-          y: startY,
-          scale: startScale,
-          rotation: startRotation,
-          opacity: 1,
-          "--lift": 0,
-        },
-        0,
-      )
-      // Lift off the deck.
-      .to(
-        element,
-        {
-          y: startY - 18,
-          scale: startScale * 1.06,
-          "--lift": 1,
-          duration: isJumper ? 0.12 : 0.22,
-          ease: "power2.out",
-        },
-        at,
-      )
-      .to(
-        path,
-        {
-          t: 1,
-          duration: isJumper ? 0.62 : 0.78,
-          ease: "power3.inOut",
-          onUpdate() {
-            gsap.set(element, {
-              x: quadratic(startX, controlX, 0, path.t),
-              y: quadratic(startY - 18, controlY, 0, path.t),
-              scale: startScale * 1.06 + (1.04 - startScale * 1.06) * path.t,
-              rotation: startRotation + (endRotation - startRotation) * path.t,
-            });
+      timeline
+        .set(
+          element,
+          {
+            x: start.x,
+            y: start.y,
+            scale: startScale,
+            rotation: startRotation,
+            opacity: 1,
+            "--lift": 0,
           },
-        },
-        `>`,
-      )
-      // Land: a soft press into the table.
-      .to(element, {
-        scale: 1,
-        "--lift": 0,
-        duration: 0.32,
-        ease: "back.out(2.2)",
-      });
-  });
+          0,
+        )
+        // Lift off the deck.
+        .to(
+          element,
+          {
+            x: lifted.x,
+            y: lifted.y,
+            scale: startScale * 1.06,
+            "--lift": 1,
+            duration: isJumper ? 0.12 : 0.22,
+            ease: "power2.out",
+          },
+          at,
+        )
+        .to(
+          path,
+          {
+            t: 1,
+            duration: isJumper ? 0.62 : 0.78,
+            ease: "power3.inOut",
+            onUpdate() {
+              const local = toLocalOffset(
+                quadratic(startX, controlX, 0, path.t),
+                quadratic(liftY, controlY, 0, path.t),
+                frame,
+              );
+              gsap.set(element, {
+                x: local.x,
+                y: local.y,
+                scale: startScale * 1.06 + (1.04 - startScale * 1.06) * path.t,
+                rotation:
+                  startRotation + (endRotation - startRotation) * path.t,
+              });
+            },
+          },
+          `>`,
+        )
+        // Land: a soft press into the table.
+        .to(element, {
+          scale: 1,
+          "--lift": 0,
+          duration: 0.32,
+          ease: "back.out(2.2)",
+        });
+    },
+  );
 
   return timeline;
 }

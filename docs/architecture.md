@@ -34,6 +34,13 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 - The burn reveal (`presentation/effects/burn/`) rasterises the exact DOM card-back SVG into a canvas, so nothing visibly swaps when it starts. A pure distance field (`burnField.ts`, unit-tested) is warped by fractal noise and stretched upward, and spreads from the pointer position (keyboard activation ignites the bottom edge). Each frame shades scorch, an incandescent rim and char, then adds embers and a downsampled bloom. All of this happens in canvas, with no CSS filter animated per frame. Reduced motion reveals instantly.
 - Decorative glows animate only `opacity` and `transform`. Animating `filter` or `box-shadow` forces a repaint every frame and is avoided.
 
+## Spread table
+
+- `domain/spread` owns the `Spread` and `SpreadPosition` model, numbering, the 1–12 limit, required questions, presets and the versioned snapshot parser. It is framework-free; see [`spread-table.md`](./spread-table.md).
+- Persistence goes through the `SpreadSessionStorage` port (`application/ports`). `LocalStorageSpreadSessionStorage` only moves strings; validation and migration live in `application/use-cases/spreadSession.ts`, so no backend can bypass them.
+- The table keeps positions in relative coordinates. Zoom and pan are presentation-only view state (`useBoardViewport`), and the draw flight converts its screen path into the landing slot's rotated, zoomed frame.
+- `useSpreadDealer` mirrors the draw machine for a spread: one shuffled pile, dealt in number order with `continueDrawing()`, and rebuilt without table cards after a reload or clear.
+
 ## Future extension points
 
 Decks, table scenes, persistence, and interpretation providers will use versioned schemas plus registries or application ports. Infrastructure implementations will be injected rather than imported into domain code.
