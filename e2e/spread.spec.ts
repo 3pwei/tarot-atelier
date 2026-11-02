@@ -300,3 +300,94 @@ test("named templates are saved, deleted and restored across reloads", async ({
     page.getByRole("button", { name: "經典三張", exact: true }),
   ).toBeVisible();
 });
+
+async function rotationOf(page: Page, index: number) {
+  return slot(page, index).evaluate((element) =>
+    Number.parseFloat(element.style.getPropertyValue("--rot")),
+  );
+}
+
+/** Sweeps a pointer a quarter turn clockwise around `center`. */
+async function sweep(
+  page: Page,
+  center: { x: number; y: number },
+  start: { x: number; y: number },
+  options: { isMobile: boolean; holdMs: number },
+) {
+  const radius = Math.hypot(start.x - center.x, start.y - center.y);
+  const startAngle = Math.atan2(start.y - center.y, start.x - center.x);
+  const steps = 12;
+  const at = (step: number) => {
+    const angle = startAngle + (Math.PI / 2) * (step / steps);
+    return {
+      x: center.x + Math.cos(angle) * radius,
+      y: center.y + Math.sin(angle) * radius,
+    };
+  };
+
+  if (!options.isMobile) {
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.waitForTimeout(options.holdMs);
+    for (let step = 1; step <= steps; step += 1) {
+      const point = at(step);
+      await page.mouse.move(point.x, point.y);
+    }
+    await page.mouse.up();
+    return;
+  }
+  const client = await page.context().newCDPSession(page);
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [start],
+  });
+  await page.waitForTimeout(options.holdMs);
+  for (let step = 1; step <= steps; step += 1) {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [at(step)],
+    });
+  }
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+}
+
+test("press and hold, then drag, rotates a position around its centre", async ({
+  page,
+  isMobile,
+}) => {
+  await page.getByRole("button", { name: "放大牌桌" }).click();
+  await page.getByRole("button", { name: "放大牌桌" }).click();
+  const target = slot(page, 2);
+  const before = await relativePosition(page, 2);
+  const box = await target.boundingBox();
+  if (!box) throw new Error("slot 2 is not visible");
+  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+  // Hold on the card, then sweep a quarter turn: it rotates, it does not move.
+  await sweep(
+    page,
+    center,
+    { x: center.x + box.width * 0.35, y: center.y },
+    { isMobile, holdMs: 700 },
+  );
+  expect(await rotationOf(page, 2)).toBe(90);
+  expect(await relativePosition(page, 2)).toEqual(before);
+  await expect(target).not.toHaveAttribute("data-rotating", "true");
+
+  // The turning-arrow handle rotates straight away, without holding.
+  await handle(page, 2).click();
+  const knob = target.getByRole("button", { name: "牌位 2 順時針轉 45°" });
+  const knobBox = await knob.boundingBox();
+  if (!knobBox) throw new Error("rotate handle is not visible");
+  await sweep(
+    page,
+    center,
+    { x: knobBox.x + knobBox.width / 2, y: knobBox.y + knobBox.height / 2 },
+    { isMobile, holdMs: 0 },
+  );
+  expect(await rotationOf(page, 2)).toBe(180);
+  expect(await relativePosition(page, 2)).toEqual(before);
+});

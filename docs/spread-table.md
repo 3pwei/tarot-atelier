@@ -49,9 +49,9 @@ The circle uses eight positions because twelve cards on a 3:2 table overlap at r
 ## Table and interaction
 
 - The table has a fixed 3:2 aspect ratio. Positions map onto an inner area inset by half a card, so a card at `x = 0` or `y = 1` stays fully on the table. Card width is 11% of the table width (container query units).
-- **Pointer and touch**: drag a position. A press becomes a drag after 5 px; a drag never also ignites a card or toggles selection.
+- **Pointer and touch**: drag a position to move it. A press becomes a move after 5 px of travel; holding still instead switches to rotating (below). A finished gesture never also ignites a card or toggles selection.
 - **Keyboard**: each position has a numbered handle. Arrow keys or the numeric keypad (8/2/4/6 and diagonals) move 1% of the table, Shift moves 5%, `[` and `]` rotate by 15°, and Enter opens the editor.
-- **Rotate button**: the selected position shows a turning-arrow button that rotates it 45° clockwise per tap. The editor has ↺ 45° and ↻ 45° buttons plus an exact degree field. The editor also takes exact horizontal and vertical values (0–100) and degrees.
+- **Rotate by dragging**: press and hold a position for 0.45 s (a dashed dial and the live angle appear, with a short vibration where supported), then drag around it to rotate. The turning-arrow handle on the selected position rotates on drag straight away; a tap on it turns 45°. Angles are whole degrees and snap onto 45° lines within 4°. A press-and-hold never also ignites a card. The editor keeps ↺ 45° / ↻ 45° buttons and an exact degree field.
 - **Zoom and pan**: ×1–×2.5 via buttons, ctrl/⌘ + wheel or trackpad pinch, and two-finger pinch on touch. Dragging the empty table pans when zoomed. Zoom is view state only; stored coordinates never change. Until the table is zoomed, vertical swipes on its background still scroll the page.
 - **Flight**: dealt cards leave the deck 180 ms apart in number order. The draw timeline plans each curve in screen space and converts it into the landing slot's rotated, zoomed frame (`toLocalOffset`), so a card lands exactly on its position at any rotation or zoom.
 - The reading list below the table shows every position in number order with its question and result. It is also the accessible summary of the table.

@@ -287,7 +287,7 @@ export function DrawExperience({
             />
           ) : (
             <p className="spread-details__hint">
-              點選牌位即可編輯問題、旋轉、排序或刪除；也可以直接拖曳，或聚焦號碼後用方向鍵、數字鍵盤移動。
+              點選牌位即可編輯問題、排序或刪除。拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦號碼後用方向鍵、數字鍵盤操作。
             </p>
           )}
           <PositionList

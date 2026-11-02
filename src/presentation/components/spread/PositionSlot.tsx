@@ -1,23 +1,19 @@
 "use client";
 
 import {
-  useEffect,
   useId,
   useRef,
   type CSSProperties,
   type KeyboardEvent,
-  type MouseEvent,
-  type PointerEvent,
   type ReactNode,
   type RefObject,
 } from "react";
 import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
+import { useSlotGestures } from "@/presentation/components/spread/useSlotGestures";
 
-/** Pointer travel before a press becomes a drag instead of a click. */
-const DRAG_THRESHOLD_PX = 5;
 export const KEY_STEP = 0.01;
 export const KEY_STEP_LARGE = 0.05;
-/** `[` and `]` fine-tune; the rotate buttons turn in bigger steps. */
+/** `[` and `]` fine-tune; a tap on a rotate button turns a bigger step. */
 export const ROTATE_STEP = 15;
 export const ROTATE_BUTTON_STEP = 45;
 
@@ -41,14 +37,6 @@ export function keyDirection(
   event: Pick<KeyboardEvent, "key" | "code">,
 ): TablePoint | undefined {
   return KEY_DIRECTIONS[event.code] ?? KEY_DIRECTIONS[event.key];
-}
-
-interface DragSession {
-  readonly pointerId: number;
-  readonly startX: number;
-  readonly startY: number;
-  readonly offset: TablePoint;
-  moved: boolean;
 }
 
 interface PositionSlotProps {
@@ -111,13 +99,18 @@ export function PositionSlot({
   children,
 }: PositionSlotProps) {
   const hintId = useId();
-  const suppressClick = useRef(false);
-  const detach = useRef<() => void>(() => undefined);
-  const latest = useRef({ position, onMove });
-  useEffect(() => {
-    latest.current = { position, onMove };
+  const slotRef = useRef<HTMLDivElement>(null);
+  const turnByStep = () =>
+    onRotate(position.id, position.rotation + ROTATE_BUTTON_STEP);
+  const gestures = useSlotGestures({
+    position,
+    locked,
+    field,
+    slot: slotRef,
+    onMove,
+    onRotate,
+    onHandleTap: turnByStep,
   });
-  useEffect(() => () => detach.current(), []);
 
   const question = position.question.trim();
   const hasCards = Boolean(position.drawResult);
@@ -126,82 +119,6 @@ export function PositionSlot({
     "--y": position.y,
     "--rot": `${position.rotation}deg`,
   } as CSSProperties;
-
-  function relativePoint(clientX: number, clientY: number): TablePoint | null {
-    const rect = field.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0 || rect.height === 0) return null;
-    return {
-      x: (clientX - rect.left) / rect.width,
-      y: (clientY - rect.top) / rect.height,
-    };
-  }
-
-  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (locked) return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    const start = relativePoint(event.clientX, event.clientY);
-    if (!start) return;
-    detach.current();
-    const session: DragSession = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      offset: { x: start.x - position.x, y: start.y - position.y },
-      moved: false,
-    };
-    const slot = event.currentTarget;
-
-    const onPointerMove = (move: globalThis.PointerEvent) => {
-      if (move.pointerId !== session.pointerId) return;
-      if (
-        !session.moved &&
-        Math.hypot(
-          move.clientX - session.startX,
-          move.clientY - session.startY,
-        ) < DRAG_THRESHOLD_PX
-      ) {
-        return;
-      }
-      session.moved = true;
-      slot.dataset.dragging = "true";
-      const point = relativePoint(move.clientX, move.clientY);
-      if (!point) return;
-      latest.current.onMove(latest.current.position.id, {
-        x: point.x - session.offset.x,
-        y: point.y - session.offset.y,
-      });
-    };
-    const onPointerEnd = (end: globalThis.PointerEvent) => {
-      if (end.pointerId !== session.pointerId) return;
-      suppressClick.current = session.moved;
-      // Touch drags end without a click; never swallow the next real tap.
-      if (session.moved) {
-        setTimeout(() => {
-          suppressClick.current = false;
-        }, 0);
-      }
-      delete slot.dataset.dragging;
-      detach.current();
-    };
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerEnd);
-    window.addEventListener("pointercancel", onPointerEnd);
-    detach.current = () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerEnd);
-      window.removeEventListener("pointercancel", onPointerEnd);
-      detach.current = () => undefined;
-    };
-  }
-
-  // A drag must not also ignite a card or toggle selection on release.
-  function handleClickCapture(event: MouseEvent<HTMLDivElement>) {
-    if (!suppressClick.current) return;
-    suppressClick.current = false;
-    event.preventDefault();
-    event.stopPropagation();
-  }
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (locked) return;
@@ -221,6 +138,7 @@ export function PositionSlot({
 
   return (
     <div
+      ref={slotRef}
       className="spread-slot"
       style={style}
       data-slot={position.id}
@@ -229,8 +147,11 @@ export function PositionSlot({
       data-drawn={hasCards || undefined}
       data-missing-question={question.length === 0 || undefined}
       data-locked={locked || undefined}
-      onPointerDown={handlePointerDown}
-      onClickCapture={handleClickCapture}
+      data-rotating={gestures.rotating || undefined}
+      onPointerDown={gestures.onSlotPointerDown}
+      onClickCapture={gestures.onClickCapture}
+      // Holding still to rotate must not open the touch context menu.
+      onContextMenu={(event) => event.preventDefault()}
       onClick={() => onSelect(position.id)}
       title={question || undefined}
     >
@@ -244,25 +165,31 @@ export function PositionSlot({
       >
         {position.index}
       </button>
-      {selected && !locked && (
+      {(selected || gestures.rotating) && !locked && (
         <button
           type="button"
           className="spread-slot__rotate"
           aria-label={`牌位 ${position.index} 順時針轉 ${ROTATE_BUTTON_STEP}°`}
-          title={`順時針轉 ${ROTATE_BUTTON_STEP}°`}
-          // Rotating must not start a drag or toggle the selection.
-          onPointerDown={(event) => event.stopPropagation()}
+          title={`拖曳旋轉，點一下轉 ${ROTATE_BUTTON_STEP}°`}
+          onPointerDown={gestures.onHandlePointerDown}
           onClick={(event) => {
             event.stopPropagation();
-            onRotate(position.id, position.rotation + ROTATE_BUTTON_STEP);
+            // Pointer taps are handled by the gesture; this is the keyboard.
+            if (event.detail === 0) turnByStep();
           }}
         >
           <RotateIcon />
         </button>
       )}
+      {gestures.rotating && (
+        <span className="spread-slot__angle" aria-hidden="true">
+          {position.rotation}°
+        </span>
+      )}
       <span id={hintId} className="sr-only">
         {`位置：橫向 ${percent(position.x)}、縱向 ${percent(position.y)}（0–100），旋轉 ${position.rotation} 度。`}
-        方向鍵或數字鍵盤移動，Shift 加大步幅；[ 與 ] 旋轉；Enter 編輯。
+        方向鍵或數字鍵盤移動，Shift 加大步幅；[ 與 ] 旋轉；Enter
+        編輯。觸控或滑鼠：拖曳移動，長按後拖曳旋轉。
       </span>
       {hasCards ? (
         <div className="spread-slot__cards">{children}</div>

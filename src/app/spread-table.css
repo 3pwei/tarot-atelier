@@ -442,6 +442,7 @@
   aspect-ratio: 2 / 3;
   cursor: grab;
   touch-action: none;
+  -webkit-touch-callout: none;
   transform: translate(-50%, -50%) rotate(var(--rot));
 }
 
@@ -456,6 +457,44 @@
 
 .spread-slot[data-locked] {
   cursor: default;
+}
+
+/* Press and hold switches to rotating: a dial ring and the live angle. */
+.spread-slot[data-rotating] {
+  z-index: 4;
+  cursor: grabbing;
+}
+
+.spread-slot[data-rotating]::before {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--slot-h) * 1.25);
+  aspect-ratio: 1;
+  border: 1px dashed rgba(230, 197, 122, 0.75);
+  border-radius: 50%;
+  box-shadow: 0 0 1.4rem rgba(230, 197, 122, 0.25);
+  content: "";
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.spread-slot__angle {
+  position: absolute;
+  z-index: 9;
+  top: 50%;
+  left: 50%;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid rgba(251, 234, 184, 0.8);
+  border-radius: 999px;
+  color: #1a1206;
+  background: var(--color-gold);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(calc(var(--rot) * -1));
 }
 
 .spread-slot__frame {
@@ -531,8 +570,14 @@
   box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.5);
   font-size: max(1rem, calc(var(--slot-w) * 0.18));
   transform: translate(40%, 40%) rotate(calc(var(--rot) * -1));
-  cursor: pointer;
-  touch-action: manipulation;
+  cursor: grab;
+  touch-action: none;
+}
+
+.spread-slot[data-rotating] .spread-slot__rotate {
+  color: #1a1206;
+  background: var(--color-gold);
+  cursor: grabbing;
 }
 
 .spread-slot__rotate:hover {
