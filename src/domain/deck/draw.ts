@@ -27,6 +27,12 @@ export interface DrawExperienceOptions {
   readonly jumperMode?: JumperMode;
   readonly reversedProbability?: number;
   readonly now?: () => Date;
+  /**
+   * Cards already on the table from an earlier session. They stay out of the
+   * pile, and numbering continues after them so instance IDs never repeat.
+   */
+  readonly alreadyDrawnCardIds?: readonly string[];
+  readonly previousDrawCount?: number;
 }
 
 export class InvalidDrawTransitionError extends Error {
@@ -123,9 +129,18 @@ export class DrawExperience {
       throw new Error("Draw pile card IDs must be unique");
     }
 
+    const alreadyDrawn = new Set(options.alreadyDrawnCardIds ?? []);
+    const previousDrawCount = options.previousDrawCount ?? 0;
+    if (!Number.isInteger(previousDrawCount) || previousDrawCount < 0) {
+      throw new RangeError("previousDrawCount must be a non-negative integer");
+    }
+
     this.#deckId = options.deckId;
     this.#originalCardIds = Object.freeze([...options.cardIds]);
-    this.#remainingCardIds = [...options.cardIds];
+    this.#remainingCardIds = options.cardIds.filter(
+      (cardId) => !alreadyDrawn.has(cardId),
+    );
+    this.#drawNumber = previousDrawCount;
     this.#supportsReversals = options.supportsReversals;
     this.#random = options.random ?? Math.random;
     this.#jumperMode = options.jumperMode ?? "rare";
@@ -185,6 +200,17 @@ export class DrawExperience {
     };
 
     return Object.freeze(result);
+  }
+
+  /**
+   * Deals the next card from the same shuffled pile, the way a reader lays out
+   * a spread without reshuffling between positions.
+   */
+  continueDrawing(): void {
+    if (this.#state !== "revealed") {
+      throw new InvalidDrawTransitionError(this.#state, "continue drawing");
+    }
+    this.#state = "ready";
   }
 
   reveal(): void {
