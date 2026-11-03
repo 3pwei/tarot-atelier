@@ -1,0 +1,152 @@
+name: Deploy to games site
+
+# Builds the /tarot static export and opens a `deploy: tarot <sha>` pull
+# request on 3pwei/milespapa-games. Nothing goes live until that pull request
+# is merged; Cloudflare Pages then publishes games.milespapa.com from `main`.
+
+on:
+  push:
+    branches: [master]
+    # Changes that cannot alter the built site do not open a deploy PR.
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "e2e/**"
+      - "tests/**"
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit, branch or tag of tarot-atelier to deploy (default: master)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: deploy-games
+  cancel-in-progress: true
+
+env:
+  GAMES_REPO: 3pwei/milespapa-games
+  GAMES_BRANCH: main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Require the deploy token
+        env:
+          GAMES_DEPLOY_TOKEN: ${{ secrets.GAMES_DEPLOY_TOKEN }}
+        run: |
+          if [ -z "$GAMES_DEPLOY_TOKEN" ]; then
+            echo "::error::Secret GAMES_DEPLOY_TOKEN is missing. See docs/deployment.md."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Resolve source commit
+        id: source
+        run: |
+          sha=$(git rev-parse HEAD)
+          echo "sha=$sha" >>"$GITHUB_OUTPUT"
+          echo "short=${sha:0:7}" >>"$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+          run_install: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check and build for /tarot
+        env:
+          NEXT_PUBLIC_BASE_PATH: /tarot
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: pnpm check
+
+      - name: Check out the games site
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ env.GAMES_REPO }}
+          ref: ${{ env.GAMES_BRANCH }}
+          token: ${{ secrets.GAMES_DEPLOY_TOKEN }}
+          path: games
+
+      - name: Stage site/tarot
+        id: stage
+        run: scripts/stage-games-site.sh out games
+
+      - name: Open the deploy pull request
+        if: steps.stage.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GAMES_DEPLOY_TOKEN }}
+          SOURCE_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.source.outputs.sha }}
+          SHORT: ${{ steps.source.outputs.short }}
+          SOURCE_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        working-directory: games
+        run: |
+          set -euo pipefail
+          branch="deploy/tarot-$SHORT"
+
+          if [ "$(gh pr list --repo "$GAMES_REPO" --head "$branch" --state open --json number --jq length)" != "0" ]; then
+            echo "A deploy PR for $SHORT is already open; nothing to do."
+            exit 0
+          fi
+          if git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null; then
+            echo "::error::Branch $branch already exists on $GAMES_REPO without an open PR. Delete it, then re-run."
+            exit 1
+          fi
+
+          source_pr=$(GH_TOKEN="$SOURCE_TOKEN" gh api "repos/$SOURCE_REPO/commits/$SHA/pulls" --jq '.[0].number // empty' || true)
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -A site/tarot
+          git commit -q -m "deploy: tarot $SHORT" -m "Source: https://github.com/$SOURCE_REPO/commit/$SHA"
+          git push -q origin "HEAD:refs/heads/$branch"
+
+          {
+            echo "Replaces \`site/tarot/\` with the \`/tarot\` static export of tarot-atelier."
+            echo
+            echo "- Source commit: https://github.com/$SOURCE_REPO/commit/$SHA"
+            if [ -n "$source_pr" ]; then
+              echo "- Source PR: https://github.com/$SOURCE_REPO/pull/$source_pr"
+            fi
+            echo "- Built and checked by: $RUN_URL (\`pnpm check\` with \`NEXT_PUBLIC_BASE_PATH=/tarot\`, then \`node scripts/check-site.mjs\`)"
+            echo
+            echo "Merging publishes https://games.milespapa.com/tarot/ through Cloudflare Pages."
+            echo
+            echo "**Rollback:** roll back to the previous deployment in Cloudflare Pages, or revert this merge."
+          } >"$RUNNER_TEMP/body.md"
+
+          url=$(gh pr create --repo "$GAMES_REPO" --base "$GAMES_BRANCH" --head "$branch" \
+            --title "deploy: tarot $SHORT" --body-file "$RUNNER_TEMP/body.md")
+          echo "Opened $url"
+          echo "Opened [deploy: tarot $SHORT]($url)" >>"$GITHUB_STEP_SUMMARY"
+
+          # Only the newest build should be waiting for review.
+          gh pr list --repo "$GAMES_REPO" --state open --json number,headRefName \
+            --jq ".[] | select(.headRefName | startswith(\"deploy/tarot-\")) | select(.headRefName != \"$branch\") | .number" |
+            while read -r old; do
+              gh pr close "$old" --repo "$GAMES_REPO" --delete-branch --comment "Superseded by $url."
+              echo "Closed superseded #$old"
+            done
+
+      - name: Report no change
+        if: steps.stage.outputs.changed != 'true'
+        run: echo "site/tarot/ already matches this build; no PR opened." >>"$GITHUB_STEP_SUMMARY"
