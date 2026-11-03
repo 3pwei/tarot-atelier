@@ -11,6 +11,8 @@ if (basePath && (!basePath.startsWith("/") || basePath.endsWith("/"))) {
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Project rules live in CLAUDE.md; don't generate an AGENTS.md on `next dev`.
+  agentRules: false,
   output: "export",
   trailingSlash: true,
   basePath,
