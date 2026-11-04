@@ -1,50 +1,63 @@
 # Deployment
 
-The production site is https://games.milespapa.com/tarot/. It is a static export served by Cloudflare Pages from the `main` branch of [`3pwei/milespapa-games`](https://github.com/3pwei/milespapa-games), which holds the built files of every Milespapa game, one folder each. This repository never publishes directly.
+There are two sites:
 
-## Flow
+| Site            | Address                                                                                                             | Updated                                                                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **DEV preview** | `https://<branch>.<preview-project>.pages.dev/tarot/` for each pull request; the project's own address for `master` | Automatically by Cloudflare Pages on every push to a PR or to `master`                                                                                             |
+| **Production**  | https://games.milespapa.com/tarot/                                                                                  | **Only when the owner decides to release**, by merging a `deploy: tarot <sha>` pull request on [`3pwei/milespapa-games`](https://github.com/3pwei/milespapa-games) |
 
 ```mermaid
 flowchart LR
-  M[tarot-atelier master] -->|push, or manual run| W[Deploy to games site workflow]
-  W -->|pnpm check with /tarot base path| B[out/]
-  B -->|replace site/tarot/ + check-site.mjs| P[deploy: tarot sha PR]
-  P -->|owner merges| C[Cloudflare Pages publishes]
+  PR[tarot-atelier PR] -->|Cloudflare builds| DEV[DEV preview URL<br/>for acceptance]
+  PR -->|owner merges| M[master]
+  M -->|Cloudflare builds| STG[master preview<br/>staging]
+  M -->|owner says release| D[deploy: tarot sha PR<br/>on milespapa-games]
+  D -->|owner merges| PROD[Cloudflare Pages<br/>games.milespapa.com]
 ```
 
-The workflow lives at `.github/workflows/deploy-games.yml` and runs:
+## DEV preview for every pull request
 
-1. On every push to `master`, except pushes that only touch documentation, Markdown, unit tests or E2E specs. It can also be run by hand from the Actions tab, optionally with a commit, branch or tag.
-2. `pnpm check` with `NEXT_PUBLIC_BASE_PATH=/tarot`, so a build that fails lint, tests or the build never reaches the games site.
-3. `scripts/stage-games-site.sh` replaces `site/tarot/` entirely and runs the games site's own `node scripts/check-site.mjs`.
-4. It pushes `deploy/tarot-<short-sha>` and opens a pull request titled `deploy: tarot <short-sha>`, linking the source commit, source PR and workflow run. Older open `deploy/tarot-*` pull requests are closed as superseded.
+A separate Cloudflare Pages project builds this repository directly, through Cloudflare's own GitHub integration. No token is stored in this repository.
 
-Nothing goes live until that pull request is merged. If a deploy PR for the same commit is already open, the run does nothing.
+`scripts/build-preview.sh` builds with `NEXT_PUBLIC_BASE_PATH=/tarot` and places the export at `preview/tarot/`, so a preview uses exactly the production paths. The preview root `/` redirects to `/tarot/`, unknown paths get the app's 404 page, and every response carries `X-Robots-Tag: noindex` so previews stay out of search results.
 
-Next.js generates a new build ID on every build, so each run produces a real file diff even when the source has not changed. That is why the push trigger ignores paths that cannot change the site.
+Previews keep their own browser storage: spreads saved on a preview are not visible on production, and the reverse.
 
-## One-time setup: `GAMES_DEPLOY_TOKEN`
+### One-time setup (Cloudflare dashboard)
 
-The workflow needs a token that can push branches and open pull requests on `milespapa-games` only.
+1. Workers & Pages → Create → Pages → **Connect to Git** → authorize the Cloudflare GitHub app for `3pwei/tarot-atelier` only.
+2. Project name: for example `tarot-atelier-dev`. Production branch: `master`.
+3. Build settings:
+   - Framework preset: **None**
+   - Build command: `scripts/build-preview.sh`
+   - Build output directory: `preview`
+   - Root directory: leave empty
+4. Environment variables (Production and Preview):
+   - `PNPM_VERSION` = `11.25.0` (the build image defaults to pnpm 10, which cannot install this lockfile)
+   - Node.js comes from `.nvmrc` (24); set `NODE_VERSION` = `24` only if a build reports another version.
+5. Settings → Builds → Branch control: keep **preview deployments for all non-production branches**. The `master` deployment then serves as staging. To skip it, turn off automatic production deployments.
 
-1. GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token.
-2. Resource owner: `3pwei`. Repository access: **Only select repositories** → `3pwei/milespapa-games`.
-3. Repository permissions: **Contents: Read and write**, **Pull requests: Read and write**. Leave everything else at No access.
-4. Choose an expiry and generate the token.
-5. In `3pwei/tarot-atelier` → Settings → Secrets and variables → Actions → **New repository secret**: name `GAMES_DEPLOY_TOKEN`, value the token.
+After setup, Cloudflare comments on each pull request with its preview URL. Open it and add `/tarot/` if the link points at the root (the root also redirects).
 
-When the token expires, the workflow fails at its first step with a message pointing here; generate a new one and replace the secret.
+## Releasing to production
 
-## Rollback
-
-- Before merging: close the deploy PR.
-- After merging: roll back to the previous deployment in Cloudflare Pages, or revert the deploy merge on `milespapa-games`.
-
-## Building by hand
+Releases are manual and happen only when the owner decides. Steps, from an up-to-date `master`:
 
 ```bash
 NEXT_PUBLIC_BASE_PATH=/tarot pnpm check
 scripts/stage-games-site.sh out ../milespapa-games
 ```
 
-The second command only changes the local `milespapa-games` checkout; commit and open the pull request there yourself.
+`stage-games-site.sh` refuses a build made without `/tarot`, replaces `site/tarot/` entirely so no stale chunks remain, and runs the games site's own `node scripts/check-site.mjs`. Then, in `milespapa-games`:
+
+1. Create a branch `deploy/tarot-<short-sha>` and commit `site/tarot/` as `deploy: tarot <short-sha>`.
+2. Open a pull request with the same title, linking the source commit and PR.
+3. The owner merges it; Cloudflare Pages publishes `main` to games.milespapa.com.
+
+Next.js generates a new build ID on every build, so every release is a real file diff even if the source did not change.
+
+## Rollback
+
+- Production: roll back to the previous deployment in Cloudflare Pages, or revert the deploy merge on `milespapa-games`.
+- A bad preview needs no rollback; push a fix to the pull request.

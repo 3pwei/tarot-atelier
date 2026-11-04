@@ -5,7 +5,7 @@
 # Usage: scripts/stage-games-site.sh <out-dir> <milespapa-games-dir>
 #
 # Prints `changed=true|false` (also to $GITHUB_OUTPUT when set). It never
-# commits or pushes; the deploy workflow does that.
+# commits or pushes; see docs/deployment.md for the release steps.
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
