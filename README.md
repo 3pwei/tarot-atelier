@@ -58,8 +58,8 @@ pnpm test:e2e
 
 正式版部署於 [https://games.milespapa.com/tarot/](https://games.milespapa.com/tarot/)，由 Cloudflare Pages 從 [`3pwei/milespapa-games`](https://github.com/3pwei/milespapa-games) 的 `main` 發布；此 repository 不直接發布，也不使用 GitHub Pages。
 
-- **DEV 預覽**：每個 PR 由另一個 Cloudflare Pages 專案以 `scripts/build-preview.sh` 建置，提供可驗收的預覽網址（路徑同正式站 `/tarot/`，不被搜尋引擎收錄）。
-- **正式發布**：由專案擁有者決定時機。以 `NEXT_PUBLIC_BASE_PATH=/tarot pnpm check` 建置、`scripts/stage-games-site.sh` 取代遊戲站的 `site/tarot/`，再於 `milespapa-games` 開 `deploy: tarot <commit>` PR，合併後上線。
+- **DEV 預覽**：每個 PR 由另一個 Cloudflare Pages 專案以 `pnpm preview:build` 建置，提供可驗收的預覽網址（路徑同正式站 `/tarot/`，不被搜尋引擎收錄）。
+- **正式發布**：由專案擁有者決定時機。執行 `pnpm release:stage ../milespapa-games`（完整品質檢查並取代遊戲站的 `site/tarot/`），再於 `milespapa-games` 開 `deploy: tarot <commit>` PR，合併後上線。
 
 設定步驟、發布流程與回滾方式見 [`docs/deployment.md`](docs/deployment.md)。
 

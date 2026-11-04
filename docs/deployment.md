@@ -20,7 +20,7 @@ flowchart LR
 
 A separate Cloudflare Pages project builds this repository directly, through Cloudflare's own GitHub integration. No token is stored in this repository.
 
-`scripts/build-preview.sh` builds with `NEXT_PUBLIC_BASE_PATH=/tarot` and places the export at `preview/tarot/`, so a preview uses exactly the production paths. The preview root `/` redirects to `/tarot/`, unknown paths get the app's 404 page, and every response carries `X-Robots-Tag: noindex` so previews stay out of search results.
+`pnpm preview:build` builds with `NEXT_PUBLIC_BASE_PATH=/tarot` and places the export at `preview/tarot/`, so a preview uses exactly the production paths. The preview root `/` redirects to `/tarot/`, unknown paths get the app's 404 page, and every response carries `X-Robots-Tag: noindex` so previews stay out of search results.
 
 Previews keep their own browser storage: spreads saved on a preview are not visible on production, and the reverse.
 
@@ -30,7 +30,7 @@ Previews keep their own browser storage: spreads saved on a preview are not visi
 2. Project name: for example `tarot-atelier-dev`. Production branch: `master`.
 3. Build settings:
    - Framework preset: **None**
-   - Build command: `scripts/build-preview.sh`
+   - Build command: `pnpm preview:build`
    - Build output directory: `preview`
    - Root directory: leave empty
 4. Environment variables (Production and Preview):
@@ -42,20 +42,34 @@ After setup, Cloudflare comments on each pull request with its preview URL. Open
 
 ## Releasing to production
 
-Releases are manual and happen only when the owner decides. Steps, from an up-to-date `master`:
+Releases are manual and happen only when the owner decides. From an up-to-date `master`, with a clean checkout of `milespapa-games` next to this repository:
 
 ```bash
-NEXT_PUBLIC_BASE_PATH=/tarot pnpm check
-scripts/stage-games-site.sh out ../milespapa-games
+pnpm release:stage ../milespapa-games
 ```
 
-`stage-games-site.sh` refuses a build made without `/tarot`, replaces `site/tarot/` entirely so no stale chunks remain, and runs the games site's own `node scripts/check-site.mjs`. Then, in `milespapa-games`:
+It runs the full `pnpm check` with `NEXT_PUBLIC_BASE_PATH=/tarot`, refuses an export built for any other base path, replaces `site/tarot/` entirely so no stale chunks remain, and runs the games site's own `node scripts/check-site.mjs`. It never commits or pushes. Then, in `milespapa-games`:
 
 1. Create a branch `deploy/tarot-<short-sha>` and commit `site/tarot/` as `deploy: tarot <short-sha>`.
 2. Open a pull request with the same title, linking the source commit and PR.
 3. The owner merges it; Cloudflare Pages publishes `main` to games.milespapa.com.
 
 Next.js generates a new build ID on every build, so every release is a real file diff even if the source did not change.
+
+## Where the tooling lives
+
+`scripts/site/` holds the build and release steps as small TypeScript modules, run directly by Node and unit-tested with Vitest:
+
+| Module            | Responsibility                                                                          |
+| ----------------- | --------------------------------------------------------------------------------------- |
+| `siteConfig.ts`   | The only place that names the slug (`tarot`), export and preview folders                |
+| `staticExport.ts` | Build with the base path; refuse an export built for another one                        |
+| `preview.ts`      | Lay out the DEV preview and its Cloudflare host files                                   |
+| `gamesSite.ts`    | Stage a release into a `milespapa-games` checkout                                       |
+| `process.ts`      | Run commands; injected so tests never spawn real builds                                 |
+| `cli.ts`          | The `preview` and `stage` commands behind `pnpm preview:build` and `pnpm release:stage` |
+
+Another Next.js game can reuse the folder by changing `siteConfig.ts` only.
 
 ## Rollback
 
