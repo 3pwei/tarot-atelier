@@ -11,6 +11,8 @@
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
+    "preview:build": "node scripts/site/cli.ts preview",
+    "release:stage": "node scripts/site/cli.ts stage",
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
