@@ -37,7 +37,7 @@ export function HomePage() {
           />
           <span className="brand-name">Tarot Atelier</span>
         </a>
-        <span className="phase-chip">DEV 預覽測試 第 1 版</span>
+        <span className="phase-chip">DEV 預覽測試 第 2 版</span>
       </header>
 
       <main id="top">
