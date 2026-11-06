@@ -29,8 +29,51 @@ async function relativePosition(page: Page, index: number) {
   }));
 }
 
-/** Drags with a mouse on desktop and a real touch sequence on mobile. */
+/** Pages whose timers Playwright already controls; install only once each. */
+const pagesWithClock = new WeakSet<Page>();
+
+/**
+ * How far ahead the paused clock is set. Playwright refuses to pause in the
+ * past, and each protocol call takes time on slow machines.
+ */
+const PAUSE_LEAD_MS = 1_000;
+
+/**
+ * Runs `action` while the page's timers are paused, then resumes them even if
+ * the action fails. Use it for gestures that must not race a timer: on slow
+ * machines a single input step can take longer than the long-press delay.
+ */
+async function withPageTimersPaused(page: Page, action: () => Promise<void>) {
+  if (!pagesWithClock.has(page)) {
+    await page.clock.install();
+    pagesWithClock.add(page);
+  }
+  await page.clock.pauseAt(Date.now() + PAUSE_LEAD_MS);
+  try {
+    await action();
+  } finally {
+    await page.clock.resume();
+  }
+}
+
+/**
+ * Drags with a mouse on desktop and a real touch sequence on mobile.
+ * A drag tests moving, so the long-press timer is held off; rotating by long
+ * press has its own test that deliberately holds still.
+ */
 async function dragBy(
+  page: Page,
+  target: Locator,
+  dx: number,
+  dy: number,
+  isMobile: boolean,
+) {
+  await withPageTimersPaused(page, () =>
+    dragWithInput(page, target, dx, dy, isMobile),
+  );
+}
+
+async function dragWithInput(
   page: Page,
   target: Locator,
   dx: number,
