@@ -3,6 +3,10 @@ import {
   POSITION_ROLES,
   type PositionRole,
 } from "@/domain/reading/positionRole";
+import {
+  QUESTION_TOPICS,
+  type QuestionTopic,
+} from "@/domain/reading/questionTopic";
 
 /**
  * Pre-written reading content: per-card text written ahead of time and
@@ -18,6 +22,7 @@ export const CONTENT_LIMITS = Object.freeze({
   reflection: 60,
   suggestion: 80,
   core: 160,
+  topicLine: 60,
 });
 
 const bounded = (max: number) =>
@@ -69,8 +74,15 @@ const roleTemplates = z.strictObject({
   /** Says what the card means in this position. */
   position: template,
   /** Ties it back to the main question; omitted without one. */
-  anchor: template,
+  anchors: templates,
 });
+
+/** One sentence per position role, speaking to the main question's topic. */
+const topicLines = z.strictObject(
+  Object.fromEntries(
+    POSITION_ROLES.map((role) => [role, bounded(CONTENT_LIMITS.topicLine)]),
+  ) as Record<PositionRole, ReturnType<typeof bounded>>,
+);
 
 const suitRecord = z.strictObject({
   wands: z.string().min(1),
@@ -104,6 +116,13 @@ export const readingPhrasesSchema = z.strictObject({
       POSITION_ROLES.map((role) => [role, roleTemplates]),
     ) as Record<PositionRole, typeof roleTemplates>,
   ),
+  /** Applies one more of the card's angles to the main question. */
+  cardLink: templates,
+  topics: z.strictObject(
+    Object.fromEntries(
+      QUESTION_TOPICS.map((topic) => [topic, topicLines]),
+    ) as Record<QuestionTopic, typeof topicLines>,
+  ),
   jumper: templates,
   synthesis: z.strictObject({
     openingWithMain: template,
@@ -124,6 +143,8 @@ export const TEMPLATE_PLACEHOLDERS = Object.freeze({
   minorCore: ["card", "orientation", "theme"],
   rolePosition: ["angle"],
   roleAnchor: ["mainQuestion"],
+  cardLink: ["angle"],
+  topicLine: [],
   jumper: ["jumper", "jumperOrientation", "jumperAngle"],
   synthesis: ["mainQuestion", "count", "majorCount", "suit", "suitTheme"],
   fallback: ["card", "meaning", "keyword"],

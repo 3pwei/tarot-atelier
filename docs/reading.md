@@ -26,11 +26,14 @@ flowchart LR
 
 Each position has the primary card's **symbolism** and an **interpretation**, plus the jumper's **added message** when there is one. The spread as a whole gets a **synthesis**, up to three **reflection questions** and up to three **suggestions** (worded as 「可以考慮…」, never as orders). `sensitiveTopics` flags health, legal and financial questions, and the panel then points to a qualified professional.
 
-Each interpretation is one paragraph of up to three sentences:
+Each interpretation is one paragraph of up to five sentences:
 
 1. **What the card means.** Major arcana use their written explanation; minor arcana use their first angle.
 2. **What it means in this position.** `domain/reading/positionRole.ts` reads the position's question as past, present, future, obstacle, advice, self, others or unknown. The sentence names that role (「在『現在的狀態』這個位置…」) with another angle; the position's question is never quoted back.
-3. **How it relates to the main question** (「對於『面試結果』…」). This is left out when there is no main question. Future positions add that the direction is possible, not decided.
+3. **How it relates to the main question.** Only when there is a main question:
+   - **The position's link** (「對於『面試結果』，這可以幫你看清此刻的處境。」), with two wordings per role. Future positions say the direction is possible, not decided.
+   - **One more of the card's angles** (「放到這件事上，可以留意的是：…」). Only an angle not used yet and suited to the role; when none fits, the sentence is left out.
+   - **A topic line.** `domain/reading/questionTopic.ts` reads the main question as work, love, study, relationships, direction or general, and each topic has one line per role (「以工作或求職來說，可以對照你目前的準備和狀態…」). Questions flagged as health, legal or financial get no topic line; the panel points them to a professional instead.
 
 There is one voice; readings have no tone setting (removed by owner decision, 2026-11-07).
 
@@ -38,21 +41,21 @@ There is one voice; readings have no tone setting (removed by owner decision, 20
 
 The content lives in `infrastructure/reading/content/` as versioned JSON, validated with Zod when loaded:
 
-| File                                                     | Contents                                                                                                                                                                              |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `majors-00-10.zh-Hant.json`, `majors-11-21.zh-Hant.json` | 22 major arcana, upright and reversed: symbolism, a written explanation (`core`), three question angles, a reflection question and a suggestion                                       |
-| `minors-*.zh-Hant.json`                                  | 56 minor arcana, upright and reversed: the same content without `core`; the `minorCore` template voices them                                                                          |
-| `readingPhrases.zh-Hant.json`                            | The position and main-question sentence for each role, minor-card and jumper templates, synthesis sentences, orientation labels, suit themes and a fallback for decks without content |
+| File                                                     | Contents                                                                                                                                                                                                                               |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `majors-00-10.zh-Hant.json`, `majors-11-21.zh-Hant.json` | 22 major arcana, upright and reversed: symbolism, a written explanation (`core`), three question angles, a reflection question and a suggestion                                                                                        |
+| `minors-*.zh-Hant.json`                                  | 56 minor arcana, upright and reversed: the same content without `core`; the `minorCore` template voices them                                                                                                                           |
+| `readingPhrases.zh-Hant.json`                            | The position and main-question sentences for each role, topic lines for each topic and role, minor-card, card-link and jumper templates, synthesis sentences, orientation labels, suit themes and a fallback for decks without content |
 
 - **Deterministic:** `composeReading` is pure. It picks between template variants with a hash of the request, so the same spread always reads the same way.
-- **Lazy:** each content file is its own chunk, fetched only when a reading is requested. The first page load is unaffected; the standard deck's content is about 32 KB gzipped in total, across seven chunks.
+- **Lazy:** each content file is its own chunk, fetched only when a reading is requested. The first page load is unaffected; the standard deck's content is about 34 KB gzipped in total, across seven chunks.
 - **No reversed meaning, no invention:** a reversed card is read _neutrally_ when its deck does not support reversals or defines no reversed meaning (`domain/reading/cardMeaning.ts`). It keeps its core symbolism with a note, instead of using placeholder text or making a meaning up.
 - **Other decks:** a deck without its own content is read from its manifest: meanings and keywords through the fallback templates. Giving a deck its own content means adding one loader to `contentLibrary.ts`.
 - **Authorship:** written by Claude for this project; the content records `review: "pending-owner-review"` until the owner has reviewed it.
 
 ### Rules every text follows
 
-Tests enforce these over all content and over composed readings of every card and orientation in every position role:
+Tests enforce these over all content and over composed readings of every card and orientation in every position role and question topic:
 
 - No certainty or commands: `FORBIDDEN_CERTAINTY_PHRASES` in `domain/reading/readingSafety.ts` (for example 「一定會」「注定」「保證」「你必須」).
 - Reflection questions end with 「？」; suggestions start with 「可以考慮」.

@@ -8,6 +8,10 @@ import {
   detectPositionRole,
   type PositionRole,
 } from "@/domain/reading/positionRole";
+import {
+  detectQuestionTopic,
+  type QuestionTopic,
+} from "@/domain/reading/questionTopic";
 import { detectSensitiveTopics } from "@/domain/reading/readingSafety";
 import {
   READING_SCHEMA_VERSION,
@@ -61,6 +65,8 @@ interface Composer {
   readonly content: DeckReadingContent | undefined;
   readonly phrases: ReadingPhrases;
   readonly mainQuestion: string | undefined;
+  /** Absent for questions that need a professional rather than a topic line. */
+  readonly topic: QuestionTopic | undefined;
   readonly pick: Pick;
 }
 
@@ -117,19 +123,57 @@ const ACTION_ROLES: ReadonlySet<PositionRole> = new Set(["advice", "future"]);
 /**
  * The angles that suit a position: descriptive ones for the past, the present
  * and the people involved; action-oriented ones for advice and what comes next.
- * Falls back to every angle when none fits.
  */
-function anglesForRole(
+function suitedAngles(
   angles: readonly string[],
   role: PositionRole,
   actionPrefixes: readonly string[],
 ): readonly string[] {
   const wantsAction = ACTION_ROLES.has(role);
-  const suited = angles.filter(
+  return angles.filter(
     (angle) =>
       actionPrefixes.some((prefix) => angle.startsWith(prefix)) === wantsAction,
   );
+}
+
+/** Like `suitedAngles`, but falls back to every angle when none fits. */
+function anglesForRole(
+  angles: readonly string[],
+  role: PositionRole,
+  actionPrefixes: readonly string[],
+): readonly string[] {
+  const suited = suitedAngles(angles, role, actionPrefixes);
   return suited.length > 0 ? suited : angles;
+}
+
+/**
+ * How a card relates to the main question: the position's link to it, one
+ * more of the card's angles applied to it, and a line for its topic.
+ */
+function mainQuestionSentences(
+  composer: Composer,
+  slot: string,
+  roleName: PositionRole,
+  linkAngles: readonly string[],
+  mainQuestion: string,
+): readonly string[] {
+  const { phrases, pick } = composer;
+  const anchor = fillTemplate(
+    pick(phrases.roles[roleName].anchors, `${slot}:anchor`),
+    { mainQuestion },
+  );
+  const cardLink =
+    linkAngles.length > 0
+      ? [
+          fillTemplate(pick(phrases.cardLink, `${slot}:link`), {
+            angle: pick(linkAngles, `${slot}:linkAngle`),
+          }),
+        ]
+      : [];
+  const topicLine = composer.topic
+    ? [phrases.topics[composer.topic][roleName]]
+    : [];
+  return [anchor, ...cardLink, ...topicLine];
 }
 
 /**
@@ -163,13 +207,28 @@ function primaryReading(
     roleName,
     phrases.actionAnglePrefixes,
   );
+  const positionAngle = composer.pick(positionAngles, `${slot}:angle`);
+  // The extra angle is optional, so an unsuited one is left out, not forced in.
+  const linkAngles = suitedAngles(
+    read.entry.angles.filter(
+      (angle) =>
+        angle !== positionAngle &&
+        (read.entry.core !== undefined || angle !== theme),
+    ),
+    roleName,
+    phrases.actionAnglePrefixes,
+  );
   const sentences = [
     core,
-    fillTemplate(role.position, {
-      angle: composer.pick(positionAngles, `${slot}:angle`),
-    }),
+    fillTemplate(role.position, { angle: positionAngle }),
     ...(composer.mainQuestion
-      ? [fillTemplate(role.anchor, { mainQuestion: composer.mainQuestion })]
+      ? mainQuestionSentences(
+          composer,
+          slot,
+          roleName,
+          linkAngles,
+          composer.mainQuestion,
+        )
       : []),
   ];
   return {
@@ -282,11 +341,19 @@ export function composeReading(
   content: DeckReadingContent | undefined,
   phrases: ReadingPhrases,
 ): ReadingResult {
+  const sensitiveTopics = detectSensitiveTopics([
+    request.mainQuestion ?? "",
+    ...request.positions.map((position) => position.question),
+  ]);
   const composer: Composer = {
     deck,
     content,
     phrases,
     mainQuestion: request.mainQuestion,
+    topic:
+      request.mainQuestion && sensitiveTopics.length === 0
+        ? detectQuestionTopic(request.mainQuestion)
+        : undefined,
     pick: pickerFor(request),
   };
 
@@ -327,9 +394,6 @@ export function composeReading(
       primaries.map((read) => read.entry.suggestion),
       MAX_SUGGESTIONS,
     ),
-    sensitiveTopics: detectSensitiveTopics([
-      request.mainQuestion ?? "",
-      ...request.positions.map((position) => position.question),
-    ]),
+    sensitiveTopics,
   };
 }

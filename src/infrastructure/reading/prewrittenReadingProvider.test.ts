@@ -15,7 +15,11 @@ import {
 } from "@/domain/reading/testing/readingFixtures";
 import type { ReadingRequest, ReadingResult } from "@/domain/reading/types";
 import { MAX_SPREAD_POSITIONS } from "@/domain/spread/types";
-import { loadReadingPhrases } from "@/infrastructure/reading/content/contentLibrary";
+import {
+  loadDeckReadingContent,
+  loadReadingPhrases,
+  STANDARD_DECK_ID,
+} from "@/infrastructure/reading/content/contentLibrary";
 import { PrewrittenReadingProvider } from "@/infrastructure/reading/prewrittenReadingProvider";
 
 const provider = new PrewrittenReadingProvider(standardRegistry);
@@ -102,6 +106,63 @@ describe("PrewrittenReadingProvider", () => {
     });
   });
 
+  it("applies one more of the card's angles to the main question, never one already used", async () => {
+    const result = await read(interview, "面試結果");
+    const content = await loadDeckReadingContent(STANDARD_DECK_ID);
+    result.positions.forEach((position) => {
+      const { cardId, meaningMode, interpretation } = position.primary;
+      const card = content?.cards[cardId];
+      const angles = (
+        meaningMode === "reversed" ? card?.reversed : card?.upright
+      )?.angles;
+      for (const angle of angles ?? []) {
+        expect(interpretation.split(angle).length, angle).toBeLessThanOrEqual(
+          2,
+        );
+      }
+    });
+  });
+
+  it("adds the extra angle when one suits the position's role", async () => {
+    const result = await read(interview, "面試結果");
+    expect(result.positions[1]?.primary.interpretation).toMatch(
+      /放到這件事上|回到這個問題/u,
+    );
+  });
+
+  it("speaks to the main question's topic in each position's role", async () => {
+    const result = await read(interview, "面試結果");
+    const [past, present, future] = result.positions.map(
+      (p) => p.primary.interpretation,
+    );
+    expect(past).toContain("以工作或求職來說，可以回顧之前的經歷與準備");
+    expect(present).toContain("以工作或求職來說，可以對照你目前的準備和狀態");
+    expect(future).toContain(
+      "以工作或求職來說，可以把它當成接下來可能遇到的情況",
+    );
+  });
+
+  it("uses a general line when the topic is not recognised", async () => {
+    const result = await read(
+      [{ question: "現在的狀態是什麼？", draw: { card: MAJOR(1) } }],
+      "今天的運勢",
+    );
+    expect(result.positions[0]?.primary.interpretation).toContain(
+      "可以對照你目前的狀況",
+    );
+  });
+
+  it("adds no topic line to questions that need a professional", async () => {
+    const result = await read(
+      [{ question: "現在的狀態是什麼？", draw: { card: MAJOR(1) } }],
+      "這份工作的投資要不要做",
+    );
+    const interpretation = result.positions[0]?.primary.interpretation ?? "";
+    expect(interpretation).toContain("對於「這份工作的投資要不要做」");
+    expect(interpretation).not.toContain("以工作或求職來說");
+    expect(result.sensitiveTopics).toEqual(["financial"]);
+  });
+
   it("says a future position is possible, not decided", async () => {
     const result = await read(interview, "面試結果");
     expect(result.positions[2]?.primary.interpretation).toContain(
@@ -109,10 +170,12 @@ describe("PrewrittenReadingProvider", () => {
     );
   });
 
-  it("leaves out the main-question sentence when there is none", async () => {
+  it("leaves out the main-question sentences when there is none", async () => {
     const result = await read(interview);
     result.positions.forEach((position) => {
-      expect(position.primary.interpretation).not.toContain("對於「");
+      expect(position.primary.interpretation).not.toMatch(
+        /對於「|放到這件事上|回到這個問題|來說，/u,
+      );
     });
   });
 
@@ -239,20 +302,30 @@ describe("PrewrittenReadingProvider", () => {
       "對方怎麼看？",
       "今天的提醒？",
     ];
+    const topicQuestions = [
+      "面試結果",
+      "感情",
+      "考試",
+      "家人",
+      "人生方向",
+      "今天的運勢",
+    ];
     for (const orientation of ["upright", "reversed"] as const) {
       for (let start = 0; start < cards.length; start += MAX_SPREAD_POSITIONS) {
         const chunk = cards.slice(start, start + MAX_SPREAD_POSITIONS);
-        const result = await read(
-          chunk.map((card, i) => ({
-            question: roleQuestions[i % roleQuestions.length] ?? "問題？",
-            draw: { card, orientation },
-          })),
-          "整體方向",
-        );
-        const offending = allTexts(result).filter(
-          (text) => findCertaintyPhrases(text).length > 0,
-        );
-        expect(offending).toEqual([]);
+        for (const mainQuestion of topicQuestions) {
+          const result = await read(
+            chunk.map((card, i) => ({
+              question: roleQuestions[i % roleQuestions.length] ?? "問題？",
+              draw: { card, orientation },
+            })),
+            mainQuestion,
+          );
+          const offending = allTexts(result).filter(
+            (text) => findCertaintyPhrases(text).length > 0,
+          );
+          expect(offending).toEqual([]);
+        }
       }
     }
   });

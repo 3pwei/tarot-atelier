@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
 import { POSITION_ROLES } from "@/domain/reading/positionRole";
+import { QUESTION_TOPICS } from "@/domain/reading/questionTopic";
 import { findCertaintyPhrases } from "@/domain/reading/readingSafety";
 import {
   loadDeckReadingContent,
@@ -116,7 +117,21 @@ describe("reading phrases", () => {
     check(Object.values(phrases.fallback), TEMPLATE_PLACEHOLDERS.fallback);
     for (const role of Object.values(phrases.roles)) {
       check([role.position], TEMPLATE_PLACEHOLDERS.rolePosition);
-      check([role.anchor], TEMPLATE_PLACEHOLDERS.roleAnchor);
+      check(role.anchors, TEMPLATE_PLACEHOLDERS.roleAnchor);
+    }
+    check(phrases.cardLink, TEMPLATE_PLACEHOLDERS.cardLink);
+    for (const lines of Object.values(phrases.topics)) {
+      check(Object.values(lines), TEMPLATE_PLACEHOLDERS.topicLine);
+    }
+  });
+
+  it("speak to every question topic in every position role", async () => {
+    const phrases = await loadReadingPhrases();
+    expect(Object.keys(phrases.topics).sort()).toEqual(
+      [...QUESTION_TOPICS].sort(),
+    );
+    for (const lines of Object.values(phrases.topics)) {
+      expect(Object.keys(lines).sort()).toEqual([...POSITION_ROLES].sort());
     }
   });
 });
