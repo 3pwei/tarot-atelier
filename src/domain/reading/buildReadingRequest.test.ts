@@ -17,7 +17,7 @@ function buildOk(...args: Parameters<typeof buildReadingRequest>) {
 }
 
 describe("buildReadingRequest", () => {
-  it("builds the request from the domain model, versioned and with the tone", () => {
+  it("builds the request from the domain model, versioned", () => {
     const spread = spreadOf(
       [
         { question: "現況是什麼？", draw: { card: MAJOR(17) } },
@@ -28,13 +28,12 @@ describe("buildReadingRequest", () => {
       ],
       "  我的工作方向  ",
     );
-    const request = buildOk(spread, standardRegistry, "gentle");
+    const request = buildOk(spread, standardRegistry);
 
     expect(request).toEqual({
       schemaVersion: "1.0.0",
       deckId: "atelier-standard-tarot",
       mainQuestion: "我的工作方向",
-      tone: "gentle",
       positions: [
         {
           index: 1,
@@ -65,7 +64,7 @@ describe("buildReadingRequest", () => {
     const reordered = reorderPosition(moved.spread, "p3", 1);
     if (!reordered.ok) throw new Error(reordered.code);
 
-    const request = buildOk(reordered.spread, standardRegistry, "analytical");
+    const request = buildOk(reordered.spread, standardRegistry);
     expect(request.positions.map((p) => [p.index, p.question])).toEqual([
       [1, "三"],
       [2, "一"],
@@ -83,7 +82,7 @@ describe("buildReadingRequest", () => {
         },
       },
     ]);
-    const request = buildOk(spread, standardRegistry, "analytical");
+    const request = buildOk(spread, standardRegistry);
 
     expect(request.positions).toHaveLength(1);
     expect(request.positions[0]?.jumper).toEqual({
@@ -97,14 +96,14 @@ describe("buildReadingRequest", () => {
       [{ question: "Q", draw: { card: MAJOR(1) } }],
       "   ",
     );
-    expect(buildOk(spread, standardRegistry, "concise")).not.toHaveProperty(
+    expect(buildOk(spread, standardRegistry)).not.toHaveProperty(
       "mainQuestion",
     );
   });
 
   it("handles a single position and the twelve-position maximum", () => {
     const one = spreadOf([{ question: "Q", draw: { card: MAJOR(1) } }]);
-    expect(buildOk(one, standardRegistry, "witty").positions).toHaveLength(1);
+    expect(buildOk(one, standardRegistry).positions).toHaveLength(1);
 
     const twelve = spreadOf(
       Array.from({ length: MAX_SPREAD_POSITIONS }, (_, i) => ({
@@ -112,7 +111,7 @@ describe("buildReadingRequest", () => {
         draw: { card: MAJOR(i) },
       })),
     );
-    const request = buildOk(twelve, standardRegistry, "dramatic");
+    const request = buildOk(twelve, standardRegistry);
     expect(request.positions.map((p) => p.index)).toEqual(
       Array.from({ length: MAX_SPREAD_POSITIONS }, (_, i) => i + 1),
     );
@@ -123,12 +122,10 @@ describe("buildReadingRequest", () => {
       { question: "有問題", draw: { card: MAJOR(1) } },
       { question: "  ", draw: { card: MAJOR(2) } },
     ]);
-    expect(buildReadingRequest(spread, standardRegistry, "analytical")).toEqual(
-      {
-        ok: false,
-        issues: [{ code: "missing-question", index: 2 }],
-      },
-    );
+    expect(buildReadingRequest(spread, standardRegistry)).toEqual({
+      ok: false,
+      issues: [{ code: "missing-question", index: 2 }],
+    });
   });
 
   it("refuses positions that have not been drawn", () => {
@@ -136,12 +133,10 @@ describe("buildReadingRequest", () => {
       { question: "一", draw: { card: MAJOR(1) } },
       { question: "二" },
     ]);
-    expect(buildReadingRequest(spread, standardRegistry, "analytical")).toEqual(
-      {
-        ok: false,
-        issues: [{ code: "undrawn-position", index: 2 }],
-      },
-    );
+    expect(buildReadingRequest(spread, standardRegistry)).toEqual({
+      ok: false,
+      issues: [{ code: "undrawn-position", index: 2 }],
+    });
   });
 
   it("refuses card IDs the deck does not contain", () => {
@@ -152,24 +147,22 @@ describe("buildReadingRequest", () => {
         draw: { card: MAJOR(2), jumper: { card: "not-a-card" } },
       },
     ]);
-    expect(buildReadingRequest(spread, standardRegistry, "analytical")).toEqual(
-      {
-        ok: false,
-        issues: [
-          {
-            code: "unknown-card",
-            index: 1,
-            cardId: "atelier-standard.major.99",
-          },
-          { code: "unknown-card", index: 2, cardId: "not-a-card" },
-        ],
-      },
-    );
+    expect(buildReadingRequest(spread, standardRegistry)).toEqual({
+      ok: false,
+      issues: [
+        {
+          code: "unknown-card",
+          index: 1,
+          cardId: "atelier-standard.major.99",
+        },
+        { code: "unknown-card", index: 2, cardId: "not-a-card" },
+      ],
+    });
   });
 
   it("refuses a deck the registry does not know", () => {
     const spread = spreadOf([{ question: "一", draw: { card: MAJOR(1) } }]);
-    expect(buildReadingRequest(spread, registryOf(), "analytical")).toEqual({
+    expect(buildReadingRequest(spread, registryOf())).toEqual({
       ok: false,
       issues: [{ code: "unknown-deck", deckId: atelierStandardDeck.id }],
     });
@@ -183,18 +176,14 @@ describe("buildReadingRequest", () => {
         draw: { card: "phase-one-test.tide", deckId: "phase-one-test-deck" },
       },
     ]);
-    expect(buildReadingRequest(spread, standardRegistry, "analytical")).toEqual(
-      {
-        ok: false,
-        issues: [{ code: "mixed-decks" }],
-      },
-    );
+    expect(buildReadingRequest(spread, standardRegistry)).toEqual({
+      ok: false,
+      issues: [{ code: "mixed-decks" }],
+    });
   });
 
   it("refuses an empty spread", () => {
-    expect(
-      buildReadingRequest(spreadOf([]), standardRegistry, "analytical"),
-    ).toEqual({
+    expect(buildReadingRequest(spreadOf([]), standardRegistry)).toEqual({
       ok: false,
       issues: [{ code: "no-positions" }],
     });

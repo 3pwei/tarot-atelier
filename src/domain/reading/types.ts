@@ -3,19 +3,6 @@ import type { Orientation } from "@/domain/deck/types";
 /** Version of the request and result formats exchanged with a provider. */
 export const READING_SCHEMA_VERSION = "1.0.0" as const;
 
-export const READING_TONES = [
-  "gentle",
-  "mystical",
-  "analytical",
-  "witty",
-  "dramatic",
-  "concise",
-] as const;
-
-export type ReadingTone = (typeof READING_TONES)[number];
-
-export const DEFAULT_READING_TONE: ReadingTone = "analytical";
-
 export interface ReadingCardRef {
   readonly id: string;
   readonly orientation: Orientation;
@@ -37,7 +24,6 @@ export interface ReadingRequest {
   readonly mainQuestion?: string;
   /** Sorted by `index`, exactly 1..n. */
   readonly positions: readonly ReadingPositionRequest[];
-  readonly tone: ReadingTone;
 }
 
 /**
@@ -73,7 +59,6 @@ export type ReadingSource = "prewritten" | "ai";
 export interface ReadingResult {
   readonly schemaVersion: typeof READING_SCHEMA_VERSION;
   readonly deckId: string;
-  readonly tone: ReadingTone;
   readonly source: ReadingSource;
   readonly positions: readonly PositionReading[];
   /** How the cards relate to each other across the spread. */

@@ -1,23 +1,8 @@
 import type { ReadingFailure } from "@/application/use-cases/requestReading";
 import type { ReadingRequestIssue } from "@/domain/reading/buildReadingRequest";
-import type {
-  MeaningMode,
-  ReadingTone,
-  SensitiveTopic,
-} from "@/domain/reading/types";
+import type { MeaningMode, SensitiveTopic } from "@/domain/reading/types";
 
 /** Every player-facing word of the reading panel lives here. */
-
-export const TONE_LABELS: Readonly<Record<ReadingTone, string>> = Object.freeze(
-  {
-    gentle: "溫柔",
-    mystical: "神秘",
-    analytical: "分析",
-    witty: "詼諧",
-    dramatic: "戲劇",
-    concise: "簡潔",
-  },
-);
 
 export const MEANING_LABELS: Readonly<Record<MeaningMode, string>> =
   Object.freeze({
@@ -70,13 +55,12 @@ export const READING_COPY = Object.freeze({
   title: "解讀",
   sampleBadge: "範例解牌，不是 AI",
   sourceNote: "依牌義預先撰寫並組合而成，不是即時生成的 AI 解讀。",
-  toneLegend: "解讀語氣",
   generate: "產生範例解讀",
   regenerate: "重新產生",
   loading: "正在組合解讀…",
   cancel: "取消",
   retry: "再試一次",
-  stale: "牌陣或語氣已改變，下方是先前的解讀。按「重新產生」以更新。",
+  stale: "牌陣已改變，下方是先前的解讀。按「重新產生」以更新。",
   deck: "使用的牌組",
   mainQuestion: "主問題",
   jumper: "跳牌",

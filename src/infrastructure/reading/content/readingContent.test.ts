@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
+import { POSITION_ROLES } from "@/domain/reading/positionRole";
 import { findCertaintyPhrases } from "@/domain/reading/readingSafety";
-import { READING_TONES } from "@/domain/reading/types";
 import {
   loadDeckReadingContent,
-  loadTonePhrases,
+  loadReadingPhrases,
   STANDARD_DECK_ID,
 } from "@/infrastructure/reading/content/contentLibrary";
 import {
@@ -26,8 +26,9 @@ async function standardContent(): Promise<DeckReadingContent> {
 function allTexts(value: unknown): readonly string[] {
   if (typeof value === "string") return [value];
   if (Array.isArray(value)) return value.flatMap(allTexts);
-  if (value && typeof value === "object")
+  if (value && typeof value === "object") {
     return Object.values(value).flatMap(allTexts);
+  }
   return [];
 }
 
@@ -39,30 +40,24 @@ describe("standard deck reading content", () => {
     );
   });
 
-  it("writes every tone in full for the major arcana (plan C)", async () => {
+  it("writes a full explanation for every major arcana card", async () => {
     const content = await standardContent();
     for (const card of atelierStandardDeck.cards.filter(
       (c) => c.category === "major",
     )) {
-      for (const orientation of ["upright", "reversed"] as const) {
-        expect(
-          Object.keys(
-            content.cards[card.id]?.[orientation].voices ?? {},
-          ).sort(),
-          `${card.id} ${orientation}`,
-        ).toEqual([...READING_TONES].sort());
-      }
+      expect(content.cards[card.id]?.upright.core, card.id).toBeTruthy();
+      expect(content.cards[card.id]?.reversed.core, card.id).toBeTruthy();
     }
   });
 
-  it("gives minor arcana core content that the tone templates voice", async () => {
+  it("gives minor arcana core content that templates voice", async () => {
     const content = await standardContent();
     const minors = atelierStandardDeck.cards.filter(
       (c) => c.category === "minor",
     );
     expect(minors).toHaveLength(56);
     for (const card of minors) {
-      expect(content.cards[card.id]?.upright.voices).toBeUndefined();
+      expect(content.cards[card.id]?.upright.core).toBeUndefined();
     }
   });
 
@@ -79,7 +74,7 @@ describe("standard deck reading content", () => {
   it("never states the future as certain or orders the reader around", async () => {
     const texts = [
       ...allTexts(await standardContent()),
-      ...allTexts(await loadTonePhrases()),
+      ...allTexts(await loadReadingPhrases()),
     ];
     const offending = texts.filter(
       (text) => findCertaintyPhrases(text).length > 0,
@@ -98,9 +93,16 @@ describe("standard deck reading content", () => {
   });
 });
 
-describe("tone phrases", () => {
+describe("reading phrases", () => {
+  it("cover every position role", async () => {
+    const phrases = await loadReadingPhrases();
+    expect(Object.keys(phrases.roles).sort()).toEqual(
+      [...POSITION_ROLES].sort(),
+    );
+  });
+
   it("only use the placeholders each template is filled with", async () => {
-    const phrases = await loadTonePhrases();
+    const phrases = await loadReadingPhrases();
     const check = (texts: readonly string[], allowed: readonly string[]) => {
       for (const text of texts) {
         for (const name of placeholdersOf(text)) {
@@ -108,25 +110,22 @@ describe("tone phrases", () => {
         }
       }
     };
-    for (const tone of READING_TONES) {
-      const templates = phrases.tones[tone];
-      check(templates.link, TEMPLATE_PLACEHOLDERS.link);
-      check(templates.minorVoice, TEMPLATE_PLACEHOLDERS.minorVoice);
-      check(templates.jumper, TEMPLATE_PLACEHOLDERS.jumper);
-      check(
-        Object.values(templates.synthesis),
-        TEMPLATE_PLACEHOLDERS.synthesis,
-      );
-    }
+    check(phrases.minorCore, TEMPLATE_PLACEHOLDERS.minorCore);
+    check(phrases.jumper, TEMPLATE_PLACEHOLDERS.jumper);
+    check(Object.values(phrases.synthesis), TEMPLATE_PLACEHOLDERS.synthesis);
     check(Object.values(phrases.fallback), TEMPLATE_PLACEHOLDERS.fallback);
+    for (const role of Object.values(phrases.roles)) {
+      check([role.position], TEMPLATE_PLACEHOLDERS.rolePosition);
+      check([role.anchor], TEMPLATE_PLACEHOLDERS.roleAnchor);
+    }
   });
 });
 
 describe("fillTemplate", () => {
   it("fills placeholders without re-reading inserted values", () => {
     expect(
-      fillTemplate("對「{question}」：{angle}", {
-        question: "{angle}?",
+      fillTemplate("對「{mainQuestion}」：{angle}", {
+        mainQuestion: "{angle}?",
         angle: "慢慢來",
       }),
     ).toBe("對「{angle}?」：慢慢來");

@@ -32,7 +32,7 @@ describe("createReadingRequester", () => {
     const { provider, calls } = fakeProvider(answers);
     const outcome = await createReadingRequester(provider).request(REQUEST_ID, {
       ...validRequest,
-      tone: "unknown",
+      deckId: "",
     });
     expect(outcome).toEqual({ ok: false, failure: "invalid-request" });
     expect(calls).toHaveLength(0);
@@ -78,7 +78,7 @@ describe("createReadingRequester", () => {
 
     const outcome = await requester.request(REQUEST_ID, {
       ...validRequest,
-      tone: "witty",
+      mainQuestion: "另一個問題",
     });
     expect(outcome).toEqual({ ok: false, failure: "request-id-conflict" });
   });

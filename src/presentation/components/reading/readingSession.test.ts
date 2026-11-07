@@ -66,7 +66,10 @@ describe("isStale", () => {
     expect(isStale(initialReadingState, fingerprint)).toBe(false);
     expect(isStale(loading, fingerprint)).toBe(false);
     expect(
-      isStale(loading, fingerprintOf({ ...validRequest, tone: "witty" })),
+      isStale(
+        loading,
+        fingerprintOf({ ...validRequest, mainQuestion: "改了" }),
+      ),
     ).toBe(true);
     expect(isStale(loading, undefined)).toBe(true);
   });

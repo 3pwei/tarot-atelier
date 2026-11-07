@@ -31,7 +31,6 @@ export const validRequest: ReadingRequest = {
       jumper: { id: "atelier-standard.cups.three", orientation: "upright" },
     },
   ],
-  tone: "analytical",
 };
 
 function cardReading(
@@ -53,7 +52,6 @@ export function resultFor(request: ReadingRequest): ReadingResult {
   return {
     schemaVersion: "1.0.0",
     deckId: request.deckId,
-    tone: request.tone,
     source: "prewritten",
     positions: request.positions.map((position) => ({
       index: position.index,

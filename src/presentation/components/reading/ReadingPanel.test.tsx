@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 import {
@@ -114,11 +114,10 @@ describe("ReadingPanel", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("defaults to the analytical tone and offers all six", () => {
+  it("offers no tone choice", () => {
     render(<Harness requester={realRequester()} />);
-    const tones = within(screen.getByRole("group", { name: "解讀語氣" }));
-    expect(tones.getAllByRole("radio")).toHaveLength(6);
-    expect(tones.getByRole("radio", { name: "分析" })).toBeChecked();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(screen.queryByText("解讀語氣")).not.toBeInTheDocument();
   });
 
   it("generates an expandable reading section by section", async () => {
@@ -141,7 +140,9 @@ describe("ReadingPanel", () => {
     generate();
 
     expect(await screen.findByText("正在組合解讀…")).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "解讀語氣" })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "重新產生" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
 
     expect(await screen.findByText(/已取消這次解讀/u)).toBeInTheDocument();
@@ -165,13 +166,17 @@ describe("ReadingPanel", () => {
     expect(calls[1]?.requestId).toBe(calls[0]?.requestId);
   });
 
-  it("marks a reading as stale when the tone changes", async () => {
-    render(<Harness requester={realRequester()} />);
+  it("marks a reading as stale when the spread changes", async () => {
+    const view = render(<Harness requester={realRequester()} />);
     generate();
     await screen.findByText("全局關聯");
 
-    fireEvent.click(screen.getByRole("radio", { name: "詼諧" }));
-    expect(screen.getByText(/牌陣或語氣已改變/u)).toBeInTheDocument();
+    const edited = spreadOf(
+      [{ question: "現況是什麼？", draw: { card: MAJOR(17) } }],
+      "換了主問題",
+    );
+    view.rerender(<Harness requester={realRequester()} spread={edited} />);
+    expect(screen.getByText(/牌陣已改變/u)).toBeInTheDocument();
   });
 
   it("points health, legal and financial questions to a professional", async () => {

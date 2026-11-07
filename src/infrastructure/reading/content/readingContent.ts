@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { READING_TONES, type ReadingTone } from "@/domain/reading/types";
+import {
+  POSITION_ROLES,
+  type PositionRole,
+} from "@/domain/reading/positionRole";
 
 /**
  * Pre-written reading content: per-card text written ahead of time and
@@ -14,7 +17,7 @@ export const CONTENT_LIMITS = Object.freeze({
   angle: 40,
   reflection: 60,
   suggestion: 80,
-  voice: 160,
+  core: 160,
 });
 
 const bounded = (max: number) =>
@@ -26,19 +29,13 @@ const bounded = (max: number) =>
       message: `Must be at most ${max} characters`,
     });
 
-const voices = z.strictObject(
-  Object.fromEntries(
-    READING_TONES.map((tone) => [tone, bounded(CONTENT_LIMITS.voice)]),
-  ) as Record<ReadingTone, ReturnType<typeof bounded>>,
-);
-
 const cardEntry = z.strictObject({
   symbolism: bounded(CONTENT_LIMITS.symbolism),
+  /** A fully written explanation; cards without it are voiced by `minorCore`. */
+  core: bounded(CONTENT_LIMITS.core).optional(),
   angles: z.array(bounded(CONTENT_LIMITS.angle)).min(2).max(3),
   reflection: bounded(CONTENT_LIMITS.reflection),
   suggestion: bounded(CONTENT_LIMITS.suggestion),
-  /** Fully written text per tone; cards without it use tone templates. */
-  voices: voices.optional(),
 });
 
 const cardContent = z.strictObject({
@@ -68,20 +65,11 @@ export interface DeckReadingContent {
 const template = z.string().min(1);
 const templates = z.array(template).min(1);
 
-const toneTemplates = z.strictObject({
-  link: templates,
-  minorVoice: templates,
-  jumper: templates,
-  synthesis: z.strictObject({
-    openingWithMain: template,
-    openingPlain: template,
-    single: template,
-    majorHeavy: template,
-    suitLead: template,
-    reversedHeavy: template,
-    balanced: template,
-    jumperPresent: template,
-  }),
+const roleTemplates = z.strictObject({
+  /** Says what the card means in this position. */
+  position: template,
+  /** Ties it back to the main question; omitted without one. */
+  anchor: template,
 });
 
 const suitRecord = z.strictObject({
@@ -91,7 +79,7 @@ const suitRecord = z.strictObject({
   pentacles: z.string().min(1),
 });
 
-export const tonePhrasesSchema = z.strictObject({
+export const readingPhrasesSchema = z.strictObject({
   schemaVersion: z.literal(READING_CONTENT_SCHEMA_VERSION),
   locale: z.literal("zh-Hant"),
   orientationLabels: z.strictObject({
@@ -108,20 +96,34 @@ export const tonePhrasesSchema = z.strictObject({
     reflection: template,
     suggestion: template,
   }),
-  tones: z.strictObject(
+  minorCore: templates,
+  /** Angles starting with these suggest an action rather than describe a state. */
+  actionAnglePrefixes: z.array(z.string().min(1)).min(1),
+  roles: z.strictObject(
     Object.fromEntries(
-      READING_TONES.map((tone) => [tone, toneTemplates]),
-    ) as Record<ReadingTone, typeof toneTemplates>,
+      POSITION_ROLES.map((role) => [role, roleTemplates]),
+    ) as Record<PositionRole, typeof roleTemplates>,
   ),
+  jumper: templates,
+  synthesis: z.strictObject({
+    openingWithMain: template,
+    openingPlain: template,
+    single: template,
+    majorHeavy: template,
+    suitLead: template,
+    reversedHeavy: template,
+    balanced: template,
+    jumperPresent: template,
+  }),
 });
 
-export type TonePhrases = z.infer<typeof tonePhrasesSchema>;
-export type ToneTemplates = z.infer<typeof toneTemplates>;
+export type ReadingPhrases = z.infer<typeof readingPhrasesSchema>;
 
 /** Placeholders each template may use; anything else is a content bug. */
 export const TEMPLATE_PLACEHOLDERS = Object.freeze({
-  link: ["question", "angle"],
-  minorVoice: ["card", "orientation", "theme"],
+  minorCore: ["card", "orientation", "theme"],
+  rolePosition: ["angle"],
+  roleAnchor: ["mainQuestion"],
   jumper: ["jumper", "jumperOrientation", "jumperAngle"],
   synthesis: ["mainQuestion", "count", "majorCount", "suit", "suitTheme"],
   fallback: ["card", "meaning", "keyword"],

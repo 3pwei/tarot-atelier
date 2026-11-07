@@ -7,23 +7,23 @@ import type { ReadingRequest, ReadingResult } from "@/domain/reading/types";
 import { composeReading } from "@/infrastructure/reading/composeReading";
 import {
   loadDeckReadingContent,
-  loadTonePhrases,
+  loadReadingPhrases,
 } from "@/infrastructure/reading/content/contentLibrary";
 import type {
   DeckReadingContent,
-  TonePhrases,
+  ReadingPhrases,
 } from "@/infrastructure/reading/content/readingContent";
 
 export interface PrewrittenReadingSources {
   readonly loadContent: (
     deckId: string,
   ) => Promise<DeckReadingContent | undefined>;
-  readonly loadPhrases: () => Promise<TonePhrases>;
+  readonly loadPhrases: () => Promise<ReadingPhrases>;
 }
 
 const defaultSources: PrewrittenReadingSources = {
   loadContent: loadDeckReadingContent,
-  loadPhrases: loadTonePhrases,
+  loadPhrases: loadReadingPhrases,
 };
 
 /**

@@ -7,7 +7,6 @@ import {
 import { countCharacters } from "@/domain/spread/spread";
 import {
   READING_SCHEMA_VERSION,
-  READING_TONES,
   type ReadingRequest,
   type ReadingResult,
 } from "@/domain/reading/types";
@@ -35,7 +34,6 @@ const nonBlankText = (max: number) =>
 
 const id = z.string().min(1).max(MAX_ID_LENGTH);
 const orientation = z.enum(["upright", "reversed"]);
-const tone = z.enum(READING_TONES);
 const coordinate = z.number().min(0).max(1);
 
 const cardRef = z.strictObject({ id, orientation });
@@ -63,7 +61,6 @@ export const readingRequestSchema = z.strictObject({
     .min(1)
     .max(MAX_SPREAD_POSITIONS)
     .refine(isSequential, { message: "Position indexes must be 1..n" }),
-  tone,
 }) satisfies z.ZodType<ReadingRequest>;
 
 const cardReading = z.strictObject({
@@ -90,7 +87,6 @@ const textList = z
 export const readingResultSchema = z.strictObject({
   schemaVersion: z.literal(READING_SCHEMA_VERSION),
   deckId: id,
-  tone,
   source: z.enum(["prewritten", "ai"]),
   positions: z
     .array(positionReading)

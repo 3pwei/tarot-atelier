@@ -4,6 +4,10 @@ import {
   deckMeaningText,
   resolveMeaningMode,
 } from "@/domain/reading/cardMeaning";
+import {
+  detectPositionRole,
+  type PositionRole,
+} from "@/domain/reading/positionRole";
 import { detectSensitiveTopics } from "@/domain/reading/readingSafety";
 import {
   READING_SCHEMA_VERSION,
@@ -18,8 +22,7 @@ import {
   fillTemplate,
   type CardContentEntry,
   type DeckReadingContent,
-  type TonePhrases,
-  type ToneTemplates,
+  type ReadingPhrases,
 } from "@/infrastructure/reading/content/readingContent";
 
 /** At most this many reflection questions and suggestions per reading. */
@@ -56,9 +59,8 @@ interface ReadCard {
 interface Composer {
   readonly deck: Deck;
   readonly content: DeckReadingContent | undefined;
-  readonly phrases: TonePhrases;
-  readonly tone: ToneTemplates;
-  readonly toneName: ReadingRequest["tone"];
+  readonly phrases: ReadingPhrases;
+  readonly mainQuestion: string | undefined;
   readonly pick: Pick;
 }
 
@@ -66,7 +68,7 @@ interface Composer {
 function fallbackEntry(
   card: CardDefinition,
   mode: MeaningMode,
-  phrases: TonePhrases,
+  phrases: ReadingPhrases,
 ): CardContentEntry {
   const keywords =
     card.keywords.length > 0 ? card.keywords : [card.name.zhHant];
@@ -109,37 +111,74 @@ function symbolismOf(composer: Composer, read: ReadCard): string {
     : read.entry.symbolism;
 }
 
+/** Positions that look ahead read better with an angle that suggests action. */
+const ACTION_ROLES: ReadonlySet<PositionRole> = new Set(["advice", "future"]);
+
+/**
+ * The angles that suit a position: descriptive ones for the past, the present
+ * and the people involved; action-oriented ones for advice and what comes next.
+ * Falls back to every angle when none fits.
+ */
+function anglesForRole(
+  angles: readonly string[],
+  role: PositionRole,
+  actionPrefixes: readonly string[],
+): readonly string[] {
+  const wantsAction = ACTION_ROLES.has(role);
+  const suited = angles.filter(
+    (angle) =>
+      actionPrefixes.some((prefix) => angle.startsWith(prefix)) === wantsAction,
+  );
+  return suited.length > 0 ? suited : angles;
+}
+
+/**
+ * One paragraph per card: what the card means, what it means in this
+ * position, and how that relates to the main question. The position's
+ * question itself is never quoted back.
+ */
 function primaryReading(
   composer: Composer,
   position: ReadingPositionRequest,
   read: ReadCard,
 ): CardReading {
   const slot = `p${position.index}`;
-  const label = composer.phrases.orientationLabels[read.mode];
-  const written = read.entry.voices?.[composer.toneName];
-  // Without a written voice, the first angle sets the theme and the link to
-  // the question uses another one, so the two sentences never repeat.
+  const { phrases } = composer;
+  // Without a written core, the first angle is the theme and the position
+  // sentence uses another one, so the two sentences never repeat.
   const [theme = read.entry.symbolism, ...otherAngles] = read.entry.angles;
-  const voice =
-    written ??
-    fillTemplate(composer.pick(composer.tone.minorVoice, `${slot}:voice`), {
+  const core =
+    read.entry.core ??
+    fillTemplate(composer.pick(phrases.minorCore, `${slot}:core`), {
       card: read.card.name.zhHant,
-      orientation: label,
+      orientation: phrases.orientationLabels[read.mode],
       theme,
     });
-  const linkAngles =
-    written || otherAngles.length === 0 ? read.entry.angles : otherAngles;
-  const link = fillTemplate(composer.pick(composer.tone.link, `${slot}:link`), {
-    question: position.question,
-    angle: composer.pick(linkAngles, `${slot}:angle`),
-  });
+  const roleName = detectPositionRole(position.question);
+  const role = phrases.roles[roleName];
+  const positionAngles = anglesForRole(
+    read.entry.core || otherAngles.length === 0
+      ? read.entry.angles
+      : otherAngles,
+    roleName,
+    phrases.actionAnglePrefixes,
+  );
+  const sentences = [
+    core,
+    fillTemplate(role.position, {
+      angle: composer.pick(positionAngles, `${slot}:angle`),
+    }),
+    ...(composer.mainQuestion
+      ? [fillTemplate(role.anchor, { mainQuestion: composer.mainQuestion })]
+      : []),
+  ];
   return {
     cardId: read.card.id,
     cardName: read.card.name.zhHant,
     orientation: position.primary.orientation,
     meaningMode: read.mode,
     symbolism: symbolismOf(composer, read),
-    interpretation: `${voice}${link}`,
+    interpretation: sentences.join(""),
   };
 }
 
@@ -156,7 +195,7 @@ function jumperReading(
     orientation: ref.orientation,
     meaningMode: read.mode,
     symbolism: symbolismOf(composer, read),
-    interpretation: fillTemplate(composer.pick(composer.tone.jumper, slot), {
+    interpretation: fillTemplate(composer.pick(composer.phrases.jumper, slot), {
       jumper: read.card.name.zhHant,
       jumperOrientation: composer.phrases.orientationLabels[read.mode],
       jumperAngle: composer.pick(read.entry.angles, `${slot}:angle`),
@@ -183,7 +222,7 @@ function synthesisOf(
   request: ReadingRequest,
   primaries: readonly ReadCard[],
 ): string {
-  const { synthesis } = composer.tone;
+  const { synthesis } = composer.phrases;
   const count = primaries.length;
   const sentences = [
     request.mainQuestion
@@ -241,14 +280,13 @@ export function composeReading(
   request: ReadingRequest,
   deck: Deck,
   content: DeckReadingContent | undefined,
-  phrases: TonePhrases,
+  phrases: ReadingPhrases,
 ): ReadingResult {
   const composer: Composer = {
     deck,
     content,
     phrases,
-    tone: phrases.tones[request.tone],
-    toneName: request.tone,
+    mainQuestion: request.mainQuestion,
     pick: pickerFor(request),
   };
 
@@ -278,7 +316,6 @@ export function composeReading(
   return {
     schemaVersion: READING_SCHEMA_VERSION,
     deckId: request.deckId,
-    tone: request.tone,
     source: "prewritten",
     positions,
     synthesis: synthesisOf(composer, request, primaries),

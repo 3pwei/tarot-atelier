@@ -9,8 +9,9 @@ Phase 04 adds readings. The site is a static export served by Cloudflare Pages, 
 ## Decision
 
 1. **Readings come from pre-written content in Phase 04.** The content is versioned JSON in the repository and composed in the browser (plan C):
-   - The 22 major arcana are fully written for each of the six tones.
-   - The 56 minor arcana have core content that tone templates voice.
+   - The 22 major arcana each have a fully written explanation, upright and reversed.
+   - The 56 minor arcana have core content that templates voice.
+   - Each paragraph names the position's role and ties back to the main question. There is no tone setting: the owner removed it on 2026-11-07 after the first preview read poorly.
 
    It costs nothing per reading, cannot be abused into a bill and works offline. The UI labels it 「範例解牌，不是 AI」.
 

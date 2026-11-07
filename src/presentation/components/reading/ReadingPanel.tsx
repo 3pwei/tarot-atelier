@@ -3,18 +3,13 @@
 import { useId } from "react";
 import type { Deck } from "@/domain/deck/deck";
 import type { CardInstance } from "@/domain/deck/types";
-import {
-  READING_TONES,
-  type CardReading,
-  type ReadingResult,
-} from "@/domain/reading/types";
+import { type CardReading, type ReadingResult } from "@/domain/reading/types";
 import type { Spread } from "@/domain/spread/types";
 import {
   FAILURE_MESSAGES,
   issueMessage,
   MEANING_LABELS,
   READING_COPY,
-  TONE_LABELS,
   TOPIC_LABELS,
 } from "@/presentation/components/reading/readingLabels";
 import type { ReadingSession } from "@/presentation/components/reading/useReadingSession";
@@ -183,7 +178,6 @@ export function ReadingPanel({
   revealed,
 }: ReadingPanelProps) {
   const titleId = useId();
-  const toneId = useId();
   const { state, build, stale } = session;
   const loading = state.status === "loading";
   const result = state.status === "ready" ? state.result : undefined;
@@ -206,22 +200,6 @@ export function ReadingPanel({
       ) : (
         <>
           <SpreadSummary deck={deck} spread={spread} />
-
-          <fieldset className="reading-tones" disabled={loading}>
-            <legend id={toneId}>{READING_COPY.toneLegend}</legend>
-            {READING_TONES.map((tone) => (
-              <label key={tone} className="reading-tone">
-                <input
-                  type="radio"
-                  name={toneId}
-                  value={tone}
-                  checked={session.tone === tone}
-                  onChange={() => session.setTone(tone)}
-                />
-                <span>{TONE_LABELS[tone]}</span>
-              </label>
-            ))}
-          </fieldset>
 
           {build.ok ? null : (
             <ul className="reading-issues" role="alert">

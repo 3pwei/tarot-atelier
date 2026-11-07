@@ -75,7 +75,7 @@ export function fingerprintOf(request: ReadingRequest): string {
   return JSON.stringify(request);
 }
 
-/** True when the shown reading no longer matches the spread or the tone. */
+/** True when the shown reading no longer matches the spread. */
 export function isStale(
   state: ReadingState,
   currentFingerprint: string | undefined,

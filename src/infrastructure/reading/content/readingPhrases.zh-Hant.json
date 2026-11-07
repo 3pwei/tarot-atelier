@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "1.0.0",
+  "locale": "zh-Hant",
+  "orientationLabels": {
+    "upright": "正位",
+    "reversed": "逆位",
+    "neutral": "（中性解讀）"
+  },
+  "neutralNote": "這張牌在此牌組沒有定義逆位，因此以它的核心意義、用中性的方式來讀。",
+  "suitThemes": {
+    "wands": "行動與熱情",
+    "cups": "情感與關係",
+    "swords": "思考與溝通",
+    "pentacles": "資源、身體與現實生活"
+  },
+  "suitNames": {
+    "wands": "權杖",
+    "cups": "聖杯",
+    "swords": "寶劍",
+    "pentacles": "錢幣"
+  },
+  "fallback": {
+    "symbolism": "{card}的意義是：{meaning}",
+    "angle": "留意「{keyword}」在這件事裡扮演的角色",
+    "reflection": "關於「{keyword}」，你此刻最在意的是什麼？",
+    "suggestion": "可以考慮從一件和「{keyword}」有關的小事開始觀察。"
+  },
+  "minorCore": [
+    "{card}{orientation}在這裡的重點是：{theme}。",
+    "{card}{orientation}的主要意涵是：{theme}。"
+  ],
+  "actionAnglePrefixes": [
+    "需要",
+    "可以",
+    "適合",
+    "值得",
+    "不必",
+    "留意",
+    "放慢",
+    "記得",
+    "試著"
+  ],
+  "roles": {
+    "past": {
+      "position": "在「過去與起因」這個位置，它指向的是：{angle}。",
+      "anchor": "對於「{mainQuestion}」，這可能說明了事情走到現在的背景。"
+    },
+    "present": {
+      "position": "在「現在的狀態」這個位置，它指向的是：{angle}。",
+      "anchor": "對於「{mainQuestion}」，這可以幫你看清此刻的處境。"
+    },
+    "future": {
+      "position": "在「接下來的走向」這個位置，它指向的是：{angle}。",
+      "anchor": "對於「{mainQuestion}」，這是一個可能的發展方向，而不是已經決定的結果。"
+    },
+    "obstacle": {
+      "position": "在「阻礙」這個位置，它指向的是：{angle}。",
+      "anchor": "對於「{mainQuestion}」，這可能是需要先處理的卡點。"
+    },
+    "advice": {
+      "position": "在「建議」這個位置，它指向的是：{angle}。",
+      "anchor": "對於「{mainQuestion}」，可以把它當成一個值得嘗試的方向。"
+    },
+    "self": {
+      "position": "在「你自己」這個位置，它指向的是：{angle}。",
+      "anchor": "對於「{mainQuestion}」，這反映的是你自己的狀態。"
+    },
+    "others": {
+      "position": "在「對方或環境」這個位置，它指向的是：{angle}。",
+      "anchor": "對於「{mainQuestion}」，這反映的可能是對方或環境的狀態。"
+    },
+    "unknown": {
+      "position": "在這個牌位，它指向的是：{angle}。",
+      "anchor": "對於「{mainQuestion}」，可以從這個角度思考。"
+    }
+  },
+  "jumper": [
+    "跳牌{jumper}{jumperOrientation}是這個位置的補充訊息，提示另一個面向：{jumperAngle}。"
+  ],
+  "synthesis": {
+    "openingWithMain": "整體來看，這組牌圍繞著「{mainQuestion}」展開，共 {count} 個牌位。",
+    "openingPlain": "整體來看，這組牌共有 {count} 個牌位。",
+    "single": "只有一個牌位時，重點不在牌與牌的關係，而在這張牌提供的單一焦點。",
+    "majorHeavy": "大牌占了 {majorCount} 張，代表這件事牽涉的可能是較長期、較核心的主題。",
+    "suitLead": "小牌以{suit}居多，{suitTheme}可能是這次最需要留意的面向。",
+    "reversedHeavy": "逆位的牌偏多，或許反映出某些力量正在受阻，可以先找出卡住的環節。",
+    "balanced": "牌面的能量相對平均，可以把每個牌位當成同一件事的不同切面來比較。",
+    "jumperPresent": "這次有跳牌出現，它們是額外的提醒，值得和所屬牌位一起解讀。"
+  }
+}

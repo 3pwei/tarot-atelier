@@ -34,7 +34,7 @@ test("reads a finished spread with no credentials or server, labelled as a sampl
   await expect(panel.getByText("範例解牌，不是 AI")).toBeVisible();
   await expect(panel.getByText("工坊標準塔羅")).toBeVisible();
   await expect(panel.locator(".reading-summary__positions li")).toHaveCount(3);
-  await expect(panel.getByRole("radio", { name: "分析" })).toBeChecked();
+  await expect(panel.getByRole("radio")).toHaveCount(0);
 
   await panel.getByRole("button", { name: "產生範例解讀" }).click();
   const sections = panel.locator("details.reading-section");
@@ -46,11 +46,6 @@ test("reads a finished spread with no credentials or server, labelled as a sampl
   await expect(synthesis.locator(".reading-section__body")).toBeHidden();
   await synthesis.locator("summary").click();
   await expect(synthesis.locator(".reading-section__body")).toBeVisible();
-
-  await panel.getByRole("radio", { name: "詼諧" }).check();
-  await expect(panel.getByText(/牌陣或語氣已改變/u)).toBeVisible();
-  await panel.getByRole("button", { name: "重新產生" }).click();
-  await expect(panel.getByText(/牌陣或語氣已改變/u)).toBeHidden();
 
   await expect(panel.getByText(/僅供娛樂與自我反思/u)).toBeVisible();
   expect(external).toEqual([]);

@@ -1,20 +1,12 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { ReadingRequester } from "@/application/use-cases/requestReading";
 import type { DeckRegistry } from "@/domain/deck/deckRegistry";
 import {
   buildReadingRequest,
   type ReadingRequestBuild,
 } from "@/domain/reading/buildReadingRequest";
-import { DEFAULT_READING_TONE, type ReadingTone } from "@/domain/reading/types";
 import type { Spread } from "@/domain/spread/types";
 import {
   fingerprintOf,
@@ -25,11 +17,9 @@ import {
 } from "@/presentation/components/reading/readingSession";
 
 export interface ReadingSession {
-  readonly tone: ReadingTone;
-  readonly setTone: (tone: ReadingTone) => void;
   readonly build: ReadingRequestBuild;
   readonly state: ReadingState;
-  /** The shown reading or failure belongs to an older spread or tone. */
+  /** The shown reading or failure belongs to an older spread. */
   readonly stale: boolean;
   readonly generate: () => void;
   /** Tries the failed attempt again with the same request ID. */
@@ -44,13 +34,12 @@ export function useReadingSession(options: {
   readonly createRequestId: () => string;
 }): ReadingSession {
   const { spread, registry, requester, createRequestId } = options;
-  const [tone, setTone] = useState<ReadingTone>(DEFAULT_READING_TONE);
   const [state, dispatch] = useReducer(readingReducer, initialReadingState);
   const controller = useRef<AbortController | null>(null);
 
   const build = useMemo(
-    () => buildReadingRequest(spread, registry, tone),
-    [spread, registry, tone],
+    () => buildReadingRequest(spread, registry),
+    [spread, registry],
   );
   const fingerprint = build.ok ? fingerprintOf(build.request) : undefined;
 
@@ -89,8 +78,6 @@ export function useReadingSession(options: {
   useEffect(() => () => controller.current?.abort(), []);
 
   return {
-    tone,
-    setTone,
     build,
     state,
     stale: isStale(state, fingerprint),

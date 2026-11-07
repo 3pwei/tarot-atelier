@@ -8,7 +8,6 @@ import {
   type ReadingCardRef,
   type ReadingPositionRequest,
   type ReadingRequest,
-  type ReadingTone,
 } from "@/domain/reading/types";
 
 export type ReadingRequestIssue =
@@ -91,7 +90,6 @@ function deckIssues(
 export function buildReadingRequest(
   spread: Spread,
   registry: DeckRegistry,
-  tone: ReadingTone,
 ): ReadingRequestBuild {
   const positions = [...spread.positions].sort((a, b) => a.index - b.index);
   const issues: ReadingRequestIssue[] = [...validateSpread(spread)];
@@ -117,7 +115,6 @@ export function buildReadingRequest(
       deckId: decks.deckId,
       ...(mainQuestion ? { mainQuestion } : {}),
       positions: positions.filter(isDrawn).map(toPositionRequest),
-      tone,
     },
   };
 }

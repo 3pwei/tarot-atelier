@@ -1,9 +1,9 @@
 import {
   cardContentMapSchema,
   READING_CONTENT_SCHEMA_VERSION,
-  tonePhrasesSchema,
+  readingPhrasesSchema,
   type DeckReadingContent,
-  type TonePhrases,
+  type ReadingPhrases,
 } from "@/infrastructure/reading/content/readingContent";
 
 export const STANDARD_DECK_ID = "atelier-standard-tarot";
@@ -52,7 +52,7 @@ export async function loadDeckReadingContent(
   return DECK_CONTENT_LOADERS[deckId]?.();
 }
 
-export async function loadTonePhrases(): Promise<TonePhrases> {
-  const file = await import("./tonePhrases.zh-Hant.json");
-  return tonePhrasesSchema.parse(file.default);
+export async function loadReadingPhrases(): Promise<ReadingPhrases> {
+  const file = await import("./readingPhrases.zh-Hant.json");
+  return readingPhrasesSchema.parse(file.default);
 }

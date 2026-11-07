@@ -9,7 +9,6 @@ import {
   resultFor,
   validRequest,
 } from "@/application/reading/testing/readingDoubles";
-import { READING_TONES } from "@/domain/reading/types";
 
 const accepts = (value: unknown) =>
   readingRequestSchema.safeParse(value).success;
@@ -19,12 +18,16 @@ describe("readingRequestSchema", () => {
     expect(accepts(validRequest)).toBe(true);
   });
 
-  it.each(READING_TONES)("accepts the %s tone", (tone) => {
-    expect(accepts({ ...validRequest, tone })).toBe(true);
+  it("accepts a request without a main question or jumper", () => {
+    const [first] = validRequest.positions;
+    expect(accepts({ ...validRequest, positions: [first] })).toBe(true);
   });
 
   it.each([
-    ["an unknown tone", { ...validRequest, tone: "sarcastic" }],
+    [
+      "a tone, which readings no longer have",
+      { ...validRequest, tone: "witty" },
+    ],
     ["another schema version", { ...validRequest, schemaVersion: "2.0.0" }],
     ["no positions", { ...validRequest, positions: [] }],
     ["an extra field", { ...validRequest, apiKey: "secret" }],

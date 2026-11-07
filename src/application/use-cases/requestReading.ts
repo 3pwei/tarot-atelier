@@ -39,7 +39,6 @@ function answersRequest(
 ): boolean {
   return (
     result.deckId === request.deckId &&
-    result.tone === request.tone &&
     result.positions.length === request.positions.length &&
     result.positions.every((position, order) => {
       const asked = request.positions[order];
