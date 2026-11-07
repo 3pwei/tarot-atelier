@@ -133,6 +133,10 @@ export function DrawExperience({
   });
   const selected = spread.positions.find((p) => p.id === selectedId);
   const filled = spread.positions.filter((p) => p.drawResult).length;
+  // `allRevealed` also holds for an empty table (nothing left unrevealed); a
+  // reading needs every position drawn as well.
+  const spreadRevealed =
+    filled > 0 && dealer.emptyCount === 0 && dealer.allRevealed;
 
   const handleRevealed = useCallback(
     (instanceId: string) => dispatch({ type: "revealed", instanceId }),
@@ -333,7 +337,7 @@ export function DrawExperience({
           session={reading}
           deck={deck}
           spread={spread}
-          revealed={dealer.allRevealed}
+          revealed={spreadRevealed}
         />
 
         <div className="draw-table__foot">
