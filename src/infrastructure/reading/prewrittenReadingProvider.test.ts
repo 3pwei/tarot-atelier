@@ -106,6 +106,14 @@ describe("PrewrittenReadingProvider", () => {
     });
   });
 
+  it("voices a minor card without repeating its name or the same angle", async () => {
+    const result = await provider.interpret(requestOf(threeCards));
+    const minor = result.positions[2]?.primary.interpretation ?? "";
+    expect(minor.split("權杖二")).toHaveLength(2);
+    expect(minor).toContain("站在選擇的起點，正在規劃方向");
+    expect(minor.split("站在選擇的起點，正在規劃方向")).toHaveLength(2);
+  });
+
   it("adds the jumper's message to its position without adding a position", async () => {
     const result = await provider.interpret(requestOf(threeCards));
     expect(result.positions).toHaveLength(3);
@@ -226,8 +234,8 @@ describe("PrewrittenReadingProvider", () => {
     const primary = result.positions[0]?.primary;
 
     expect(primary?.meaningMode).toBe("neutral");
-    expect(primary?.interpretation).toContain("觀察往返的節奏");
-    expect(primary?.symbolism).toContain("節奏");
+    expect(primary?.symbolism).toContain("觀察往返的節奏");
+    expect(primary?.interpretation).toContain("節奏");
     expect(primary?.symbolism).toContain("沒有定義逆位");
     expect(primary?.symbolism).not.toContain("此牌組已關閉逆位");
     expect(readingResultSchema.safeParse(result).success).toBe(true);

@@ -77,7 +77,7 @@ function fallbackEntry(
   return {
     symbolism: fillTemplate(phrases.fallback.symbolism, {
       card: card.name.zhHant,
-      keyword: keywords.join("、"),
+      meaning: deckMeaningText(card, mode),
     }),
     angles,
     reflection: fillTemplate(phrases.fallback.reflection, {
@@ -116,18 +116,22 @@ function primaryReading(
 ): CardReading {
   const slot = `p${position.index}`;
   const label = composer.phrases.orientationLabels[read.mode];
+  const written = read.entry.voices?.[composer.toneName];
+  // Without a written voice, the first angle sets the theme and the link to
+  // the question uses another one, so the two sentences never repeat.
+  const [theme = read.entry.symbolism, ...otherAngles] = read.entry.angles;
   const voice =
-    read.entry.voices?.[composer.toneName] ??
+    written ??
     fillTemplate(composer.pick(composer.tone.minorVoice, `${slot}:voice`), {
       card: read.card.name.zhHant,
       orientation: label,
-      // The deck's own meaning, so the voice adds to the symbolism instead
-      // of repeating it.
-      meaning: deckMeaningText(read.card, read.mode),
+      theme,
     });
+  const linkAngles =
+    written || otherAngles.length === 0 ? read.entry.angles : otherAngles;
   const link = fillTemplate(composer.pick(composer.tone.link, `${slot}:link`), {
     question: position.question,
-    angle: composer.pick(read.entry.angles, `${slot}:angle`),
+    angle: composer.pick(linkAngles, `${slot}:angle`),
   });
   return {
     cardId: read.card.id,

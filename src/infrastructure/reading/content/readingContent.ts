@@ -121,7 +121,7 @@ export type ToneTemplates = z.infer<typeof toneTemplates>;
 /** Placeholders each template may use; anything else is a content bug. */
 export const TEMPLATE_PLACEHOLDERS = Object.freeze({
   link: ["question", "angle"],
-  minorVoice: ["card", "orientation", "meaning"],
+  minorVoice: ["card", "orientation", "theme"],
   jumper: ["jumper", "jumperOrientation", "jumperAngle"],
   synthesis: ["mainQuestion", "count", "majorCount", "suit", "suitTheme"],
   fallback: ["card", "meaning", "keyword"],

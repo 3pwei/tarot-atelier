@@ -20,7 +20,7 @@
     "pentacles": "錢幣"
   },
   "fallback": {
-    "symbolism": "{card}象徵著「{keyword}」。",
+    "symbolism": "{card}的意義是：{meaning}",
     "angle": "留意「{keyword}」在這件事裡扮演的角色",
     "reflection": "關於「{keyword}」，你此刻最在意的是什麼？",
     "suggestion": "可以考慮從一件和「{keyword}」有關的小事開始觀察。"
@@ -32,8 +32,8 @@
         "面對「{question}」，這張牌輕聲提醒的是：{angle}。"
       ],
       "minorVoice": [
-        "{card}{orientation}出現在這裡，像是陪你一起看見：{meaning}",
-        "{card}{orientation}來到這個位置，溫和地說：{meaning}"
+        "{card}{orientation}出現在這裡，像是陪你一起看見：{theme}。",
+        "{card}{orientation}來到這個位置，溫和地提醒：{theme}。"
       ],
       "jumper": [
         "跳牌{jumper}{jumperOrientation}也一起來到這個位置，輕輕補上一句：{jumperAngle}。"
@@ -55,8 +55,8 @@
         "當你帶著「{question}」凝視這張牌，浮現出來的是：{angle}。"
       ],
       "minorVoice": [
-        "{card}{orientation}靜靜落下，牌面低語著：{meaning}",
-        "{card}{orientation}自暗處現身，它的象徵是：{meaning}"
+        "{card}{orientation}靜靜落下，牌面低語著：{theme}。",
+        "{card}{orientation}自暗處現身，帶來的暗示是：{theme}。"
       ],
       "jumper": [
         "一張跳牌{jumper}{jumperOrientation}自牌堆躍出，為這個位置添上暗示：{jumperAngle}。"
@@ -78,8 +78,8 @@
         "放在「{question}」上，這張牌指向的重點是：{angle}。"
       ],
       "minorVoice": [
-        "{card}{orientation}的核心是：{meaning}",
-        "{card}{orientation}在這裡的主要意涵是：{meaning}"
+        "{card}{orientation}在這裡的重點是：{theme}。",
+        "{card}{orientation}的主要意涵是：{theme}。"
       ],
       "jumper": [
         "跳牌{jumper}{jumperOrientation}是這個位置的補充訊息，提示另一個面向：{jumperAngle}。"
@@ -101,8 +101,8 @@
         "針對「{question}」，這張牌丟出的提示是：{angle}。"
       ],
       "minorVoice": [
-        "{card}{orientation}來報到了，重點整理：{meaning}",
-        "{card}{orientation}舉手發言：{meaning}"
+        "{card}{orientation}來報到了，重點整理：{theme}。",
+        "{card}{orientation}舉手發言：{theme}。"
       ],
       "jumper": [
         "還附贈一張跳牌{jumper}{jumperOrientation}，附加說明：{jumperAngle}。"
@@ -124,8 +124,8 @@
         "當「{question}」被攤在燈光下，這張牌指出：{angle}。"
       ],
       "minorVoice": [
-        "{card}{orientation}登場，帶來這樣的訊息：{meaning}",
-        "幕起，{card}{orientation}站上舞台：{meaning}"
+        "{card}{orientation}登場，帶來這樣的訊息：{theme}。",
+        "幕起，{card}{orientation}站上舞台：{theme}。"
       ],
       "jumper": [
         "就在此刻，跳牌{jumper}{jumperOrientation}破陣而出，它要你留意：{jumperAngle}。"
@@ -146,7 +146,7 @@
         "對「{question}」：{angle}。",
         "就「{question}」而言：{angle}。"
       ],
-      "minorVoice": ["{card}{orientation}：{meaning}"],
+      "minorVoice": ["{card}{orientation}：{theme}。"],
       "jumper": ["跳牌{jumper}{jumperOrientation}補充：{jumperAngle}。"],
       "synthesis": {
         "openingWithMain": "主問題「{mainQuestion}」，{count} 個牌位。",
