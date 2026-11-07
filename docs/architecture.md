@@ -41,6 +41,12 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 - The table keeps positions in relative coordinates. Zoom and pan are presentation-only view state (`useBoardViewport`), and the draw flight converts its screen path into the landing slot's rotated, zoomed frame.
 - `useSpreadDealer` mirrors the draw machine for a spread: one shuffled pile, dealt in number order with `continueDrawing()`, and rebuilt without table cards after a reload or clear.
 
+## Readings
+
+- `domain/reading` builds a versioned `ReadingRequest` from the `Spread` and `DeckRegistry`, decides how each card is read (upright, reversed or neutral) and holds the safety rules. It is framework-free.
+- `application/reading/readingSchemas.ts` validates both directions with Zod; `createReadingRequester` adds safe retries by request ID and cancellation. Providers sit behind the `ReadingProvider` port.
+- `PrewrittenReadingProvider` composes readings from versioned, lazily loaded content in `infrastructure/reading/content`. See [`reading.md`](./reading.md) and [ADR 0002](./decisions/0002-reading-provider-boundary.md).
+
 ## Future extension points
 
-Decks, table scenes, persistence, and interpretation providers will use versioned schemas plus registries or application ports. Infrastructure implementations will be injected rather than imported into domain code.
+Table scenes, uploaded decks and an AI reading provider will use versioned schemas plus registries or application ports. Infrastructure implementations are injected rather than imported into domain code.
