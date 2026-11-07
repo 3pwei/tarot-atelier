@@ -211,6 +211,43 @@ describe("DrawExperience spread table", () => {
     await screen.findByText("牌陣已完成");
   });
 
+  it("reads the finished spread offline, labelled as a sample", async () => {
+    renderTable();
+    await ready();
+    // An empty table has nothing unrevealed, but nothing to read either.
+    expect(
+      screen.getByText("所有牌翻開後，就能產生解讀。"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "產生範例解讀" }),
+    ).not.toBeInTheDocument();
+    await shuffleAndDeal();
+    expect(
+      screen.getByText("所有牌翻開後，就能產生解讀。"),
+    ).toBeInTheDocument();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+
+    fireEvent.click(screen.getByRole("button", { name: "產生範例解讀" }));
+    expect(await screen.findByText("全局關聯")).toBeInTheDocument();
+    expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
+    expect(screen.getAllByText("單牌象徵").length).toBeGreaterThan(0);
+  });
+
+  it("waits again when an empty position is added after reading", async () => {
+    renderTable();
+    await ready();
+    await shuffleAndDeal();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+    expect(screen.getByRole("button", { name: "產生範例解讀" })).toBeEnabled();
+
+    addPosition();
+    expect(
+      screen.getByText("所有牌翻開後，就能產生解讀。"),
+    ).toBeInTheDocument();
+  });
+
   it("never shows players the jumper probability", async () => {
     const { container } = renderTable();
     await ready();
