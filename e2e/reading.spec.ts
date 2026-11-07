@@ -47,7 +47,7 @@ test("reads a finished spread with no credentials or server, labelled as a sampl
   await synthesis.locator("summary").click();
   await expect(synthesis.locator(".reading-section__body")).toBeVisible();
 
-  await panel.getByText("詼諧", { exact: true }).click();
+  await panel.getByRole("radio", { name: "詼諧" }).check();
   await expect(panel.getByText(/牌陣或語氣已改變/u)).toBeVisible();
   await panel.getByRole("button", { name: "重新產生" }).click();
   await expect(panel.getByText(/牌陣或語氣已改變/u)).toBeHidden();
