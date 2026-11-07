@@ -1,6 +1,7 @@
 packages:
   - .
 allowBuilds:
+  esbuild: false
   unrs-resolver: false
 minimumReleaseAgeExclude:
   - "@types/three@0.187.0"

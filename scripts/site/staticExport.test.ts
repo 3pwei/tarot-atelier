@@ -22,7 +22,7 @@ function exportDir(basePath?: string): string {
 
 describe("buildStaticExport", () => {
   it.each(["build", "check"] as const)(
-    "runs `pnpm %s` with the site's base path",
+    "runs `pnpm %s` with the site's base path and AI readings on",
     (gate) => {
       const { run, calls } = recordingRun();
       buildStaticExport(testSite, gate, run);
@@ -33,6 +33,7 @@ describe("buildStaticExport", () => {
           options: {
             env: {
               NEXT_PUBLIC_BASE_PATH: "/tarot",
+              NEXT_PUBLIC_AI_READINGS: "on",
               NEXT_TELEMETRY_DISABLED: "1",
             },
           },

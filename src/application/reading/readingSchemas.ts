@@ -6,6 +6,7 @@ import {
 } from "@/domain/spread/types";
 import { countCharacters } from "@/domain/spread/spread";
 import {
+  READING_FALLBACK_REASONS,
   READING_SCHEMA_VERSION,
   type ReadingRequest,
   type ReadingResult,
@@ -79,6 +80,8 @@ const positionReading = z.strictObject({
   jumper: cardReading.optional(),
 });
 
+export const readingFallbackReasonSchema = z.enum(READING_FALLBACK_REASONS);
+
 const textList = z
   .array(nonBlankText(MAX_TEXT_LENGTH))
   .min(1)
@@ -97,6 +100,7 @@ export const readingResultSchema = z.strictObject({
   reflectionQuestions: textList,
   suggestions: textList,
   sensitiveTopics: z.array(z.enum(["health", "legal", "financial"])),
+  fallback: z.strictObject({ reason: readingFallbackReasonSchema }).optional(),
 }) satisfies z.ZodType<ReadingResult>;
 
 /** Identifies one press of "generate"; a retry reuses it. */

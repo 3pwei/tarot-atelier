@@ -3,13 +3,19 @@
 import { useId } from "react";
 import type { Deck } from "@/domain/deck/deck";
 import type { CardInstance } from "@/domain/deck/types";
-import { type CardReading, type ReadingResult } from "@/domain/reading/types";
+import type {
+  CardReading,
+  ReadingResult,
+  ReadingSource,
+} from "@/domain/reading/types";
 import type { Spread } from "@/domain/spread/types";
 import {
   FAILURE_MESSAGES,
+  FALLBACK_MESSAGES,
   issueMessage,
   MEANING_LABELS,
   READING_COPY,
+  SOURCE_COPY,
   TOPIC_LABELS,
 } from "@/presentation/components/reading/readingLabels";
 import type { ReadingSession } from "@/presentation/components/reading/useReadingSession";
@@ -20,6 +26,8 @@ interface ReadingPanelProps {
   readonly spread: Spread;
   /** Every card on the table has been revealed. */
   readonly revealed: boolean;
+  /** Where readings come from when generated: AI first, or pre-written. */
+  readonly source: ReadingSource;
 }
 
 function cardLabel(deck: Deck, card: CardInstance): string {
@@ -176,12 +184,15 @@ export function ReadingPanel({
   deck,
   spread,
   revealed,
+  source,
 }: ReadingPanelProps) {
   const titleId = useId();
   const { state, build, stale } = session;
   const loading = state.status === "loading";
   const result = state.status === "ready" ? state.result : undefined;
   const topics = result?.sensitiveTopics ?? [];
+  // A shown reading is labelled by where it actually came from.
+  const copy = SOURCE_COPY[result?.source ?? source];
 
   return (
     <section
@@ -191,9 +202,9 @@ export function ReadingPanel({
     >
       <header className="reading-panel__head">
         <h2 id={titleId}>{READING_COPY.title}</h2>
-        <span className="reading-badge">{READING_COPY.sampleBadge}</span>
+        <span className="reading-badge">{copy.badge}</span>
       </header>
-      <p className="reading-panel__note">{READING_COPY.sourceNote}</p>
+      <p className="reading-panel__note">{copy.note}</p>
 
       {!revealed ? (
         <p className="reading-panel__waiting">{READING_COPY.waiting}</p>
@@ -213,7 +224,7 @@ export function ReadingPanel({
             {loading ? (
               <>
                 <span className="reading-status" role="status">
-                  {READING_COPY.loading}
+                  {SOURCE_COPY[source].loading}
                 </span>
                 <button
                   type="button"
@@ -256,6 +267,12 @@ export function ReadingPanel({
           {stale && result ? (
             <p className="reading-stale" role="status">
               {READING_COPY.stale}
+            </p>
+          ) : null}
+
+          {result?.fallback ? (
+            <p className="reading-fallback" role="status">
+              {FALLBACK_MESSAGES[result.fallback.reason]}
             </p>
           ) : null}
 

@@ -17,6 +17,7 @@ export default defineConfig([
   globalIgnores([
     ".next/**",
     "preview/**",
+    "functions/**",
     "coverage/**",
     "playwright-report/**",
     "test-results/**",
@@ -42,6 +43,7 @@ export default defineConfig([
                   "application",
                   "infrastructure",
                   "presentation",
+                  "server",
                 ]),
                 "next/**",
                 "@react-three/**",
@@ -62,7 +64,11 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: outerLayerPatterns(["infrastructure", "presentation"]),
+              group: outerLayerPatterns([
+                "infrastructure",
+                "presentation",
+                "server",
+              ]),
               message:
                 "Application must not depend on infrastructure or presentation.",
             },
@@ -79,8 +85,44 @@ export default defineConfig([
         {
           patterns: [
             {
+              group: outerLayerPatterns(["presentation", "server"]),
+              message:
+                "Infrastructure must not depend on presentation or server.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/presentation/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: outerLayerPatterns(["server"]),
+              message:
+                "Presentation runs in the browser and must not import server code.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The server entry point composes the inner layers for Cloudflare.
+    files: ["src/server/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [{ name: "react", message: "Server code renders no UI." }],
+          patterns: [
+            {
               group: outerLayerPatterns(["presentation"]),
-              message: "Infrastructure must not depend on presentation.",
+              message: "Server code must not depend on presentation.",
             },
           ],
         },

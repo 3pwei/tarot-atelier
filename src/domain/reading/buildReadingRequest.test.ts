@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { movePosition, reorderPosition } from "@/domain/spread/spread";
 import { buildReadingRequest } from "@/domain/reading/buildReadingRequest";
+import { READING_SCHEMA_VERSION } from "@/domain/reading/types";
 import {
   MAJOR,
   registryOf,
@@ -31,7 +32,7 @@ describe("buildReadingRequest", () => {
     const request = buildOk(spread, standardRegistry);
 
     expect(request).toEqual({
-      schemaVersion: "1.0.0",
+      schemaVersion: READING_SCHEMA_VERSION,
       deckId: "atelier-standard-tarot",
       mainQuestion: "我的工作方向",
       positions: [

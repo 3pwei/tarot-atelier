@@ -7,11 +7,13 @@ import {
   type ReadingRequester,
 } from "@/application/use-cases/requestReading";
 import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
+import { buildReadingRequest } from "@/domain/reading/buildReadingRequest";
 import {
   MAJOR,
   spreadOf,
   standardRegistry,
 } from "@/domain/reading/testing/readingFixtures";
+import type { ReadingSource } from "@/domain/reading/types";
 import type { Spread } from "@/domain/spread/types";
 import { PrewrittenReadingProvider } from "@/infrastructure/reading/prewrittenReadingProvider";
 import { ReadingPanel } from "@/presentation/components/reading/ReadingPanel";
@@ -42,6 +44,7 @@ function Harness(props: {
   readonly requester: ReadingRequester;
   readonly spread?: Spread;
   readonly revealed?: boolean;
+  readonly source?: ReadingSource;
 }) {
   const [createRequestId] = useState(uuids);
   const session = useReadingSession({
@@ -56,6 +59,7 @@ function Harness(props: {
       deck={atelierStandardDeck}
       spread={props.spread ?? spread}
       revealed={props.revealed ?? true}
+      source={props.source ?? "prewritten"}
     />
   );
 }
@@ -82,8 +86,14 @@ function manualRequester() {
   return { requester, calls };
 }
 
+function buildFor(target: Spread) {
+  const build = buildReadingRequest(target, standardRegistry);
+  if (!build.ok) throw new Error("unbuildable spread");
+  return build.request;
+}
+
 function generate() {
-  fireEvent.click(screen.getByRole("button", { name: "產生範例解讀" }));
+  fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
 }
 
 describe("ReadingPanel", () => {
@@ -110,7 +120,7 @@ describe("ReadingPanel", () => {
       screen.getByText("所有牌翻開後，就能產生解讀。"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "產生範例解讀" }),
+      screen.queryByRole("button", { name: "產生解讀" }),
     ).not.toBeInTheDocument();
   });
 
@@ -188,6 +198,44 @@ describe("ReadingPanel", () => {
     expect(await screen.findByText(/涉及財務/u)).toBeInTheDocument();
   });
 
+  it("labels AI readings and says where the question goes before generating", () => {
+    render(<Harness requester={realRequester()} source="ai" />);
+    expect(screen.getByText("AI 解讀")).toBeInTheDocument();
+    expect(screen.getByText(/Cloudflare Workers AI/u)).toBeInTheDocument();
+    expect(screen.queryByText("範例解牌，不是 AI")).not.toBeInTheDocument();
+  });
+
+  it("shows how long an AI reading takes while it is generated", async () => {
+    const { requester } = manualRequester();
+    render(<Harness requester={requester} source="ai" />);
+    generate();
+    expect(await screen.findByText(/正在產生解讀/u)).toBeInTheDocument();
+  });
+
+  it("labels a fallback as a sample and says why AI did not answer", async () => {
+    const { requester, calls } = manualRequester();
+    render(<Harness requester={requester} source="ai" />);
+    generate();
+    const request = calls[0];
+    if (!request) throw new Error("no request");
+    const reading = await realRequester().request(
+      "00000000-0000-4000-8000-000000000099",
+      buildFor(spread),
+    );
+    if (!reading.ok) throw new Error("no reading");
+    await act(async () =>
+      request.answer({
+        ok: true,
+        result: { ...reading.result, fallback: { reason: "daily-limit" } },
+      }),
+    );
+
+    expect(
+      await screen.findByText(/今天的 AI 解讀額度已用完/u),
+    ).toBeInTheDocument();
+    expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
+  });
+
   it("explains why it cannot read yet and disables generating", () => {
     const unfinished = spreadOf([
       { question: "一？", draw: { card: MAJOR(1) } },
@@ -195,6 +243,6 @@ describe("ReadingPanel", () => {
     ]);
     render(<Harness requester={realRequester()} spread={unfinished} />);
     expect(screen.getByRole("alert")).toHaveTextContent("牌位 2 還沒有抽牌。");
-    expect(screen.getByRole("button", { name: "產生範例解讀" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "產生解讀" })).toBeDisabled();
   });
 });
