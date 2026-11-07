@@ -9,12 +9,15 @@ flowchart TD
   A --> D[Domain]
   P --> D
   I --> D
+  V[Server] --> A
+  V --> I
+  V --> D
   S[Shared pure utilities]
   D --> S
   A --> S
 ```
 
-Dependencies only point inward. `domain` is pure TypeScript and has no React, Next.js, Zustand, animation, persistence, or network dependency. ESLint encodes these restrictions.
+Dependencies only point inward. `domain` is pure TypeScript and has no React, Next.js, Zustand, animation, persistence, or network dependency. `server` composes the reading endpoint for Cloudflare Pages Functions; nothing else may import it, and it may not import presentation. ESLint encodes these restrictions.
 
 ## Rendering decisions
 
@@ -46,7 +49,8 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 - `domain/reading` builds a versioned `ReadingRequest` from the `Spread` and `DeckRegistry`, decides how each card is read (upright, reversed or neutral) and holds the safety rules. It is framework-free.
 - `application/reading/readingSchemas.ts` validates both directions with Zod; `createReadingRequester` adds safe retries by request ID and cancellation. Providers sit behind the `ReadingProvider` port.
 - `PrewrittenReadingProvider` composes readings from versioned, lazily loaded content in `infrastructure/reading/content`. See [`reading.md`](./reading.md) and [ADR 0002](./decisions/0002-reading-provider-boundary.md).
+- AI readings: the browser's `FallbackReadingProvider` asks `HttpReadingProvider` first and falls back to pre-written readings. The endpoint (`server/readingsEndpoint.ts`) runs `serveReading` with `AiReadingProvider`, `WorkersAiTextGenerator` and `D1UsageLimiter` behind the `TextGenerator` and `UsageLimiter` ports. See [ADR 0003](./decisions/0003-ai-readings-on-pages-functions.md).
 
 ## Future extension points
 
-Table scenes, uploaded decks and an AI reading provider will use versioned schemas plus registries or application ports. Infrastructure implementations are injected rather than imported into domain code.
+Table scenes and uploaded decks will use versioned schemas plus registries or application ports. Infrastructure implementations are injected rather than imported into domain code.

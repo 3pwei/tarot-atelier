@@ -13,7 +13,11 @@ import {
   standardRegistry,
   type PositionSpec,
 } from "@/domain/reading/testing/readingFixtures";
-import type { ReadingRequest, ReadingResult } from "@/domain/reading/types";
+import {
+  READING_SCHEMA_VERSION,
+  type ReadingRequest,
+  type ReadingResult,
+} from "@/domain/reading/types";
 import { MAX_SPREAD_POSITIONS } from "@/domain/spread/types";
 import {
   loadDeckReadingContent,
@@ -339,7 +343,7 @@ describe("PrewrittenReadingProvider", () => {
 
   it("reads a deck without its own content from the deck's meanings, neutrally when reversed", async () => {
     const request: ReadingRequest = {
-      schemaVersion: "1.0.0",
+      schemaVersion: READING_SCHEMA_VERSION,
       deckId: phaseOneTestDeck.id,
       positions: [
         {

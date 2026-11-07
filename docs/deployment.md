@@ -20,7 +20,7 @@ flowchart LR
 
 A separate Cloudflare Pages project builds this repository directly, through Cloudflare's own GitHub integration. No token is stored in this repository.
 
-`pnpm preview:build` builds with `NEXT_PUBLIC_BASE_PATH=/tarot` and places the export at `preview/tarot/`, so a preview uses exactly the production paths. The preview root `/` redirects to `/tarot/`, unknown paths get the app's 404 page, and every response carries `X-Robots-Tag: noindex` so previews stay out of search results.
+`pnpm preview:build` builds with `NEXT_PUBLIC_BASE_PATH=/tarot` and places the export at `preview/tarot/`, so a preview uses exactly the production paths. It also bundles the reading endpoint into `functions/` at the repository root, where Pages looks for Functions; see [AI readings](#ai-readings-one-time-cloudflare-setup). The preview root `/` redirects to `/tarot/`, unknown paths get the app's 404 page, and every response carries `X-Robots-Tag: noindex` so previews stay out of search results.
 
 Previews keep their own browser storage: spreads saved on a preview are not visible on production, and the reverse.
 
@@ -87,6 +87,33 @@ Close the throwaway PR without merging and delete its branch; branches are auto-
 | Node 22.x                                                 | Add `NODE_VERSION` = `24`                                      |
 | `preview:build` not found                                 | The build used an older commit; Deployments → Retry deployment |
 
+## AI readings: one-time Cloudflare setup
+
+The reading endpoint is a Pages Function (`functions/tarot/api/v1/readings.js`), built by `pnpm preview:build` and `pnpm release:stage`. It needs these settings on **each** Pages project that serves it: first the DEV preview project, then `milespapa-games` before the first release with AI. Until they exist, the endpoint answers 503 and every reading falls back to pre-written readings, so nothing breaks.
+
+**Before you start:** check the account's plan (Workers & Pages → Plans). On **Workers Free**, using up the 10,000 daily Neurons only makes AI fail until 08:00 Taiwan time, at no cost. On a paid plan, extra Neurons are billed; `DAILY_AI_READINGS` is then what caps spending.
+
+1. **Create the usage database once.** Storage & Databases → D1 SQL Database → Create, named for example `tarot-usage`. Leave it empty: the endpoint creates and migrates its own tables.
+2. **Add the bindings.** Workers & Pages → the Pages project → Settings. Do this for both **Production** and **Preview**:
+   - Bindings → Add → **Workers AI**, variable name `AI`.
+   - Bindings → Add → **D1 database**, variable name `USAGE_DB`, database `tarot-usage`.
+3. **Add the secret.** Settings → Variables and Secrets → Add, name `VISITOR_SALT`, a random value of at least 32 characters (for example from a password manager), **Encrypt**, Save. Use a different value for each project.
+4. **Optional variables**, same place, not encrypted: `AI_MODEL`, `DAILY_AI_READINGS`, `VISITOR_DAILY_AI_READINGS` (defaults in [`reading.md`](./reading.md#ai-readings)).
+5. **Redeploy**, because bindings take effect on the next deployment: Deployments → the latest deployment → Retry deployment.
+
+**Check it** on a PR preview:
+
+| #   | Action                                                                                          | Passes when                                                                           |
+| --- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 1   | Main question 「面試結果」, three cards, reveal all, 「產生解讀」                               | After a few seconds the badge says 「AI 解讀」 and the text mentions the interview    |
+| 2   | DevTools → Network → `readings`                                                                 | `POST /tarot/api/v1/readings` answered 200                                            |
+| 3   | Generate five more times                                                                        | The sixth says 「你今天的 AI 解讀次數已用完」 and shows a sample                      |
+| 4   | Deployments → the deployment → View details → Functions → Begin log stream, then generate again | `reading.served` and `reading.ai-usage` lines with token counts, and no question text |
+
+If every reading falls back with 「AI 解讀暫時無法使用」, the log line `reading.misconfigured` names the missing setting.
+
+**Changing the model or limits** needs no code change: edit the variable, then retry the latest deployment.
+
 ## Releasing to production
 
 Releases are manual and happen only when the owner decides. From an up-to-date `master`, with a clean checkout of `milespapa-games` next to this repository:
@@ -95,9 +122,9 @@ Releases are manual and happen only when the owner decides. From an up-to-date `
 pnpm release:stage ../milespapa-games
 ```
 
-It runs the full `pnpm check` with `NEXT_PUBLIC_BASE_PATH=/tarot`, refuses an export built for any other base path, replaces `site/tarot/` entirely so no stale chunks remain, and runs the games site's own `node scripts/check-site.mjs`. It never commits or pushes. Then, in `milespapa-games`:
+It runs the full `pnpm check` with `NEXT_PUBLIC_BASE_PATH=/tarot` and AI readings on, refuses an export built for any other base path, replaces `site/tarot/` and `functions/tarot/` entirely so nothing stale remains, and runs the games site's own `node scripts/check-site.mjs`. It never commits or pushes. Then, in `milespapa-games`:
 
-1. Create a branch `deploy/tarot-<short-sha>` and commit `site/tarot/` as `deploy: tarot <short-sha>`.
+1. Create a branch `deploy/tarot-<short-sha>` and commit `site/tarot/` and `functions/tarot/` as `deploy: tarot <short-sha>`.
 2. Open a pull request with the same title, linking the source commit and PR.
 3. With preview deployments enabled on the `milespapa-games` project (Cloudflare's default), Cloudflare builds a preview of the deploy branch (`<branch>.milespapa-games.pages.dev/tarot/`). It shows exactly what production will serve, other games included; check it before merging.
 4. The owner merges it; Cloudflare Pages publishes `main` to games.milespapa.com.
@@ -108,14 +135,15 @@ Next.js generates a new build ID on every build, so every release is a real file
 
 `scripts/site/` holds the build and release steps as small TypeScript modules, run directly by Node and unit-tested with Vitest:
 
-| Module            | Responsibility                                                                          |
-| ----------------- | --------------------------------------------------------------------------------------- |
-| `siteConfig.ts`   | The only place that names the slug (`tarot`), export and preview folders                |
-| `staticExport.ts` | Build with the base path; refuse an export built for another one                        |
-| `preview.ts`      | Lay out the DEV preview and its Cloudflare host files                                   |
-| `gamesSite.ts`    | Stage a release into a `milespapa-games` checkout                                       |
-| `process.ts`      | Run commands; injected so tests never spawn real builds                                 |
-| `cli.ts`          | The `preview` and `stage` commands behind `pnpm preview:build` and `pnpm release:stage` |
+| Module               | Responsibility                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| `siteConfig.ts`      | The only place that names the slug (`tarot`), export and preview folders                |
+| `staticExport.ts`    | Build with the base path; refuse an export built for another one                        |
+| `preview.ts`         | Lay out the DEV preview and its Cloudflare host files                                   |
+| `gamesSite.ts`       | Stage a release into a `milespapa-games` checkout                                       |
+| `readingFunction.ts` | Bundle the reading endpoint and place it where Pages serves it                          |
+| `process.ts`         | Run commands; injected so tests never spawn real builds                                 |
+| `cli.ts`             | The `preview` and `stage` commands behind `pnpm preview:build` and `pnpm release:stage` |
 
 Another Next.js game can reuse the folder by changing `siteConfig.ts` only.
 

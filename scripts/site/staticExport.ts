@@ -1,16 +1,21 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { StepFailedError, type Run } from "./process.ts";
+import { AI_READINGS_ON } from "../../src/application/reading/readingEndpoint.ts";
 import { basePathOf, type SiteConfig } from "./siteConfig.ts";
 
 /** `pnpm build` only, or the full `pnpm check` gate that ends with a build. */
 export type BuildGate = "build" | "check";
 
-/** Builds the static export with the site's base path. */
+/**
+ * Builds the static export with the site's base path. Every published build
+ * ships the reading endpoint, so AI readings are on.
+ */
 export function buildStaticExport(site: SiteConfig, gate: BuildGate, run: Run) {
   run("pnpm", [gate], {
     env: {
       NEXT_PUBLIC_BASE_PATH: basePathOf(site),
+      NEXT_PUBLIC_AI_READINGS: AI_READINGS_ON,
       NEXT_TELEMETRY_DISABLED: "1",
     },
   });

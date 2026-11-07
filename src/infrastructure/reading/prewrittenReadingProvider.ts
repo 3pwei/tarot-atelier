@@ -21,7 +21,8 @@ export interface PrewrittenReadingSources {
   readonly loadPhrases: () => Promise<ReadingPhrases>;
 }
 
-const defaultSources: PrewrittenReadingSources = {
+/** Content shipped with the app, loaded lazily. */
+export const BUNDLED_READING_SOURCES: PrewrittenReadingSources = {
   loadContent: loadDeckReadingContent,
   loadPhrases: loadReadingPhrases,
 };
@@ -39,7 +40,7 @@ export class PrewrittenReadingProvider implements ReadingProvider {
 
   constructor(
     registry: DeckRegistry,
-    sources: PrewrittenReadingSources = defaultSources,
+    sources: PrewrittenReadingSources = BUNDLED_READING_SOURCES,
   ) {
     this.#registry = registry;
     this.#sources = sources;

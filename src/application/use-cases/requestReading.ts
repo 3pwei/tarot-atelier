@@ -1,4 +1,8 @@
-import type { ReadingProvider } from "@/application/ports/readingProvider";
+import {
+  isAbortError,
+  type ReadingProvider,
+} from "@/application/ports/readingProvider";
+import { answersRequest } from "@/application/reading/answersRequest";
 import {
   readingRequestIdSchema,
   readingRequestSchema,
@@ -26,30 +30,6 @@ export const REMEMBERED_REQUESTS = 20;
 interface RememberedRequest {
   readonly fingerprint: string;
   readonly outcome: Promise<ReadingOutcome>;
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
-}
-
-/** A result must answer the request it was given, position for position. */
-function answersRequest(
-  result: ReadingResult,
-  request: ReadingRequest,
-): boolean {
-  return (
-    result.deckId === request.deckId &&
-    result.positions.length === request.positions.length &&
-    result.positions.every((position, order) => {
-      const asked = request.positions[order];
-      return (
-        asked !== undefined &&
-        position.index === asked.index &&
-        position.primary.cardId === asked.primary.id &&
-        position.jumper?.cardId === asked.jumper?.id
-      );
-    })
-  );
 }
 
 export interface ReadingRequester {

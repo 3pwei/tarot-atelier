@@ -53,3 +53,9 @@ export function recordingRun(outputs: Readonly<Record<string, string>> = {}) {
   };
   return { run, calls };
 }
+
+/** Stands in for esbuild: writes a marker file where the bundle would go. */
+export function fakeBundle(outFile: string): void {
+  mkdirSync(dirname(outFile), { recursive: true });
+  writeFileSync(outFile, "export function onRequestPost() {}");
+}
