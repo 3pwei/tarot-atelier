@@ -6,6 +6,10 @@ import type {
   SpreadTemplateStorage,
 } from "@/application/ports/textStorage";
 import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary";
+import {
+  createReadingRequester,
+  type ReadingRequester,
+} from "@/application/use-cases/requestReading";
 import type { RandomSource } from "@/domain/deck/draw";
 import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
@@ -14,9 +18,13 @@ import {
   SPREAD_SESSION_STORAGE_KEY,
   SPREAD_TEMPLATE_STORAGE_KEY,
 } from "@/infrastructure/persistence/localStorageTextStorage";
+import { PrewrittenReadingProvider } from "@/infrastructure/reading/prewrittenReadingProvider";
 import { DeckStack } from "@/presentation/components/draw/DeckStack";
 import { DrawnCard } from "@/presentation/components/draw/DrawnCard";
 import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
+import { ReadingPanel } from "@/presentation/components/reading/ReadingPanel";
+import { createRequestId as createReadingRequestId } from "@/presentation/components/reading/readingSession";
+import { useReadingSession } from "@/presentation/components/reading/useReadingSession";
 import { MainQuestionField } from "@/presentation/components/spread/MainQuestionField";
 import { PositionInspector } from "@/presentation/components/spread/PositionInspector";
 import { PositionList } from "@/presentation/components/spread/PositionList";
@@ -43,6 +51,9 @@ interface DrawExperienceProps {
   readonly storage?: SpreadSessionStorage;
   readonly templateStorage?: SpreadTemplateStorage;
   readonly createId?: () => string;
+  /** Replaces the offline pre-written provider, e.g. in tests. */
+  readonly readingRequester?: ReadingRequester;
+  readonly createRequestId?: () => string;
 }
 
 /**
@@ -55,14 +66,26 @@ export function DrawExperience({
   storage: storageOverride,
   templateStorage: templateStorageOverride,
   createId = createClientId,
+  readingRequester: readingRequesterOverride,
+  createRequestId = createReadingRequestId,
 }: DrawExperienceProps = {}) {
   const root = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
-  const deck = useMemo(() => {
-    const registry = registerBuiltInDecks(new InMemoryDeckRegistry());
-    return registry.get(STANDARD_DECK_ID) ?? registry.getSelected();
-  }, []);
+  const registry = useMemo(
+    () => registerBuiltInDecks(new InMemoryDeckRegistry()),
+    [],
+  );
+  const deck = useMemo(
+    () => registry.get(STANDARD_DECK_ID) ?? registry.getSelected(),
+    [registry],
+  );
+  const readingRequester = useMemo(
+    () =>
+      readingRequesterOverride ??
+      createReadingRequester(new PrewrittenReadingProvider(registry)),
+    [readingRequesterOverride, registry],
+  );
   const storage = useMemo(
     () =>
       storageOverride ??
@@ -101,6 +124,12 @@ export function DrawExperience({
     flyingCount: dealer.flyingIds.length,
     allRevealed: dealer.allRevealed,
     remaining: dealer.remaining,
+  });
+  const reading = useReadingSession({
+    spread,
+    registry,
+    requester: readingRequester,
+    createRequestId,
   });
   const selected = spread.positions.find((p) => p.id === selectedId);
   const filled = spread.positions.filter((p) => p.drawResult).length;
@@ -299,6 +328,13 @@ export function DrawExperience({
             onSelect={handleSelect}
           />
         </div>
+
+        <ReadingPanel
+          session={reading}
+          deck={deck}
+          spread={spread}
+          revealed={dealer.allRevealed}
+        />
 
         <div className="draw-table__foot">
           <span>

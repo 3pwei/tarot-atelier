@@ -37,7 +37,7 @@ export function HomePage() {
           />
           <span className="brand-name">Tarot Atelier</span>
         </a>
-        <span className="phase-chip">Phase 03 自由牌桌</span>
+        <span className="phase-chip">Phase 04 解牌</span>
       </header>
 
       <main id="top">
@@ -116,7 +116,7 @@ export function HomePage() {
       </main>
 
       <footer className="site-footer content-wrap">
-        Tarot Atelier Phase 03 · 僅供娛樂與自我反思 ·
+        Tarot Atelier Phase 04 · 僅供娛樂與自我反思 ·
         程序式卡框與符號為原創開發素材
       </footer>
     </div>

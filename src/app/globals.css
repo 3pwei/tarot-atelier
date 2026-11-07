@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./draw-experience.css";
 @import "./spread-table.css";
+@import "./reading-panel.css";
 
 :root {
   --color-midnight: #080914;

@@ -211,6 +211,22 @@ describe("DrawExperience spread table", () => {
     await screen.findByText("牌陣已完成");
   });
 
+  it("reads the finished spread offline, labelled as a sample", async () => {
+    renderTable();
+    await ready();
+    await shuffleAndDeal();
+    expect(
+      screen.getByText("所有牌翻開後，就能產生解讀。"),
+    ).toBeInTheDocument();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+
+    fireEvent.click(screen.getByRole("button", { name: "產生範例解讀" }));
+    expect(await screen.findByText("全局關聯")).toBeInTheDocument();
+    expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
+    expect(screen.getAllByText("單牌象徵").length).toBeGreaterThan(0);
+  });
+
   it("never shows players the jumper probability", async () => {
     const { container } = renderTable();
     await ready();
