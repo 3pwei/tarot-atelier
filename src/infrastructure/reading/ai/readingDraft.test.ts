@@ -22,6 +22,24 @@ describe("parseReadingDraft", () => {
     expect(parseReadingDraft(wrapped)).toMatchObject({ ok: true });
   });
 
+  it("reads a jumper written as null or empty as no jumper", () => {
+    for (const jumper of [null, ""]) {
+      const parsed = parseReadingDraft(
+        JSON.stringify({
+          ...draft,
+          positions: [{ index: 1, interpretation: "提醒。", jumper }],
+        }),
+      );
+      expect(parsed).toEqual({
+        ok: true,
+        draft: {
+          ...draft,
+          positions: [{ index: 1, interpretation: "提醒。" }],
+        },
+      });
+    }
+  });
+
   it("refuses an answer with no JSON or broken JSON", () => {
     expect(parseReadingDraft("抱歉，我無法解讀。")).toEqual({
       ok: false,

@@ -15,6 +15,16 @@ const text = (max: number) =>
 
 const L = READING_DRAFT_LENGTHS;
 
+/**
+ * Models told to leave out a field often write it as null or "" instead.
+ * Both mean "no text", the same as leaving it out.
+ */
+const optionalText = (max: number) =>
+  z.preprocess(
+    (value) => (value === null || value === "" ? undefined : value),
+    text(max).optional(),
+  );
+
 /** What the model writes; card names and symbolism are added from content. */
 export const readingDraftSchema = z.object({
   positions: z
@@ -22,7 +32,7 @@ export const readingDraftSchema = z.object({
       z.object({
         index: z.number().int().min(1),
         interpretation: text(L.interpretation.max),
-        jumper: text(L.jumper.max).optional(),
+        jumper: optionalText(L.jumper.max),
       }),
     )
     .min(1),
