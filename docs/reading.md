@@ -45,7 +45,7 @@ The content lives in `infrastructure/reading/content/` as versioned JSON, valida
 | `readingPhrases.zh-Hant.json`                            | The position and main-question sentence for each role, minor-card and jumper templates, synthesis sentences, orientation labels, suit themes and a fallback for decks without content |
 
 - **Deterministic:** `composeReading` is pure. It picks between template variants with a hash of the request, so the same spread always reads the same way.
-- **Lazy:** each content file is its own chunk, fetched only when a reading is requested. The first page load is unaffected; the standard deck's content is about 44 KB gzipped in total, across seven chunks.
+- **Lazy:** each content file is its own chunk, fetched only when a reading is requested. The first page load is unaffected; the standard deck's content is about 32 KB gzipped in total, across seven chunks.
 - **No reversed meaning, no invention:** a reversed card is read _neutrally_ when its deck does not support reversals or defines no reversed meaning (`domain/reading/cardMeaning.ts`). It keeps its core symbolism with a note, instead of using placeholder text or making a meaning up.
 - **Other decks:** a deck without its own content is read from its manifest: meanings and keywords through the fallback templates. Giving a deck its own content means adding one loader to `contentLibrary.ts`.
 - **Authorship:** written by Claude for this project; the content records `review: "pending-owner-review"` until the owner has reviewed it.
