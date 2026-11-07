@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { READING_WAIT_MS } from "@/application/reading/readingsApi";
 import type { WorkersAiBinding } from "@/infrastructure/reading/ai/workersAiTextGenerator";
 import type { D1Database } from "@/infrastructure/reading/usage/d1UsageLimiter";
 
@@ -11,7 +12,8 @@ export const READING_ENDPOINT_DEFAULTS = Object.freeze({
   dailyReadings: 150,
   visitorDailyReadings: 5,
   maxOutputTokens: 3_000,
-  aiTimeoutMs: 25_000,
+  /** Long enough for a twelve-card reading; the browser waits longer. */
+  aiTimeoutMs: 45_000,
 });
 
 const hasMethod = (name: string) => (value: unknown) =>
@@ -39,6 +41,12 @@ const endpointEnvSchema = z.object({
   AI_MODEL: z.string().trim().min(1).default(D.model),
   DAILY_AI_READINGS: positiveInteger(D.dailyReadings),
   VISITOR_DAILY_AI_READINGS: positiveInteger(D.visitorDailyReadings),
+  AI_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(5_000)
+    .max(READING_WAIT_MS.serverMax)
+    .default(D.aiTimeoutMs),
 });
 
 export interface ReadingEndpointConfig {
@@ -80,7 +88,7 @@ export function readingEndpointConfigOf(
       dailyReadings: values.DAILY_AI_READINGS,
       visitorDailyReadings: values.VISITOR_DAILY_AI_READINGS,
       maxOutputTokens: D.maxOutputTokens,
-      aiTimeoutMs: D.aiTimeoutMs,
+      aiTimeoutMs: values.AI_TIMEOUT_MS,
     },
   };
 }

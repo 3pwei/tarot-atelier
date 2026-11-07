@@ -79,7 +79,9 @@ See [ADR 0003](./decisions/0003-ai-readings-on-pages-functions.md) for the decis
 | 503           | `{ reason: "unavailable" }`                      | Falls back and says AI is unavailable    |
 | 400, 403, 413 | `{ error }`                                      | Falls back as unavailable                |
 
-The browser also falls back after 40 seconds without an answer, or when the endpoint cannot be reached.
+The browser also falls back after 60 seconds without an answer (`READING_WAIT_MS`), or when the endpoint cannot be reached.
+
+Each model call is logged as `reading.ai-call` with its outcome (`answered`, `timeout`, `allocation-used-up` or `failed`), `elapsedMs`, token counts, `finishReason` and `reasoningChars`. Readings ask the model not to think first (`enable_thinking: false`); a `reasoningChars` above 0 means the model ignored that.
 
 **On the server**, `serveReading` does, in order:
 
@@ -100,5 +102,6 @@ Workers AI error 4006 (free allocation used up) is reported as `daily-limit`.
 | `AI_MODEL`                  | variable               | `@cf/google/gemma-4-26b-a4b-it` |
 | `DAILY_AI_READINGS`         | variable               | 150                             |
 | `VISITOR_DAILY_AI_READINGS` | variable               | 5                               |
+| `AI_TIMEOUT_MS`             | variable               | 45000 (5000 to 55000)           |
 
 Without the bindings or the salt, the endpoint logs which are missing and answers 503, so every reading falls back.

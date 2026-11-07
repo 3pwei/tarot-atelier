@@ -16,6 +16,7 @@ export function onRequestPost(context: {
   return handleReadingsRequest(context.request, context.env, {
     registry,
     now: () => new Date(),
+    clock: () => performance.now(),
     log: (event) => console.log(JSON.stringify(event)),
   });
 }

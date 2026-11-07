@@ -50,6 +50,7 @@ function setUp(
       {
         registry: standardRegistry,
         now: () => new Date("2026-11-07T10:00:00Z"),
+        clock: () => 0,
         log: (event) => logs.push({ ...event }),
       },
     );
@@ -140,10 +141,13 @@ describe("handleReadingsRequest", () => {
     await call({ ...validRequest, mainQuestion: "我的私人問題" });
     expect(logs).toEqual([
       {
-        event: "reading.ai-usage",
+        event: "reading.ai-call",
         model: "@cf/google/gemma-4-26b-a4b-it",
+        outcome: "answered",
+        elapsedMs: 0,
         inputTokens: 900,
         outputTokens: 600,
+        reasoningChars: 0,
       },
       { event: "reading.served", outcome: "ok" },
     ]);

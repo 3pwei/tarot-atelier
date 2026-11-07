@@ -13,6 +13,18 @@ import type { ServeReadingFailure } from "@/application/use-cases/serveReading";
 /** Largest request body accepted; a full twelve-card spread is far smaller. */
 export const MAX_READING_REQUEST_BYTES = 16_384;
 
+/**
+ * How long an AI reading may take. The server stops waiting for the model
+ * before the browser stops waiting for the server, so the browser always
+ * hears why and can say so.
+ */
+export const READING_WAIT_MS = Object.freeze({
+  /** Longest wait for the model that the server may be configured with. */
+  serverMax: 55_000,
+  /** When the browser gives up on the endpoint and falls back. */
+  browser: 60_000,
+});
+
 /** HTTP status for each outcome. */
 export const READINGS_STATUS = Object.freeze({
   ok: 200,

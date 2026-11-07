@@ -23,6 +23,7 @@ describe("readingEndpointConfigOf", () => {
         model: READING_ENDPOINT_DEFAULTS.model,
         dailyReadings: 150,
         visitorDailyReadings: 5,
+        aiTimeoutMs: 45_000,
       },
     });
   });
@@ -33,6 +34,7 @@ describe("readingEndpointConfigOf", () => {
       AI_MODEL: "@cf/zai-org/glm-4.7-flash",
       DAILY_AI_READINGS: "80",
       VISITOR_DAILY_AI_READINGS: "3",
+      AI_TIMEOUT_MS: "30000",
     });
     expect(parsed).toMatchObject({
       ok: true,
@@ -40,6 +42,7 @@ describe("readingEndpointConfigOf", () => {
         model: "@cf/zai-org/glm-4.7-flash",
         dailyReadings: 80,
         visitorDailyReadings: 3,
+        aiTimeoutMs: 30_000,
       },
     });
   });
@@ -54,6 +57,12 @@ describe("readingEndpointConfigOf", () => {
       "VISITOR_SALT: Add a secret VISITOR_SALT of at least 32 characters.",
     ]);
     expect(problems.join()).not.toContain("short");
+  });
+
+  it("refuses a model wait the browser would not outlast", () => {
+    expect(
+      readingEndpointConfigOf({ ...bindings(), AI_TIMEOUT_MS: "60000" }).ok,
+    ).toBe(false);
   });
 
   it("refuses a limit below one", () => {

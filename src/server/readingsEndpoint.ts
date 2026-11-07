@@ -9,10 +9,7 @@ import {
 } from "@/application/use-cases/serveReading";
 import type { DeckRegistry } from "@/domain/deck/deckRegistry";
 import { AiReadingProvider } from "@/infrastructure/reading/ai/aiReadingProvider";
-import {
-  WorkersAiTextGenerator,
-  type UsageLog,
-} from "@/infrastructure/reading/ai/workersAiTextGenerator";
+import { WorkersAiTextGenerator } from "@/infrastructure/reading/ai/workersAiTextGenerator";
 import { BUNDLED_READING_SOURCES } from "@/infrastructure/reading/prewrittenReadingProvider";
 import {
   D1UsageLimiter,
@@ -30,6 +27,8 @@ export type EndpointLog = (event: Readonly<Record<string, unknown>>) => void;
 export interface ReadingsEndpointDeps {
   readonly registry: DeckRegistry;
   readonly now: () => Date;
+  /** Milliseconds from any fixed point, for timing model calls. */
+  readonly clock: () => number;
   readonly log: EndpointLog;
 }
 
@@ -123,8 +122,6 @@ async function serve(
   });
   await migrateOnce(config.usageDb, limiter, day);
 
-  const logUsage: UsageLog = (usage) =>
-    deps.log({ event: "reading.ai-usage", ...usage });
   const provider = new AiReadingProvider(
     deps.registry,
     new WorkersAiTextGenerator(
@@ -134,7 +131,10 @@ async function serve(
         maxOutputTokens: config.maxOutputTokens,
         timeoutMs: config.aiTimeoutMs,
       },
-      logUsage,
+      {
+        log: (record) => deps.log({ event: "reading.ai-call", ...record }),
+        now: deps.clock,
+      },
     ),
     BUNDLED_READING_SOURCES,
   );

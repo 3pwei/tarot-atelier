@@ -94,25 +94,28 @@ The reading endpoint is a Pages Function (`functions/tarot/api/v1/readings.js`),
 **Before you start:** check the account's plan (Workers & Pages → Plans). On **Workers Free**, using up the 10,000 daily Neurons only makes AI fail until 08:00 Taiwan time, at no cost. On a paid plan, extra Neurons are billed; `DAILY_AI_READINGS` is then what caps spending.
 
 1. **Create the usage database once.** Storage & Databases → D1 SQL Database → Create, named for example `tarot-usage`. Leave it empty: the endpoint creates and migrates its own tables.
-2. **Add the bindings.** Workers & Pages → the Pages project → Settings. Do this for both **Production** and **Preview**:
+2. **Add the bindings.** Workers & Pages → the Pages project → Settings, then pick the environment in the **Choose Environment** menu at the top. Do steps 2 to 4 for **Preview** (PR previews) and again for **Production** (the branch `master` on this project); settings in one environment are not seen by the other:
    - Bindings → Add → **Workers AI**, variable name `AI`.
    - Bindings → Add → **D1 database**, variable name `USAGE_DB`, database `tarot-usage`.
 3. **Add the secret.** Settings → Variables and Secrets → Add, name `VISITOR_SALT`, a random value of at least 32 characters (for example from a password manager), **Encrypt**, Save. Use a different value for each project.
-4. **Optional variables**, same place, not encrypted: `AI_MODEL`, `DAILY_AI_READINGS`, `VISITOR_DAILY_AI_READINGS` (defaults in [`reading.md`](./reading.md#ai-readings)).
-5. **Redeploy**, because bindings take effect on the next deployment: Deployments → the latest deployment → Retry deployment.
+4. **Optional variables**, same place, not encrypted: `AI_MODEL`, `DAILY_AI_READINGS`, `VISITOR_DAILY_AI_READINGS`, `AI_TIMEOUT_MS` (defaults in [`reading.md`](./reading.md#ai-readings)).
+5. **Deploy again**, because settings take effect only on deployments made after them. Pages offers **Retry deployment** only for failed deployments, so push a new commit to the branch instead (an empty commit is enough: `git commit --allow-empty -m "chore: redeploy preview"`).
 
 **Check it** on a PR preview:
 
-| #   | Action                                                                                          | Passes when                                                                           |
-| --- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 1   | Main question 「面試結果」, three cards, reveal all, 「產生解讀」                               | After a few seconds the badge says 「AI 解讀」 and the text mentions the interview    |
-| 2   | DevTools → Network → `readings`                                                                 | `POST /tarot/api/v1/readings` answered 200                                            |
-| 3   | Generate five more times                                                                        | The sixth says 「你今天的 AI 解讀次數已用完」 and shows a sample                      |
-| 4   | Deployments → the deployment → View details → Functions → Begin log stream, then generate again | `reading.served` and `reading.ai-usage` lines with token counts, and no question text |
+| #   | Action                                                                                          | Passes when                                                                                          |
+| --- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 1   | Main question 「面試結果」, three cards, reveal all, 「產生解讀」                               | After a few seconds the badge says 「AI 解讀」 and the text mentions the interview                   |
+| 2   | DevTools → Network → `readings`                                                                 | `POST /tarot/api/v1/readings` answered 200                                                           |
+| 3   | Generate five more times                                                                        | The sixth says 「你今天的 AI 解讀次數已用完」 and shows a sample                                     |
+| 4   | Deployments → the deployment → View details → Functions → Begin log stream, then generate again | `reading.served` and `reading.ai-call` lines with `elapsedMs` and token counts, and no question text |
 
-If every reading falls back with 「AI 解讀暫時無法使用」, the log line `reading.misconfigured` names the missing setting.
+If every reading falls back with 「AI 解讀暫時無法使用」:
 
-**Changing the model or limits** needs no code change: edit the variable, then retry the latest deployment.
+- answered within a second or so: a setting is missing in this environment, and the log line `reading.misconfigured` names it;
+- answered after about `AI_TIMEOUT_MS`: the model was too slow, and `reading.ai-call` shows `outcome: "timeout"`.
+
+**Changing the model or limits** needs no code change: edit the variable, then deploy again as in step 5.
 
 ## Releasing to production
 
