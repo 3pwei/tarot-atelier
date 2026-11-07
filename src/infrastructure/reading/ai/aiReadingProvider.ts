@@ -116,7 +116,13 @@ export class AiReadingProvider implements ReadingProvider {
       options.signal,
     );
     const parsed = parseReadingDraft(answer);
-    if (!parsed.ok) throw unusable(parsed.problem);
+    if (!parsed.ok) {
+      throw unusable(
+        parsed.where
+          ? `${parsed.problem} (${parsed.where.join(", ")})`
+          : parsed.problem,
+      );
+    }
     return this.#assemble(request, sources, reads, parsed.draft);
   }
 

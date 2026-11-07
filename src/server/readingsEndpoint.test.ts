@@ -105,11 +105,31 @@ describe("handleReadingsRequest", () => {
     expect(await response.json()).toEqual({ reason: "daily-limit" });
   });
 
-  it("answers 503 when the model's answer cannot be used", async () => {
-    const { call } = setUp(async () => ({ response: "一定會成功！" }));
+  it("answers 503 when the model's answer cannot be used, and logs why", async () => {
+    const { call, logs } = setUp(async () => ({ response: "一定會成功！" }));
     const response = await call();
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ reason: "unavailable" });
+    expect(logs.at(-1)).toEqual({
+      event: "reading.served",
+      outcome: "unavailable",
+      detail: "The AI answer could not be used: no-json.",
+    });
+  });
+
+  it("logs where a malformed answer is wrong without quoting it", async () => {
+    const { call, logs } = setUp(async () => ({
+      response: JSON.stringify({
+        positions: [{ index: 1, interpretation: "秘密".repeat(400) }],
+        synthesis: "整體",
+        reflectionQuestions: ["？"],
+        suggestions: ["可以考慮"],
+      }),
+    }));
+    await call();
+    const detail = String(logs.at(-1)?.detail);
+    expect(detail).toContain("positions.0.interpretation");
+    expect(detail).not.toContain("秘密");
   });
 
   it("refuses other sites, oversized bodies and invalid requests", async () => {

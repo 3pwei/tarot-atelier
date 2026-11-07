@@ -10,7 +10,7 @@ import {
   readingResultSchema,
 } from "@/application/reading/readingSchemas";
 import type { DeckRegistry } from "@/domain/deck/deckRegistry";
-import { isFreeOfCertainty } from "@/domain/reading/readingSafety";
+import { certaintyPhrasesIn } from "@/domain/reading/readingSafety";
 import type {
   ReadingFallbackReason,
   ReadingRequest,
@@ -21,7 +21,12 @@ export type ServeReadingFailure = "invalid-request" | ReadingFallbackReason;
 
 export type ServeReadingOutcome =
   | { readonly ok: true; readonly result: ReadingResult }
-  | { readonly ok: false; readonly failure: ServeReadingFailure };
+  | {
+      readonly ok: false;
+      readonly failure: ServeReadingFailure;
+      /** Why, for the server log only; it never quotes player or model text. */
+      readonly detail?: string;
+    };
 
 export interface ServeReadingDeps {
   readonly registry: DeckRegistry;
@@ -58,16 +63,25 @@ function isKnownToRegistry(
   );
 }
 
-/** An AI answer is shown only when it is well formed, answers and is safe. */
-function isServable(answer: unknown, request: ReadingRequest): boolean {
+/**
+ * Why an AI answer cannot be shown, or `undefined` when it is well formed,
+ * answers the request and is safe. Certainty phrases are named because they
+ * come from our own fixed list, not from the answer.
+ */
+function unservableBecause(
+  answer: unknown,
+  request: ReadingRequest,
+): string | undefined {
   const parsed = readingResultSchema.safeParse(answer);
-  return (
-    parsed.success &&
-    parsed.data.source === "ai" &&
-    parsed.data.fallback === undefined &&
-    answersRequest(parsed.data, request) &&
-    isFreeOfCertainty(parsed.data)
-  );
+  if (!parsed.success) return "result-schema";
+  if (parsed.data.source !== "ai" || parsed.data.fallback !== undefined) {
+    return "not-ai";
+  }
+  if (!answersRequest(parsed.data, request)) return "off-request";
+  const phrases = certaintyPhrasesIn(parsed.data);
+  return phrases.length > 0
+    ? `certainty-phrases (${phrases.join(", ")})`
+    : undefined;
 }
 
 /**
@@ -95,13 +109,12 @@ export async function serveReading(
     answer = await deps.provider.interpret(request, { signal });
   } catch (error) {
     if (isAbortError(error)) throw error;
-    return {
-      ok: false,
-      failure:
-        error instanceof ReadingUnavailableError ? error.reason : "unavailable",
-    };
+    return error instanceof ReadingUnavailableError
+      ? { ok: false, failure: error.reason, detail: error.message }
+      : { ok: false, failure: "unavailable", detail: "provider-error" };
   }
-  return isServable(answer, request)
+  const problem = unservableBecause(answer, request);
+  return problem === undefined
     ? { ok: true, result: answer }
-    : { ok: false, failure: "unavailable" };
+    : { ok: false, failure: "unavailable", detail: problem };
 }

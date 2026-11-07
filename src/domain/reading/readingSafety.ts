@@ -37,11 +37,9 @@ export function readingTexts(result: ReadingResult): readonly string[] {
   ];
 }
 
-/** True when no text of the reading states certainty or gives orders. */
-export function isFreeOfCertainty(result: ReadingResult): boolean {
-  return readingTexts(result).every(
-    (text) => findCertaintyPhrases(text).length === 0,
-  );
+/** The forbidden phrases any text of the reading uses, each named once. */
+export function certaintyPhrasesIn(result: ReadingResult): readonly string[] {
+  return [...new Set(readingTexts(result).flatMap(findCertaintyPhrases))];
 }
 
 const SENSITIVE_TOPIC_KEYWORDS: Readonly<

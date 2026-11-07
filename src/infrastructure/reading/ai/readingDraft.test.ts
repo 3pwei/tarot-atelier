@@ -36,16 +36,20 @@ describe("parseReadingDraft", () => {
   it("refuses an answer of the wrong shape or far too long", () => {
     expect(
       parseReadingDraft(JSON.stringify({ ...draft, positions: [] })),
-    ).toEqual({ ok: false, problem: "invalid-shape" });
+    ).toEqual({
+      ok: false,
+      problem: "invalid-shape",
+      where: ["positions too_small"],
+    });
     expect(
       parseReadingDraft(
         JSON.stringify({ ...draft, synthesis: "長".repeat(600) }),
       ),
-    ).toEqual({ ok: false, problem: "invalid-shape" });
+    ).toMatchObject({ ok: false, problem: "invalid-shape" });
     expect(
       parseReadingDraft(
         JSON.stringify({ ...draft, suggestions: ["一", "二", "三", "四"] }),
       ),
-    ).toEqual({ ok: false, problem: "invalid-shape" });
+    ).toMatchObject({ ok: false, problem: "invalid-shape" });
   });
 });

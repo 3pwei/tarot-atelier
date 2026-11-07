@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   detectSensitiveTopics,
   findCertaintyPhrases,
-  isFreeOfCertainty,
+  certaintyPhrasesIn,
   readingTexts,
 } from "@/domain/reading/readingSafety";
 import {
@@ -38,7 +38,7 @@ const reading = (jumperText: string): ReadingResult => ({
   sensitiveTopics: [],
 });
 
-describe("isFreeOfCertainty", () => {
+describe("certaintyPhrasesIn", () => {
   it("checks every text a player reads, jumpers included", () => {
     expect(readingTexts(reading("跳牌"))).toEqual([
       "整體",
@@ -49,8 +49,8 @@ describe("isFreeOfCertainty", () => {
       "象徵",
       "跳牌",
     ]);
-    expect(isFreeOfCertainty(reading("跳牌"))).toBe(true);
-    expect(isFreeOfCertainty(reading("你注定會失敗"))).toBe(false);
+    expect(certaintyPhrasesIn(reading("跳牌"))).toEqual([]);
+    expect(certaintyPhrasesIn(reading("你注定會失敗，注定"))).toEqual(["注定"]);
   });
 });
 

@@ -48,7 +48,12 @@ function jsonObjectIn(text: string): string | undefined {
 
 export type ReadingDraftParse =
   | { readonly ok: true; readonly draft: ReadingDraft }
-  | { readonly ok: false; readonly problem: "no-json" | "invalid-shape" };
+  | {
+      readonly ok: false;
+      readonly problem: "no-json" | "invalid-shape";
+      /** Where the shape is wrong, e.g. "positions.0.jumper too_big"; no text. */
+      readonly where?: readonly string[];
+    };
 
 export function parseReadingDraft(text: string): ReadingDraftParse {
   const json = jsonObjectIn(text);
@@ -62,5 +67,11 @@ export function parseReadingDraft(text: string): ReadingDraftParse {
   const parsed = readingDraftSchema.safeParse(value);
   return parsed.success
     ? { ok: true, draft: parsed.data }
-    : { ok: false, problem: "invalid-shape" };
+    : {
+        ok: false,
+        problem: "invalid-shape",
+        where: parsed.error.issues.map(
+          (issue) => `${issue.path.join(".") || "(root)"} ${issue.code}`,
+        ),
+      };
 }

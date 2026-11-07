@@ -94,6 +94,7 @@ describe("serveReading", () => {
     expect(await serveReading(validRequest, visitor, deps)).toEqual({
       ok: false,
       failure: "daily-limit",
+      detail: "allocation used up",
     });
   });
 
@@ -105,19 +106,21 @@ describe("serveReading", () => {
     expect(await serveReading(validRequest, visitor, deps)).toEqual({
       ok: false,
       failure: "unavailable",
+      detail: "certainty-phrases (一定會)",
     });
   });
 
   it("refuses an answer that is malformed, pre-written or off-request", async () => {
-    for (const answer of [
-      { ...aiResult, positions: [] },
-      resultFor(validRequest),
-      { ...aiResult, deckId: "other" },
-    ]) {
+    for (const [answer, detail] of [
+      [{ ...aiResult, positions: [] }, "result-schema"],
+      [resultFor(validRequest), "not-ai"],
+      [{ ...aiResult, deckId: "other" }, "off-request"],
+    ] as const) {
       const { deps } = depsWith(async () => answer);
       expect(await serveReading(validRequest, visitor, deps)).toEqual({
         ok: false,
         failure: "unavailable",
+        detail,
       });
     }
   });

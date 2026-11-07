@@ -182,6 +182,7 @@ export async function handleReadingsRequest(
     deps.log({
       event: "reading.served",
       outcome: outcome.ok ? "ok" : outcome.failure,
+      ...(!outcome.ok && outcome.detail ? { detail: outcome.detail } : {}),
     });
     return responseFor(outcome);
   } catch (error) {
