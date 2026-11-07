@@ -2,17 +2,18 @@ import type {
   InterpretOptions,
   ReadingProvider,
 } from "@/application/ports/readingProvider";
-import type {
-  CardReading,
-  ReadingRequest,
-  ReadingResult,
+import {
+  READING_SCHEMA_VERSION,
+  type CardReading,
+  type ReadingRequest,
+  type ReadingResult,
 } from "@/domain/reading/types";
 
 export const REQUEST_ID = "6f1c2b9e-3d4a-4b8f-9c2e-1a2b3c4d5e6f";
 export const OTHER_REQUEST_ID = "0a9b8c7d-6e5f-4a3b-8c1d-0e9f8a7b6c5d";
 
 export const validRequest: ReadingRequest = {
-  schemaVersion: "1.0.0",
+  schemaVersion: READING_SCHEMA_VERSION,
   deckId: "atelier-standard-tarot",
   positions: [
     {
@@ -50,7 +51,7 @@ function cardReading(
 /** A minimal valid answer to `request`. */
 export function resultFor(request: ReadingRequest): ReadingResult {
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: READING_SCHEMA_VERSION,
     deckId: request.deckId,
     source: "prewritten",
     positions: request.positions.map((position) => ({

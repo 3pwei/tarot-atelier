@@ -5,6 +5,7 @@ import type {
   SpreadSessionStorage,
   SpreadTemplateStorage,
 } from "@/application/ports/textStorage";
+import type { ReadingProvider } from "@/application/ports/readingProvider";
 import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary";
 import {
   createReadingRequester,
@@ -18,7 +19,8 @@ import {
   SPREAD_SESSION_STORAGE_KEY,
   SPREAD_TEMPLATE_STORAGE_KEY,
 } from "@/infrastructure/persistence/localStorageTextStorage";
-import { PrewrittenReadingProvider } from "@/infrastructure/reading/prewrittenReadingProvider";
+import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
+import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { DeckStack } from "@/presentation/components/draw/DeckStack";
 import { DrawnCard } from "@/presentation/components/draw/DrawnCard";
 import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
@@ -51,7 +53,9 @@ interface DrawExperienceProps {
   readonly storage?: SpreadSessionStorage;
   readonly templateStorage?: SpreadTemplateStorage;
   readonly createId?: () => string;
-  /** Replaces the offline pre-written provider, e.g. in tests. */
+  /** Replaces the configured reading provider, e.g. in tests. */
+  readonly readingProvider?: ReadingProvider;
+  /** Replaces the requester around the provider, e.g. in tests. */
   readonly readingRequester?: ReadingRequester;
   readonly createRequestId?: () => string;
 }
@@ -66,6 +70,7 @@ export function DrawExperience({
   storage: storageOverride,
   templateStorage: templateStorageOverride,
   createId = createClientId,
+  readingProvider: readingProviderOverride,
   readingRequester: readingRequesterOverride,
   createRequestId = createReadingRequestId,
 }: DrawExperienceProps = {}) {
@@ -80,11 +85,15 @@ export function DrawExperience({
     () => registry.get(STANDARD_DECK_ID) ?? registry.getSelected(),
     [registry],
   );
-  const readingRequester = useMemo(
+  const readingProvider = useMemo(
     () =>
-      readingRequesterOverride ??
-      createReadingRequester(new PrewrittenReadingProvider(registry)),
-    [readingRequesterOverride, registry],
+      readingProviderOverride ??
+      createBrowserReadingProvider(registry, browserReadingConfig),
+    [readingProviderOverride, registry],
+  );
+  const readingRequester = useMemo(
+    () => readingRequesterOverride ?? createReadingRequester(readingProvider),
+    [readingRequesterOverride, readingProvider],
   );
   const storage = useMemo(
     () =>
@@ -338,6 +347,7 @@ export function DrawExperience({
           deck={deck}
           spread={spread}
           revealed={spreadRevealed}
+          source={readingProvider.source}
         />
 
         <div className="draw-table__foot">

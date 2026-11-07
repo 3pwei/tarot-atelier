@@ -1,7 +1,10 @@
 import type { Orientation } from "@/domain/deck/types";
 
-/** Version of the request and result formats exchanged with a provider. */
-export const READING_SCHEMA_VERSION = "1.0.0" as const;
+/**
+ * Version of the request and result formats exchanged with a provider and
+ * the reading endpoint. 1.1.0 added `ReadingResult.fallback`.
+ */
+export const READING_SCHEMA_VERSION = "1.1.0" as const;
 
 export interface ReadingCardRef {
   readonly id: string;
@@ -56,6 +59,18 @@ export type SensitiveTopic = "health" | "legal" | "financial";
 /** Where a result came from; the UI labels anything that is not live AI. */
 export type ReadingSource = "prewritten" | "ai";
 
+/** Why a live AI reading was not available, so pre-written content answered. */
+export const READING_FALLBACK_REASONS = [
+  /** This visitor used today's AI readings. */
+  "visitor-limit",
+  /** The site used today's AI readings, or the provider's free allocation. */
+  "daily-limit",
+  /** The AI could not answer, or answered with something unusable. */
+  "unavailable",
+] as const;
+
+export type ReadingFallbackReason = (typeof READING_FALLBACK_REASONS)[number];
+
 export interface ReadingResult {
   readonly schemaVersion: typeof READING_SCHEMA_VERSION;
   readonly deckId: string;
@@ -68,4 +83,6 @@ export interface ReadingResult {
   readonly suggestions: readonly string[];
   /** Topics that call for a qualified professional rather than cards. */
   readonly sensitiveTopics: readonly SensitiveTopic[];
+  /** Present when pre-written content stood in for an AI reading. */
+  readonly fallback?: { readonly reason: ReadingFallbackReason };
 }

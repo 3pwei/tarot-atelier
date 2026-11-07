@@ -1,4 +1,4 @@
-import type { SensitiveTopic } from "@/domain/reading/types";
+import type { ReadingResult, SensitiveTopic } from "@/domain/reading/types";
 
 /**
  * Phrases that state the future as certain or order the reader around.
@@ -21,6 +21,25 @@ export const FORBIDDEN_CERTAINTY_PHRASES: readonly string[] = Object.freeze([
 
 export function findCertaintyPhrases(text: string): readonly string[] {
   return FORBIDDEN_CERTAINTY_PHRASES.filter((phrase) => text.includes(phrase));
+}
+
+/** Every text of a reading that a player reads. */
+export function readingTexts(result: ReadingResult): readonly string[] {
+  return [
+    result.synthesis,
+    ...result.reflectionQuestions,
+    ...result.suggestions,
+    ...result.positions.flatMap((position) =>
+      [position.primary, position.jumper].flatMap((card) =>
+        card ? [card.symbolism, card.interpretation] : [],
+      ),
+    ),
+  ];
+}
+
+/** The forbidden phrases any text of the reading uses, each named once. */
+export function certaintyPhrasesIn(result: ReadingResult): readonly string[] {
+  return [...new Set(readingTexts(result).flatMap(findCertaintyPhrases))];
 }
 
 const SENSITIVE_TOPIC_KEYWORDS: Readonly<

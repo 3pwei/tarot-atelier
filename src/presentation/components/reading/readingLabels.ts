@@ -1,6 +1,11 @@
 import type { ReadingFailure } from "@/application/use-cases/requestReading";
 import type { ReadingRequestIssue } from "@/domain/reading/buildReadingRequest";
-import type { MeaningMode, SensitiveTopic } from "@/domain/reading/types";
+import type {
+  MeaningMode,
+  ReadingFallbackReason,
+  ReadingSource,
+  SensitiveTopic,
+} from "@/domain/reading/types";
 
 /** Every player-facing word of the reading panel lives here. */
 
@@ -20,6 +25,34 @@ export const FAILURE_MESSAGES: Readonly<Record<ReadingFailure, string>> =
     "provider-failed": "解讀暫時無法產生，請再試一次。",
     "invalid-result": "解讀內容格式有誤，已略過。請再試一次。",
   });
+
+/** Why pre-written content answered instead of AI. */
+export const FALLBACK_MESSAGES: Readonly<
+  Record<ReadingFallbackReason, string>
+> = Object.freeze({
+  "visitor-limit": "你今天的 AI 解讀次數已用完，先提供範例解牌，明天可以再試。",
+  "daily-limit": "今天的 AI 解讀額度已用完，先提供範例解牌，明天可以再試。",
+  unavailable: "AI 解讀暫時無法使用，先提供範例解牌。",
+});
+
+/** How each source is labelled, so nothing pre-written passes for AI. */
+export const SOURCE_COPY: Readonly<
+  Record<
+    ReadingSource,
+    { readonly badge: string; readonly note: string; readonly loading: string }
+  >
+> = Object.freeze({
+  prewritten: {
+    badge: "範例解牌，不是 AI",
+    note: "依牌義預先撰寫並組合而成，不是即時生成的 AI 解讀。",
+    loading: "正在組合解讀…",
+  },
+  ai: {
+    badge: "AI 解讀",
+    note: "由 AI 依牌義即時生成。產生時，牌陣與問題會送到 Cloudflare Workers AI 處理，不會被保存。",
+    loading: "正在產生解讀，約需十幾秒…",
+  },
+});
 
 export const TOPIC_LABELS: Readonly<Record<SensitiveTopic, string>> =
   Object.freeze({
@@ -53,11 +86,8 @@ export function issueMessage(issue: ReadingRequestIssue): string {
 
 export const READING_COPY = Object.freeze({
   title: "解讀",
-  sampleBadge: "範例解牌，不是 AI",
-  sourceNote: "依牌義預先撰寫並組合而成，不是即時生成的 AI 解讀。",
-  generate: "產生範例解讀",
+  generate: "產生解讀",
   regenerate: "重新產生",
-  loading: "正在組合解讀…",
   cancel: "取消",
   retry: "再試一次",
   stale: "牌陣已改變，下方是先前的解讀。按「重新產生」以更新。",

@@ -2,7 +2,57 @@ import { describe, expect, it } from "vitest";
 import {
   detectSensitiveTopics,
   findCertaintyPhrases,
+  certaintyPhrasesIn,
+  readingTexts,
 } from "@/domain/reading/readingSafety";
+import {
+  READING_SCHEMA_VERSION,
+  type CardReading,
+  type ReadingResult,
+} from "@/domain/reading/types";
+
+const card = (interpretation: string): CardReading => ({
+  cardId: "c",
+  cardName: "牌",
+  orientation: "upright",
+  meaningMode: "upright",
+  symbolism: "象徵",
+  interpretation,
+});
+
+const reading = (jumperText: string): ReadingResult => ({
+  schemaVersion: READING_SCHEMA_VERSION,
+  deckId: "d",
+  source: "ai",
+  positions: [
+    {
+      index: 1,
+      question: "？",
+      primary: card("主牌"),
+      jumper: card(jumperText),
+    },
+  ],
+  synthesis: "整體",
+  reflectionQuestions: ["反思？"],
+  suggestions: ["可以考慮休息。"],
+  sensitiveTopics: [],
+});
+
+describe("certaintyPhrasesIn", () => {
+  it("checks every text a player reads, jumpers included", () => {
+    expect(readingTexts(reading("跳牌"))).toEqual([
+      "整體",
+      "反思？",
+      "可以考慮休息。",
+      "象徵",
+      "主牌",
+      "象徵",
+      "跳牌",
+    ]);
+    expect(certaintyPhrasesIn(reading("跳牌"))).toEqual([]);
+    expect(certaintyPhrasesIn(reading("你注定會失敗，注定"))).toEqual(["注定"]);
+  });
+});
 
 describe("findCertaintyPhrases", () => {
   it("finds statements of certainty and commands", () => {

@@ -1,15 +1,19 @@
 # Readings
 
-Once every card on the table is revealed, the reading panel can read the spread. Phase 04 ships one provider: **pre-written readings**, composed in the browser from content written ahead of time. It needs no API key, server or network, costs nothing per reading and is labelled 「範例解牌，不是 AI」 wherever it appears.
+Once every card on the table is revealed, the reading panel can read the spread with one button, 「產生解讀」. Published builds read with **AI first** (Phase 05): the site's own endpoint asks Cloudflare Workers AI on its free allocation. When AI cannot answer, the browser falls back to **pre-written readings**, composed in the browser from content written ahead of time (Phase 04), and says why. Pre-written readings are labelled 「範例解牌，不是 AI」 wherever they appear; `next dev` reads with them alone.
 
 ## Flow
 
 ```mermaid
 flowchart LR
-  S[Spread + DeckRegistry] -->|buildReadingRequest| R[ReadingRequest v1.0.0]
+  S[Spread + DeckRegistry] -->|buildReadingRequest| R[ReadingRequest v1.1.0]
   R -->|readingRequestSchema| Q[createReadingRequester]
-  Q -->|ReadingProvider port| P[PrewrittenReadingProvider]
+  Q -->|ReadingProvider port| F[FallbackReadingProvider]
+  F -->|first| H[HttpReadingProvider]
+  H -->|POST /tarot/api/v1/readings| E[Pages Function]
+  F -->|when AI cannot answer| P[PrewrittenReadingProvider]
   P -->|composeReading| X[ReadingResult]
+  E --> X
   X -->|readingResultSchema + answers the request| U[ReadingPanel]
 ```
 
@@ -62,6 +66,42 @@ Tests enforce these over all content and over composed readings of every card an
 - Lengths stay within `CONTENT_LIMITS`, so text fits a phone.
 - Templates use only the placeholders they are filled with. Inserted values (such as a player's question) are never scanned again.
 
-## Adding an AI provider later
+## AI readings
 
-Implement `ReadingProvider` with `source: "ai"`, calling the project's own server endpoint. The server validates with the same schemas, keeps the key, applies per-user and daily limits and runs the same safety checks before answering. The panel and the requester need no change. See [ADR 0002](./decisions/0002-reading-provider-boundary.md).
+See [ADR 0003](./decisions/0003-ai-readings-on-pages-functions.md) for the decisions and [`deployment.md`](./deployment.md#ai-readings-one-time-cloudflare-setup) for the setup.
+
+**Endpoint** `POST /tarot/api/v1/readings` (`src/server/readingsEndpoint.ts`), body: a `ReadingRequest`.
+
+| Status        | Body                                             | Browser does                             |
+| ------------- | ------------------------------------------------ | ---------------------------------------- |
+| 200           | `{ result }` (source `ai`)                       | Shows it, labelled 「AI 解讀」           |
+| 429           | `{ reason: "visitor-limit" }` or `"daily-limit"` | Falls back and says the limit is used up |
+| 503           | `{ reason: "unavailable" }`                      | Falls back and says AI is unavailable    |
+| 400, 403, 413 | `{ error }`                                      | Falls back as unavailable                |
+
+The browser also falls back after 60 seconds without an answer (`READING_WAIT_MS`), or when the endpoint cannot be reached.
+
+Each model call is logged as `reading.ai-call` with its outcome (`answered`, `timeout`, `allocation-used-up` or `failed`), `elapsedMs`, token counts, `finishReason` and `reasoningChars`. Readings ask the model not to think first (`enable_thinking: false`); a `reasoningChars` above 0 means the model ignored that.
+
+**On the server**, `serveReading` does, in order:
+
+1. Validate the request and that its deck and cards exist; refuse it uncounted otherwise.
+2. Count it against the visitor's and the site's daily limit (UTC days, when Workers AI's allocation resets).
+3. Ask `AiReadingProvider`. It sends the model each card's name, orientation, deck meaning and keywords, and the questions as JSON data. The model returns only the texts: an interpretation per position, a jumper message where there is a jumper, the synthesis, reflection questions and suggestions. Card names and symbolism are filled in from the deck and the pre-written content.
+4. Refuse the answer unless it matches the draft schema, answers every position asked and no other, and contains no forbidden certainty phrase.
+
+Workers AI error 4006 (free allocation used up) is reported as `daily-limit`.
+
+**Settings** (Cloudflare Pages, read by `src/server/readingEndpointConfig.ts`):
+
+| Name                        | Kind                   | Default                         |
+| --------------------------- | ---------------------- | ------------------------------- |
+| `AI`                        | Workers AI binding     | required                        |
+| `USAGE_DB`                  | D1 binding             | required                        |
+| `VISITOR_SALT`              | secret, 32+ characters | required                        |
+| `AI_MODEL`                  | variable               | `@cf/google/gemma-4-26b-a4b-it` |
+| `DAILY_AI_READINGS`         | variable               | 150                             |
+| `VISITOR_DAILY_AI_READINGS` | variable               | 5                               |
+| `AI_TIMEOUT_MS`             | variable               | 45000 (5000 to 55000)           |
+
+Without the bindings or the salt, the endpoint logs which are missing and answers 503, so every reading falls back.

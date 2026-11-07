@@ -169,6 +169,7 @@
 }
 
 .reading-stale,
+.reading-fallback,
 .reading-professional {
   margin: 0;
   padding: 0.75rem 1rem;
@@ -180,6 +181,12 @@
 .reading-stale {
   border: 1px dashed rgba(230, 197, 122, 0.4);
   color: var(--color-gold);
+}
+
+.reading-fallback {
+  border: 1px solid rgba(230, 197, 122, 0.4);
+  color: var(--color-moon);
+  background: rgba(230, 197, 122, 0.08);
 }
 
 .reading-professional {

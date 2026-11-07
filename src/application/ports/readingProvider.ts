@@ -1,4 +1,5 @@
 import type {
+  ReadingFallbackReason,
   ReadingRequest,
   ReadingResult,
   ReadingSource,
@@ -23,4 +24,22 @@ export interface ReadingProvider {
     request: ReadingRequest,
     options?: InterpretOptions,
   ): Promise<ReadingResult>;
+}
+
+/**
+ * A provider could not read for a known reason, such as a used-up daily
+ * limit. Callers can fall back to another provider and tell the player why.
+ */
+export class ReadingUnavailableError extends Error {
+  readonly reason: ReadingFallbackReason;
+
+  constructor(reason: ReadingFallbackReason, message: string) {
+    super(message);
+    this.name = "ReadingUnavailableError";
+    this.reason = reason;
+  }
+}
+
+export function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
 }

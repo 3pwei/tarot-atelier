@@ -219,7 +219,7 @@ describe("DrawExperience spread table", () => {
       screen.getByText("所有牌翻開後，就能產生解讀。"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "產生範例解讀" }),
+      screen.queryByRole("button", { name: "產生解讀" }),
     ).not.toBeInTheDocument();
     await shuffleAndDeal();
     expect(
@@ -228,7 +228,7 @@ describe("DrawExperience spread table", () => {
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
 
-    fireEvent.click(screen.getByRole("button", { name: "產生範例解讀" }));
+    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
     expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
     expect(screen.getAllByText("單牌象徵").length).toBeGreaterThan(0);
@@ -240,7 +240,7 @@ describe("DrawExperience spread table", () => {
     await shuffleAndDeal();
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
-    expect(screen.getByRole("button", { name: "產生範例解讀" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "產生解讀" })).toBeEnabled();
 
     addPosition();
     expect(
