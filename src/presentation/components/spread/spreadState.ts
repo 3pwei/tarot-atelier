@@ -155,7 +155,8 @@ const TEMPLATE_MESSAGES: Readonly<Record<TemplateRuleCode, string>> = {
   "unknown-template": "找不到這個牌陣，請重新選擇。",
 };
 
-const LOCKED_BY_DRAWS = "已有抽牌結果；請先清除本次牌陣再換牌陣。";
+const LOCKED_BY_DRAWS =
+  "已有抽牌結果；請按「完成編輯」，在抽牌畫面清除本次牌陣後再換牌陣。";
 
 function applyUpdate(
   state: SpreadUiState,

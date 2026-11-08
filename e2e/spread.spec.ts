@@ -107,6 +107,15 @@ async function dragWithInput(
   await touch("touchEnd", start.x + dx, start.y + dy);
 }
 
+/** Moving and rotating positions needs arrange mode. */
+async function arrange(page: Page) {
+  await page.getByRole("button", { name: "編輯牌陣" }).click();
+}
+
+async function finishArranging(page: Page) {
+  await page.getByRole("button", { name: "完成編輯" }).click();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
@@ -117,6 +126,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   page,
   isMobile,
 }) => {
+  await arrange(page);
   const before = await relativePosition(page, 3);
   await dragBy(page, slot(page, 3), -30, -40, isMobile);
   const after = await relativePosition(page, 3);
@@ -125,7 +135,8 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
 
   await handle(page, 2).click();
   await page.getByLabel("旋轉（度）").fill("45");
-  await page.getByRole("button", { name: "完成" }).click();
+  await page.getByRole("button", { name: "完成", exact: true }).click();
+  await finishArranging(page);
   await page.getByRole("button", { name: "放大牌桌" }).click();
   await expect(
     page.getByRole("button", { name: /縮放 1.25 倍/u }),
@@ -156,6 +167,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   const drawnName = await page
     .getByRole("button", { name: /^牌位 1 主牌：/u })
     .getAttribute("aria-label");
+  await arrange(page);
   await handle(page, 1).focus();
   await page.keyboard.press("Shift+ArrowDown");
   await expect(
@@ -170,11 +182,11 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
 test("custom spreads need questions and stop at twelve positions", async ({
   page,
 }) => {
+  await arrange(page);
   await page.getByRole("button", { name: "空白牌桌" }).click();
-  await expect(page.getByText("請先新增至少一個牌位")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "洗牌", exact: true }),
-  ).toBeDisabled();
+    page.getByText("請按「編輯牌陣」新增至少一個牌位"),
+  ).toBeVisible();
 
   const add = page.getByRole("button", { name: "＋ 新增牌位" });
   for (let count = 1; count <= 12; count += 1) await add.click();
@@ -183,16 +195,20 @@ test("custom spreads need questions and stop at twelve positions", async ({
   await expect(page.locator("[data-slot]")).toHaveCount(12);
   await expect(page.getByText(/牌位最多 12 個/u)).toBeVisible();
 
-  await expect(page.getByText("請先為牌位 1 設定問題")).toBeVisible();
+  await expect(
+    page.getByText("請按「編輯牌陣」為牌位 1 設定問題"),
+  ).toBeVisible();
   for (let index = 1; index <= 12; index += 1) {
     await handle(page, index).focus();
     await page.keyboard.press("Enter");
     await page.getByLabel(/這個牌位的問題/u).fill(`第 ${index} 個問題`);
   }
+  await finishArranging(page);
   await expect(
     page.getByRole("button", { name: "洗牌", exact: true }),
   ).toBeEnabled();
 
+  await arrange(page);
   await handle(page, 12).focus();
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "刪除牌位" }).click();
@@ -201,6 +217,7 @@ test("custom spreads need questions and stop at twelve positions", async ({
 });
 
 test("keyboard and numeric keypad move a position", async ({ page }) => {
+  await arrange(page);
   const before = await relativePosition(page, 1);
   await handle(page, 1).focus();
   await page.keyboard.press("ArrowRight");
@@ -214,7 +231,9 @@ test("keyboard and numeric keypad move a position", async ({ page }) => {
 
 test("the spread survives a page reload", async ({ page }) => {
   await page.getByLabel(/主問題/u).fill("下個月的方向");
+  await arrange(page);
   await page.getByRole("button", { name: "五張十字", exact: true }).click();
+  await finishArranging(page);
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
   await dealAll(page, 5);
   await reveal(page, 1);
@@ -255,6 +274,7 @@ test("corrupted saved data falls back to a working table", async ({ page }) => {
 test("the table fits the viewport without horizontal scrolling", async ({
   page,
 }) => {
+  await arrange(page);
   await page.getByRole("button", { name: "圓環", exact: true }).click();
   await expect(page.locator("[data-slot]")).toHaveCount(8);
   const dimensions = await page.evaluate(() => ({
@@ -278,12 +298,13 @@ test("the table fits the viewport without horizontal scrolling", async ({
 test("named templates are saved, deleted and restored across reloads", async ({
   page,
 }) => {
+  await arrange(page);
   await handle(page, 2).click();
   await slot(page, 2)
     .getByRole("button", { name: "牌位 2 順時針轉 45°" })
     .click();
   await expect(slot(page, 2)).toHaveAttribute("style", /--rot: 45deg/u);
-  await page.getByRole("button", { name: "完成" }).click();
+  await page.getByRole("button", { name: "完成", exact: true }).click();
 
   await page.getByRole("button", { name: "儲存目前牌陣" }).click();
   await page.getByLabel("牌陣名稱").fill("斜放三張");
@@ -299,6 +320,7 @@ test("named templates are saved, deleted and restored across reloads", async ({
 
   await page.reload();
   await expect(page.getByText("已載入上次的牌陣。")).toBeVisible();
+  await arrange(page);
   await expect(
     page.getByRole("button", { name: "經典三張", exact: true }),
   ).toHaveCount(0);
@@ -371,6 +393,7 @@ test("press and hold, then drag, rotates a position around its centre", async ({
   page,
   isMobile,
 }) => {
+  await arrange(page);
   await page.getByRole("button", { name: "放大牌桌" }).click();
   await page.getByRole("button", { name: "放大牌桌" }).click();
   const target = slot(page, 2);
@@ -403,4 +426,85 @@ test("press and hold, then drag, rotates a position around its centre", async ({
   );
   expect(await rotationOf(page, 2)).toBe(180);
   expect(await relativePosition(page, 2)).toEqual(before);
+});
+
+test("during play, dragging or holding a position never moves or rotates it", async ({
+  page,
+  isMobile,
+}) => {
+  const target = slot(page, 2);
+  const before = await relativePosition(page, 2);
+  await dragBy(page, target, -40, -30, isMobile);
+  const box = await target.boundingBox();
+  if (!box) throw new Error("slot 2 is not visible");
+  const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await sweep(
+    page,
+    middle,
+    { x: middle.x + box.width * 0.35, y: middle.y },
+    { isMobile, holdMs: 700 },
+  );
+
+  expect(await relativePosition(page, 2)).toEqual(before);
+  expect(await rotationOf(page, 2)).toBe(0);
+  await expect(page.getByRole("button", { name: /順時針轉 45°/u })).toHaveCount(
+    0,
+  );
+
+  await arrange(page);
+  await expect(page.locator(".spread-board")).toHaveAttribute(
+    "data-arranging",
+    "true",
+  );
+  await expect(
+    page.getByRole("button", { name: "洗牌", exact: true }),
+  ).toBeDisabled();
+  await finishArranging(page);
+  await expect(
+    page.getByRole("button", { name: "洗牌", exact: true }),
+  ).toBeEnabled();
+});
+
+test("position numbers stay out of the way of dealt cards during play", async ({
+  page,
+}) => {
+  await expect(handle(page, 1)).toBeVisible();
+  const empty = await handle(page, 1).boundingBox();
+  const card = await slot(page, 1).boundingBox();
+  if (!empty || !card) throw new Error("position 1 is not visible");
+  // A small numeral below the empty position, not a badge over it.
+  expect(empty.y).toBeGreaterThanOrEqual(card.y + card.height - 1);
+
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await dealAll(page, 3);
+  for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
+
+  await page.getByRole("button", { name: "編輯牌陣" }).click();
+  for (const index of [1, 2, 3])
+    await expect(handle(page, index)).toBeVisible();
+});
+
+test("a revealed card opens large and fits the screen", async ({ page }) => {
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await dealAll(page, 3);
+  await reveal(page, 1);
+
+  // A jumper may cover the middle of the main card, so open it by keyboard.
+  await page
+    .getByRole("button", { name: /^牌位 1 主牌：.+點擊放大$/u })
+    .focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("牌位 1 · 主牌")).toBeVisible();
+
+  const viewport = page.viewportSize();
+  const card = await dialog.locator(".card-viewer__card").boundingBox();
+  if (!viewport || !card) throw new Error("the enlarged card is not visible");
+  expect(card.x).toBeGreaterThanOrEqual(0);
+  expect(card.x + card.width).toBeLessThanOrEqual(viewport.width);
+  expect(card.width).toBeGreaterThan(150);
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
 });

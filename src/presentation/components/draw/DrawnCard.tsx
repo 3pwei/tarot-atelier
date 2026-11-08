@@ -40,6 +40,8 @@ interface DrawnCardProps {
   /** Spread position number, used in the accessible name. */
   readonly positionIndex?: number;
   readonly onRevealed: (instanceId: string) => void;
+  /** Opens the large view of a revealed card. */
+  readonly onInspect?: (instanceId: string) => void;
 }
 
 function ignitionFromPointer(
@@ -67,6 +69,7 @@ export function DrawnCard({
   dealOrder = 0,
   positionIndex,
   onRevealed,
+  onInspect,
 }: DrawnCardProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<RevealState>(
@@ -100,7 +103,13 @@ export function DrawnCard({
     [],
   );
 
-  function reveal(event: MouseEvent<HTMLButtonElement>) {
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    if (isRevealed && onInspect) {
+      // Viewing a card is not a request to edit its position.
+      event.stopPropagation();
+      onInspect(instance.instanceId);
+      return;
+    }
     if (!canReveal) return;
     if (motionMode === "reduced") {
       finish();
@@ -125,11 +134,12 @@ export function DrawnCard({
       <button
         type="button"
         className="drawn-card__button"
-        onClick={reveal}
-        aria-disabled={!canReveal}
+        onClick={handleClick}
+        aria-disabled={!canReveal && !(isRevealed && onInspect)}
+        aria-haspopup={isRevealed && onInspect ? "dialog" : undefined}
         aria-label={
           isRevealed
-            ? `${roleLabel}：${card.name.zhHant}，${orientationLabel}`
+            ? `${roleLabel}：${card.name.zhHant}，${orientationLabel}${onInspect ? "，點擊放大" : ""}`
             : `以火焰揭示${roleLabel}`
         }
       >

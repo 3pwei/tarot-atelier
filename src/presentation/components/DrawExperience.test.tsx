@@ -99,11 +99,28 @@ function handle(index: number): HTMLElement {
   });
 }
 
+/** Moving and rotating positions happens in arrange mode only. */
+function arrange() {
+  fireEvent.click(screen.getByRole("button", { name: "編輯牌陣" }));
+}
+
+/** Editing the layout (templates, adding, the inspector) needs arrange mode. */
+function arrangeIfNeeded() {
+  const toggle = screen.queryByRole("button", { name: "編輯牌陣" });
+  if (toggle) fireEvent.click(toggle);
+}
+
+function finishArranging() {
+  fireEvent.click(screen.getByRole("button", { name: "完成編輯" }));
+}
+
 function chooseBlank() {
+  arrangeIfNeeded();
   fireEvent.click(screen.getByRole("button", { name: "空白牌桌" }));
 }
 
 function addPosition() {
+  arrangeIfNeeded();
   fireEvent.click(screen.getByRole("button", { name: "＋ 新增牌位" }));
 }
 
@@ -115,6 +132,8 @@ describe("DrawExperience spread table", () => {
     expect(document.querySelectorAll("[data-slot]")).toHaveLength(3);
     const list = screen.getByRole("list", { name: "牌位與問題" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(3);
+    expect(screen.queryByText("3 / 12 牌位")).not.toBeInTheDocument();
+    arrange();
     expect(screen.getByText("3 / 12 牌位")).toBeInTheDocument();
   });
 
@@ -163,7 +182,9 @@ describe("DrawExperience spread table", () => {
     reveal(2);
     await screen.findByText("牌陣已完成");
     expect(
-      screen.getByRole("button", { name: /^牌位 1 主牌：.+，(正位|逆位)$/u }),
+      screen.getByRole("button", {
+        name: /^牌位 1 主牌：.+，(正位|逆位)，點擊放大$/u,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -178,6 +199,7 @@ describe("DrawExperience spread table", () => {
     fireEvent.change(screen.getByLabelText(/這個牌位的問題/u), {
       target: { value: "還有什麼要知道？" },
     });
+    finishArranging();
     fireEvent.click(
       await screen.findByRole("button", { name: "從牌堆發牌到 1 個牌位" }),
     );
@@ -261,20 +283,27 @@ describe("DrawExperience spread table", () => {
     await ready();
     chooseBlank();
 
-    expect(await screen.findByText("請先新增至少一個牌位")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    expect(
+      await screen.findByText("請按「編輯牌陣」新增至少一個牌位"),
+    ).toBeInTheDocument();
 
     addPosition();
     expect(
-      await screen.findByText("請先為牌位 1 設定問題"),
+      await screen.findByText("請按「編輯牌陣」為牌位 1 設定問題"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
 
     const question = screen.getByLabelText(/這個牌位的問題/u);
     fireEvent.change(question, { target: { value: "   " } });
+    finishArranging();
+    // A blank question still blocks play after arranging.
     expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
-    fireEvent.change(question, { target: { value: "我該把力氣放在哪裡？" } });
 
+    arrange();
+    fireEvent.click(handle(1));
+    fireEvent.change(screen.getByLabelText(/這個牌位的問題/u), {
+      target: { value: "我該把力氣放在哪裡？" },
+    });
+    finishArranging();
     await screen.findByText("準備好了，請洗牌");
     expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
   });
@@ -298,6 +327,7 @@ describe("DrawExperience spread table", () => {
   it("renumbers in order after a removal and announces it", async () => {
     renderTable();
     await ready();
+    arrange();
     fireEvent.click(screen.getByRole("button", { name: "五張十字" }));
     fireEvent.click(handle(2));
     fireEvent.click(screen.getByRole("button", { name: "刪除牌位" }));
@@ -314,6 +344,7 @@ describe("DrawExperience spread table", () => {
   it("moves with arrow keys or the numeric keypad and rotates with brackets", async () => {
     renderTable();
     await ready();
+    arrange();
     const second = handle(2);
 
     fireEvent.keyDown(second, { key: "ArrowRight", code: "ArrowRight" });
@@ -330,6 +361,7 @@ describe("DrawExperience spread table", () => {
   it("rotates a selected position with its turning-arrow button", async () => {
     renderTable();
     await ready();
+    arrange();
     expect(
       screen.queryByRole("button", { name: /順時針轉 45°/u }),
     ).not.toBeInTheDocument();
@@ -351,6 +383,7 @@ describe("DrawExperience spread table", () => {
   it("edits order, rotation and position from the inspector", async () => {
     renderTable();
     await ready();
+    arrange();
     fireEvent.click(handle(3));
 
     fireEvent.change(screen.getByLabelText("排序"), { target: { value: "1" } });
@@ -375,6 +408,7 @@ describe("DrawExperience spread table", () => {
     await shuffleAndDeal();
     const before = slot(1).querySelector("[data-draw-card='primary']");
 
+    arrange();
     fireEvent.keyDown(handle(1), { key: "ArrowDown", code: "ArrowDown" });
 
     expect(slot(1).style.getPropertyValue("--y")).toBe("0.51");
@@ -383,6 +417,92 @@ describe("DrawExperience spread table", () => {
     fireEvent.click(handle(1));
     expect(screen.getByRole("button", { name: "刪除牌位" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "五張十字" })).toBeDisabled();
+  });
+
+  it("never moves or rotates positions during play", async () => {
+    renderTable();
+    await ready();
+    const second = handle(2);
+
+    fireEvent.keyDown(second, { key: "ArrowRight", code: "ArrowRight" });
+    fireEvent.keyDown(second, { key: "]", code: "BracketRight" });
+    expect(slot(2).style.getPropertyValue("--x")).toBe("0.5");
+    expect(slot(2).style.getPropertyValue("--rot")).toBe("0deg");
+
+    fireEvent.click(second);
+    expect(
+      screen.queryByRole("button", { name: /順時針轉 45°/u }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("position-inspector")).not.toBeInTheDocument();
+  });
+
+  it("shows layout editing controls only while arranging", async () => {
+    renderTable();
+    await ready();
+    const editing = ["＋ 新增牌位", "儲存目前牌陣", "經典三張"] as const;
+    for (const name of editing) {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    }
+    expect(screen.getByLabelText(/主問題/u)).toBeInTheDocument();
+    // Starting over belongs to play.
+    expect(
+      screen.getByRole("button", { name: "清除本次牌陣" }),
+    ).toBeInTheDocument();
+
+    arrange();
+    for (const name of editing) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+    expect(
+      screen.queryByRole("button", { name: "清除本次牌陣" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(handle(2));
+    expect(screen.getByTestId("position-inspector")).toBeInTheDocument();
+
+    finishArranging();
+    expect(screen.queryByTestId("position-inspector")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "＋ 新增牌位" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("pauses shuffling and dealing while arranging, and resumes after", async () => {
+    renderTable();
+    await ready();
+    arrange();
+    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "完成編輯", pressed: true }),
+    ).toBeInTheDocument();
+
+    finishArranging();
+    expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
+    await shuffleAndDeal();
+  });
+
+  it("enlarges a revealed card and returns focus when closed", async () => {
+    renderTable();
+    await ready();
+    await shuffleAndDeal();
+    reveal(1);
+    const card = screen.getByRole("button", { name: /^牌位 1 主牌：/u });
+    card.focus();
+    fireEvent.click(card);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAccessibleName(/.+(正位|逆位)$/u);
+    expect(within(dialog).getByText("牌位 1 · 主牌")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("這件事的過去與起因是什麼？"),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(card).toHaveFocus();
+
+    fireEvent.click(card);
+    fireEvent.click(screen.getByRole("button", { name: "關閉放大檢視" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("restores the spread, draws and reveals after a reload", async () => {
@@ -451,6 +571,7 @@ describe("DrawExperience spread table", () => {
 
 describe("DrawExperience template library", () => {
   async function saveAs(name: string) {
+    arrangeIfNeeded();
     fireEvent.click(screen.getByRole("button", { name: "儲存目前牌陣" }));
     fireEvent.change(screen.getByLabelText("牌陣名稱"), {
       target: { value: name },
@@ -483,6 +604,7 @@ describe("DrawExperience template library", () => {
 
     renderTable({ templateStorage });
     await ready();
+    arrange();
     fireEvent.click(screen.getByRole("button", { name: "每週一張" }));
     expect(
       await screen.findByText("已套用「每週一張」，共 1 個牌位。"),
@@ -512,6 +634,7 @@ describe("DrawExperience template library", () => {
     const templateStorage = new MemoryStorage();
     renderTable({ templateStorage });
     await ready();
+    arrange();
 
     fireEvent.click(
       screen.getByRole("button", { name: "刪除牌陣「經典三張」" }),
@@ -545,6 +668,7 @@ describe("DrawExperience template library", () => {
   it("can cancel a deletion", async () => {
     renderTable();
     await ready();
+    arrange();
     fireEvent.click(screen.getByRole("button", { name: "刪除牌陣「圓環」" }));
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
     expect(screen.getByRole("button", { name: "圓環" })).toBeInTheDocument();

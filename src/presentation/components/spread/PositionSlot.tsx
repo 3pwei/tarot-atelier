@@ -42,8 +42,8 @@ export function keyDirection(
 interface PositionSlotProps {
   readonly position: SpreadPosition;
   readonly selected: boolean;
-  /** Layout is frozen while the deck shuffles or a card is in flight. */
-  readonly locked: boolean;
+  /** The position may be moved and rotated (arrange mode, nothing in flight). */
+  readonly arrangeable: boolean;
   readonly field: RefObject<HTMLElement | null>;
   readonly onSelect: (positionId: string) => void;
   readonly onMove: (positionId: string, point: TablePoint) => void;
@@ -90,7 +90,7 @@ function percent(value: number): number {
 export function PositionSlot({
   position,
   selected,
-  locked,
+  arrangeable,
   field,
   onSelect,
   onMove,
@@ -104,7 +104,7 @@ export function PositionSlot({
     onRotate(position.id, position.rotation + ROTATE_BUTTON_STEP);
   const gestures = useSlotGestures({
     position,
-    locked,
+    arrangeable,
     field,
     slot: slotRef,
     onMove,
@@ -121,7 +121,7 @@ export function PositionSlot({
   } as CSSProperties;
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    if (locked) return;
+    if (!arrangeable) return;
     const direction = keyDirection(event);
     if (direction) {
       event.preventDefault();
@@ -146,7 +146,7 @@ export function PositionSlot({
       data-selected={selected || undefined}
       data-drawn={hasCards || undefined}
       data-missing-question={question.length === 0 || undefined}
-      data-locked={locked || undefined}
+      data-arrangeable={arrangeable || undefined}
       data-rotating={gestures.rotating || undefined}
       onPointerDown={gestures.onSlotPointerDown}
       onClickCapture={gestures.onClickCapture}
@@ -165,7 +165,7 @@ export function PositionSlot({
       >
         {position.index}
       </button>
-      {(selected || gestures.rotating) && !locked && (
+      {(selected || gestures.rotating) && arrangeable && (
         <button
           type="button"
           className="spread-slot__rotate"
@@ -188,8 +188,9 @@ export function PositionSlot({
       )}
       <span id={hintId} className="sr-only">
         {`位置：橫向 ${percent(position.x)}、縱向 ${percent(position.y)}（0–100），旋轉 ${position.rotation} 度。`}
-        方向鍵或數字鍵盤移動，Shift 加大步幅；[ 與 ] 旋轉；Enter
-        編輯。觸控或滑鼠：拖曳移動，長按後拖曳旋轉。
+        {arrangeable
+          ? "方向鍵或數字鍵盤移動，Shift 加大步幅；[ 與 ] 旋轉；Enter 編輯。觸控或滑鼠：拖曳移動，長按後拖曳旋轉。"
+          : "Enter 編輯問題。要移動或旋轉，請先按「編輯牌陣」。"}
       </span>
       {hasCards ? (
         <div className="spread-slot__cards">{children}</div>
