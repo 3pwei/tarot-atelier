@@ -182,11 +182,11 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
 test("custom spreads need questions and stop at twelve positions", async ({
   page,
 }) => {
+  await arrange(page);
   await page.getByRole("button", { name: "空白牌桌" }).click();
-  await expect(page.getByText("請先新增至少一個牌位")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "洗牌", exact: true }),
-  ).toBeDisabled();
+    page.getByText("請按「編輯牌陣」新增至少一個牌位"),
+  ).toBeVisible();
 
   const add = page.getByRole("button", { name: "＋ 新增牌位" });
   for (let count = 1; count <= 12; count += 1) await add.click();
@@ -195,16 +195,20 @@ test("custom spreads need questions and stop at twelve positions", async ({
   await expect(page.locator("[data-slot]")).toHaveCount(12);
   await expect(page.getByText(/牌位最多 12 個/u)).toBeVisible();
 
-  await expect(page.getByText("請先為牌位 1 設定問題")).toBeVisible();
+  await expect(
+    page.getByText("請按「編輯牌陣」為牌位 1 設定問題"),
+  ).toBeVisible();
   for (let index = 1; index <= 12; index += 1) {
     await handle(page, index).focus();
     await page.keyboard.press("Enter");
     await page.getByLabel(/這個牌位的問題/u).fill(`第 ${index} 個問題`);
   }
+  await finishArranging(page);
   await expect(
     page.getByRole("button", { name: "洗牌", exact: true }),
   ).toBeEnabled();
 
+  await arrange(page);
   await handle(page, 12).focus();
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "刪除牌位" }).click();
@@ -227,7 +231,9 @@ test("keyboard and numeric keypad move a position", async ({ page }) => {
 
 test("the spread survives a page reload", async ({ page }) => {
   await page.getByLabel(/主問題/u).fill("下個月的方向");
+  await arrange(page);
   await page.getByRole("button", { name: "五張十字", exact: true }).click();
+  await finishArranging(page);
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
   await dealAll(page, 5);
   await reveal(page, 1);
@@ -245,6 +251,7 @@ test("the spread survives a page reload", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible();
 
+  await arrange(page);
   await page.getByRole("button", { name: "清除本次牌陣" }).click();
   await page.getByRole("button", { name: "確定清除" }).click();
   await expect(page.locator("[data-slot]")).toHaveCount(3);
@@ -313,6 +320,7 @@ test("named templates are saved, deleted and restored across reloads", async ({
 
   await page.reload();
   await expect(page.getByText("已載入上次的牌陣。")).toBeVisible();
+  await arrange(page);
   await expect(
     page.getByRole("button", { name: "經典三張", exact: true }),
   ).toHaveCount(0);

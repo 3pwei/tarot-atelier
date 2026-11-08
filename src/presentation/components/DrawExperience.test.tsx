@@ -104,15 +104,23 @@ function arrange() {
   fireEvent.click(screen.getByRole("button", { name: "編輯牌陣" }));
 }
 
+/** Editing the layout (templates, adding, the inspector) needs arrange mode. */
+function arrangeIfNeeded() {
+  const toggle = screen.queryByRole("button", { name: "編輯牌陣" });
+  if (toggle) fireEvent.click(toggle);
+}
+
 function finishArranging() {
   fireEvent.click(screen.getByRole("button", { name: "完成編輯" }));
 }
 
 function chooseBlank() {
+  arrangeIfNeeded();
   fireEvent.click(screen.getByRole("button", { name: "空白牌桌" }));
 }
 
 function addPosition() {
+  arrangeIfNeeded();
   fireEvent.click(screen.getByRole("button", { name: "＋ 新增牌位" }));
 }
 
@@ -124,6 +132,8 @@ describe("DrawExperience spread table", () => {
     expect(document.querySelectorAll("[data-slot]")).toHaveLength(3);
     const list = screen.getByRole("list", { name: "牌位與問題" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(3);
+    expect(screen.queryByText("3 / 12 牌位")).not.toBeInTheDocument();
+    arrange();
     expect(screen.getByText("3 / 12 牌位")).toBeInTheDocument();
   });
 
@@ -189,6 +199,7 @@ describe("DrawExperience spread table", () => {
     fireEvent.change(screen.getByLabelText(/這個牌位的問題/u), {
       target: { value: "還有什麼要知道？" },
     });
+    finishArranging();
     fireEvent.click(
       await screen.findByRole("button", { name: "從牌堆發牌到 1 個牌位" }),
     );
@@ -272,20 +283,27 @@ describe("DrawExperience spread table", () => {
     await ready();
     chooseBlank();
 
-    expect(await screen.findByText("請先新增至少一個牌位")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    expect(
+      await screen.findByText("請按「編輯牌陣」新增至少一個牌位"),
+    ).toBeInTheDocument();
 
     addPosition();
     expect(
-      await screen.findByText("請先為牌位 1 設定問題"),
+      await screen.findByText("請按「編輯牌陣」為牌位 1 設定問題"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
 
     const question = screen.getByLabelText(/這個牌位的問題/u);
     fireEvent.change(question, { target: { value: "   " } });
+    finishArranging();
+    // A blank question still blocks play after arranging.
     expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
-    fireEvent.change(question, { target: { value: "我該把力氣放在哪裡？" } });
 
+    arrange();
+    fireEvent.click(handle(1));
+    fireEvent.change(screen.getByLabelText(/這個牌位的問題/u), {
+      target: { value: "我該把力氣放在哪裡？" },
+    });
+    finishArranging();
     await screen.findByText("準備好了，請洗牌");
     expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
   });
@@ -309,6 +327,7 @@ describe("DrawExperience spread table", () => {
   it("renumbers in order after a removal and announces it", async () => {
     renderTable();
     await ready();
+    arrange();
     fireEvent.click(screen.getByRole("button", { name: "五張十字" }));
     fireEvent.click(handle(2));
     fireEvent.click(screen.getByRole("button", { name: "刪除牌位" }));
@@ -364,6 +383,7 @@ describe("DrawExperience spread table", () => {
   it("edits order, rotation and position from the inspector", async () => {
     renderTable();
     await ready();
+    arrange();
     fireEvent.click(handle(3));
 
     fireEvent.change(screen.getByLabelText("排序"), { target: { value: "1" } });
@@ -372,7 +392,6 @@ describe("DrawExperience spread table", () => {
     ).toBeInTheDocument();
     expect(slot(1)).toHaveAttribute("title", "接下來可能的走向是什麼？");
 
-    arrange();
     fireEvent.change(screen.getByLabelText("旋轉（度）"), {
       target: { value: "90" },
     });
@@ -414,10 +433,35 @@ describe("DrawExperience spread table", () => {
     expect(
       screen.queryByRole("button", { name: /順時針轉 45°/u }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("旋轉（度）")).not.toBeInTheDocument();
-    expect(screen.getByText(/請按牌桌上方的「編輯牌陣」/u)).toBeInTheDocument();
-    // Questions stay editable in play.
-    expect(screen.getByLabelText(/這個牌位的問題/u)).toBeEnabled();
+    expect(screen.queryByTestId("position-inspector")).not.toBeInTheDocument();
+  });
+
+  it("shows layout editing controls only while arranging", async () => {
+    renderTable();
+    await ready();
+    const editing = [
+      "＋ 新增牌位",
+      "清除本次牌陣",
+      "儲存目前牌陣",
+      "經典三張",
+    ] as const;
+    for (const name of editing) {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    }
+    expect(screen.getByLabelText(/主問題/u)).toBeInTheDocument();
+
+    arrange();
+    for (const name of editing) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+    fireEvent.click(handle(2));
+    expect(screen.getByTestId("position-inspector")).toBeInTheDocument();
+
+    finishArranging();
+    expect(screen.queryByTestId("position-inspector")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "＋ 新增牌位" }),
+    ).not.toBeInTheDocument();
   });
 
   it("pauses shuffling and dealing while arranging, and resumes after", async () => {
@@ -511,6 +555,7 @@ describe("DrawExperience spread table", () => {
     await ready();
     await shuffleAndDeal();
 
+    arrange();
     fireEvent.click(screen.getByRole("button", { name: "清除本次牌陣" }));
     fireEvent.click(screen.getByRole("button", { name: "確定清除" }));
 
@@ -525,6 +570,7 @@ describe("DrawExperience spread table", () => {
 
 describe("DrawExperience template library", () => {
   async function saveAs(name: string) {
+    arrangeIfNeeded();
     fireEvent.click(screen.getByRole("button", { name: "儲存目前牌陣" }));
     fireEvent.change(screen.getByLabelText("牌陣名稱"), {
       target: { value: name },
@@ -541,11 +587,9 @@ describe("DrawExperience template library", () => {
     fireEvent.change(screen.getByLabelText(/這個牌位的問題/u), {
       target: { value: "這週最重要的一件事？" },
     });
-    arrange();
     fireEvent.click(
       within(slot(1)).getByRole("button", { name: "牌位 1 順時針轉 45°" }),
     );
-    finishArranging();
 
     await saveAs("每週一張");
     expect(
@@ -559,6 +603,7 @@ describe("DrawExperience template library", () => {
 
     renderTable({ templateStorage });
     await ready();
+    arrange();
     fireEvent.click(screen.getByRole("button", { name: "每週一張" }));
     expect(
       await screen.findByText("已套用「每週一張」，共 1 個牌位。"),
@@ -588,6 +633,7 @@ describe("DrawExperience template library", () => {
     const templateStorage = new MemoryStorage();
     renderTable({ templateStorage });
     await ready();
+    arrange();
 
     fireEvent.click(
       screen.getByRole("button", { name: "刪除牌陣「經典三張」" }),
@@ -621,6 +667,7 @@ describe("DrawExperience template library", () => {
   it("can cancel a deletion", async () => {
     renderTable();
     await ready();
+    arrange();
     fireEvent.click(screen.getByRole("button", { name: "刪除牌陣「圓環」" }));
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
     expect(screen.getByRole("button", { name: "圓環" })).toBeInTheDocument();

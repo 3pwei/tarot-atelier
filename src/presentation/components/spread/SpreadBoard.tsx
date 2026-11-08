@@ -99,7 +99,7 @@ export function SpreadBoard({
         </div>
         {spread.positions.length === 0 && (
           <p className="spread-board__empty">
-            空白牌桌。按「新增牌位」放下第一個位置。
+            空白牌桌。按「編輯牌陣」再按「新增牌位」，放下第一個位置。
           </p>
         )}
       </div>

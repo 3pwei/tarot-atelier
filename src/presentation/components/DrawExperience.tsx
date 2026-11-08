@@ -171,10 +171,18 @@ export function DrawExperience({
     (instanceId: string) => setInspected(instanceId),
     [],
   );
+  const arranging = tableMode === "arrange";
+  // Selecting a position opens its editor, which belongs to arrange mode.
   const handleSelect = useCallback(
-    (positionId?: string) => dispatch({ type: "select", positionId }),
-    [dispatch],
+    (positionId?: string) => {
+      if (arranging) dispatch({ type: "select", positionId });
+    },
+    [arranging, dispatch],
   );
+  const toggleArrange = () => {
+    if (arranging) dispatch({ type: "select", positionId: undefined });
+    setTableMode(arranging ? "play" : "arrange");
+  };
   const handleMove = useCallback(
     (positionId: string, point: TablePoint) =>
       dispatch({ type: "move", positionId, point }),
@@ -262,29 +270,29 @@ export function DrawExperience({
             value={spread.mainQuestion}
             onChange={(text) => dispatch({ type: "main-question", text })}
           />
-          <TemplateShelf
-            library={state.library}
-            activeTemplateId={spread.templateId}
-            applyLocked={filled > 0}
-            busy={dealer.layoutLocked}
-            onApply={(templateId) =>
-              dispatch({ type: "apply-template", templateId })
-            }
-            onBlank={() => dispatch({ type: "blank" })}
-            onSave={(name) => dispatch({ type: "save-template", name })}
-            onDelete={(templateId) =>
-              dispatch({ type: "delete-template", templateId })
-            }
-            onRestore={() => dispatch({ type: "restore-templates" })}
-          />
+          {arranging && (
+            <TemplateShelf
+              library={state.library}
+              activeTemplateId={spread.templateId}
+              applyLocked={filled > 0}
+              busy={dealer.layoutLocked}
+              onApply={(templateId) =>
+                dispatch({ type: "apply-template", templateId })
+              }
+              onBlank={() => dispatch({ type: "blank" })}
+              onSave={(name) => dispatch({ type: "save-template", name })}
+              onDelete={(templateId) =>
+                dispatch({ type: "delete-template", templateId })
+              }
+              onRestore={() => dispatch({ type: "restore-templates" })}
+            />
+          )}
           <SpreadToolbar
             positionCount={spread.positions.length}
             layoutLocked={dealer.layoutLocked}
-            arranging={tableMode === "arrange"}
+            arranging={arranging}
             canToggleArrange={abilities.canToggleArrange}
-            onToggleArrange={() =>
-              setTableMode((mode) => (mode === "arrange" ? "play" : "arrange"))
-            }
+            onToggleArrange={toggleArrange}
             zoom={viewport.view.scale}
             canZoomIn={viewport.canZoomIn}
             canZoomOut={viewport.canZoomOut}
@@ -312,7 +320,7 @@ export function DrawExperience({
                 : `牌堆：${status}`
             }
             hint={
-              tableMode === "arrange"
+              arranging
                 ? "編輯牌陣中，完成後才能發牌"
                 : dealer.canDraw
                   ? `點擊牌堆，一次發完 ${dealer.emptyCount} 個牌位`
@@ -337,7 +345,7 @@ export function DrawExperience({
         </div>
 
         <div className="spread-details">
-          {selected ? (
+          {selected && arranging ? (
             <PositionInspector
               key={selected.id}
               position={selected}
@@ -359,9 +367,9 @@ export function DrawExperience({
             />
           ) : (
             <p className="spread-details__hint">
-              {tableMode === "arrange"
-                ? "編輯牌陣中：拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦號碼後用方向鍵、數字鍵盤操作。完成後按「完成編輯」。"
-                : "點選牌位即可編輯問題、排序或刪除；翻開的牌點一下可放大。要移動或旋轉牌位，請按「編輯牌陣」。"}
+              {arranging
+                ? "編輯牌陣中：點選牌位可改問題、排序或刪除；拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦號碼後用方向鍵、數字鍵盤操作。完成後按「完成編輯」。"
+                : "翻開的牌點一下可放大。要換牌陣範本、改牌位問題、新增或移動牌位，請按「編輯牌陣」。"}
             </p>
           )}
           <PositionList

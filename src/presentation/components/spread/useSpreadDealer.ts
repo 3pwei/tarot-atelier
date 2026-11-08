@@ -61,9 +61,9 @@ export function spreadBlocker(spread: Spread): string | undefined {
   if (!first) return undefined;
   switch (first.code) {
     case "no-positions":
-      return "請先新增至少一個牌位";
+      return "請按「編輯牌陣」新增至少一個牌位";
     case "missing-question":
-      return `請先為牌位 ${first.index} 設定問題`;
+      return `請按「編輯牌陣」為牌位 ${first.index} 設定問題`;
     case "question-too-long":
       return `牌位 ${first.index} 的問題超過 300 字`;
     case "too-many-positions":
