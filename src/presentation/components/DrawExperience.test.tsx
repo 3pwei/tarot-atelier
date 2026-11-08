@@ -439,21 +439,23 @@ describe("DrawExperience spread table", () => {
   it("shows layout editing controls only while arranging", async () => {
     renderTable();
     await ready();
-    const editing = [
-      "＋ 新增牌位",
-      "清除本次牌陣",
-      "儲存目前牌陣",
-      "經典三張",
-    ] as const;
+    const editing = ["＋ 新增牌位", "儲存目前牌陣", "經典三張"] as const;
     for (const name of editing) {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
     expect(screen.getByLabelText(/主問題/u)).toBeInTheDocument();
+    // Starting over belongs to play.
+    expect(
+      screen.getByRole("button", { name: "清除本次牌陣" }),
+    ).toBeInTheDocument();
 
     arrange();
     for (const name of editing) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
+    expect(
+      screen.queryByRole("button", { name: "清除本次牌陣" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(handle(2));
     expect(screen.getByTestId("position-inspector")).toBeInTheDocument();
 
@@ -555,7 +557,6 @@ describe("DrawExperience spread table", () => {
     await ready();
     await shuffleAndDeal();
 
-    arrange();
     fireEvent.click(screen.getByRole("button", { name: "清除本次牌陣" }));
     fireEvent.click(screen.getByRole("button", { name: "確定清除" }));
 

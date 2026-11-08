@@ -251,7 +251,6 @@ test("the spread survives a page reload", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible();
 
-  await arrange(page);
   await page.getByRole("button", { name: "清除本次牌陣" }).click();
   await page.getByRole("button", { name: "確定清除" }).click();
   await expect(page.locator("[data-slot]")).toHaveCount(3);

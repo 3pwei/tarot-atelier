@@ -102,7 +102,12 @@ export function SpreadToolbar({
             >
               {positionCount} / {MAX_SPREAD_POSITIONS} 牌位
             </span>
+          </>
+        )}
 
+        {/* Starting over is part of play, not of editing the layout. */}
+        {!arranging && (
+          <>
             {confirmingClear ? (
               <div
                 className="spread-toolbar__confirm"
