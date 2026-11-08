@@ -551,7 +551,8 @@
   gap: 1rem;
   justify-items: center;
   overflow-y: auto;
-  padding: 1.25rem;
+  /* Room above the card for the close button, so it never covers the art. */
+  padding: 3.6rem 1.25rem 1.25rem;
   border: 1px solid rgba(230, 197, 122, 0.3);
   border-radius: 1.2rem;
   background: linear-gradient(180deg, #160f2b, #0a0818);
@@ -559,7 +560,7 @@
 
 .card-viewer__card {
   /* As large as the screen allows while the text still fits below. */
-  width: min(100%, 20rem, calc((100dvh - 14rem) * 2 / 3));
+  width: min(100%, 20rem, calc((100dvh - 16.5rem) * 2 / 3));
   aspect-ratio: 2 / 3;
 }
 
