@@ -16,6 +16,8 @@ interface PositionInspectorProps {
   readonly position: SpreadPosition;
   readonly total: number;
   readonly locked: boolean;
+  /** Rotation and position fields appear only while arranging the table. */
+  readonly arrangeable: boolean;
   readonly onQuestion: (text: string) => void;
   readonly onRotate: (degrees: number) => void;
   readonly onMove: (point: TablePoint) => void;
@@ -37,6 +39,7 @@ export function PositionInspector({
   position,
   total,
   locked,
+  arrangeable,
   onQuestion,
   onRotate,
   onMove,
@@ -103,79 +106,82 @@ export function PositionInspector({
           </select>
         </label>
 
-        <label className="field">
-          <span>旋轉（度）</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={359}
-            step={1}
-            value={position.rotation}
-            disabled={locked}
-            onChange={(event) => {
-              const value = parseNumber(event.target.value);
-              if (value !== undefined) onRotate(value);
-            }}
-          />
-        </label>
+        {arrangeable && (
+          <>
+            <label className="field">
+              <span>旋轉（度）</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={359}
+                step={1}
+                value={position.rotation}
+                onChange={(event) => {
+                  const value = parseNumber(event.target.value);
+                  if (value !== undefined) onRotate(value);
+                }}
+              />
+            </label>
 
-        <label className="field">
-          <span>水平位置（0–100）</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            max={100}
-            step={1}
-            value={toPercent(position.x)}
-            disabled={locked}
-            onChange={(event) => {
-              const value = parseNumber(event.target.value);
-              if (value !== undefined)
-                onMove({ x: value / 100, y: position.y });
-            }}
-          />
-        </label>
+            <label className="field">
+              <span>水平位置（0–100）</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={100}
+                step={1}
+                value={toPercent(position.x)}
+                onChange={(event) => {
+                  const value = parseNumber(event.target.value);
+                  if (value !== undefined)
+                    onMove({ x: value / 100, y: position.y });
+                }}
+              />
+            </label>
 
-        <label className="field">
-          <span>垂直位置（0–100）</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            max={100}
-            step={1}
-            value={toPercent(position.y)}
-            disabled={locked}
-            onChange={(event) => {
-              const value = parseNumber(event.target.value);
-              if (value !== undefined)
-                onMove({ x: position.x, y: value / 100 });
-            }}
-          />
-        </label>
+            <label className="field">
+              <span>垂直位置（0–100）</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={100}
+                step={1}
+                value={toPercent(position.y)}
+                onChange={(event) => {
+                  const value = parseNumber(event.target.value);
+                  if (value !== undefined)
+                    onMove({ x: position.x, y: value / 100 });
+                }}
+              />
+            </label>
+          </>
+        )}
       </div>
 
       <div className="position-inspector__actions">
-        <button
-          type="button"
-          className="ghost-action ghost-action--icon"
-          disabled={locked}
-          aria-label={`逆時針轉 ${ROTATE_BUTTON_STEP}°`}
-          onClick={() => onRotate(position.rotation - ROTATE_BUTTON_STEP)}
-        >
-          <RotateIcon direction="counterclockwise" /> {ROTATE_BUTTON_STEP}°
-        </button>
-        <button
-          type="button"
-          className="ghost-action ghost-action--icon"
-          disabled={locked}
-          aria-label={`順時針轉 ${ROTATE_BUTTON_STEP}°`}
-          onClick={() => onRotate(position.rotation + ROTATE_BUTTON_STEP)}
-        >
-          <RotateIcon /> {ROTATE_BUTTON_STEP}°
-        </button>
+        {arrangeable && (
+          <>
+            <button
+              type="button"
+              className="ghost-action ghost-action--icon"
+              aria-label={`逆時針轉 ${ROTATE_BUTTON_STEP}°`}
+              onClick={() => onRotate(position.rotation - ROTATE_BUTTON_STEP)}
+            >
+              <RotateIcon direction="counterclockwise" /> {ROTATE_BUTTON_STEP}°
+            </button>
+            <button
+              type="button"
+              className="ghost-action ghost-action--icon"
+              aria-label={`順時針轉 ${ROTATE_BUTTON_STEP}°`}
+              onClick={() => onRotate(position.rotation + ROTATE_BUTTON_STEP)}
+            >
+              <RotateIcon /> {ROTATE_BUTTON_STEP}°
+            </button>
+          </>
+        )}
         <button
           type="button"
           className="danger-action"
@@ -185,9 +191,14 @@ export function PositionInspector({
           刪除牌位
         </button>
       </div>
+      {!arrangeable && (
+        <p className="position-inspector__note">
+          要移動或旋轉牌位，請按牌桌上方的「編輯牌陣」。
+        </p>
+      )}
       {drawn && (
         <p className="position-inspector__note">
-          已有抽牌結果：可移動、旋轉或改問題，但不會重抽，也不能刪除。
+          已有抽牌結果：可改問題，或在「編輯牌陣」中移動、旋轉，但不會重抽，也不能刪除。
         </p>
       )}
     </section>

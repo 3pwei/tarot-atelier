@@ -99,6 +99,15 @@ function handle(index: number): HTMLElement {
   });
 }
 
+/** Moving and rotating positions happens in arrange mode only. */
+function arrange() {
+  fireEvent.click(screen.getByRole("button", { name: "編輯牌陣" }));
+}
+
+function finishArranging() {
+  fireEvent.click(screen.getByRole("button", { name: "完成編輯" }));
+}
+
 function chooseBlank() {
   fireEvent.click(screen.getByRole("button", { name: "空白牌桌" }));
 }
@@ -163,7 +172,9 @@ describe("DrawExperience spread table", () => {
     reveal(2);
     await screen.findByText("牌陣已完成");
     expect(
-      screen.getByRole("button", { name: /^牌位 1 主牌：.+，(正位|逆位)$/u }),
+      screen.getByRole("button", {
+        name: /^牌位 1 主牌：.+，(正位|逆位)，點擊放大$/u,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -314,6 +325,7 @@ describe("DrawExperience spread table", () => {
   it("moves with arrow keys or the numeric keypad and rotates with brackets", async () => {
     renderTable();
     await ready();
+    arrange();
     const second = handle(2);
 
     fireEvent.keyDown(second, { key: "ArrowRight", code: "ArrowRight" });
@@ -330,6 +342,7 @@ describe("DrawExperience spread table", () => {
   it("rotates a selected position with its turning-arrow button", async () => {
     renderTable();
     await ready();
+    arrange();
     expect(
       screen.queryByRole("button", { name: /順時針轉 45°/u }),
     ).not.toBeInTheDocument();
@@ -359,6 +372,7 @@ describe("DrawExperience spread table", () => {
     ).toBeInTheDocument();
     expect(slot(1)).toHaveAttribute("title", "接下來可能的走向是什麼？");
 
+    arrange();
     fireEvent.change(screen.getByLabelText("旋轉（度）"), {
       target: { value: "90" },
     });
@@ -375,6 +389,7 @@ describe("DrawExperience spread table", () => {
     await shuffleAndDeal();
     const before = slot(1).querySelector("[data-draw-card='primary']");
 
+    arrange();
     fireEvent.keyDown(handle(1), { key: "ArrowDown", code: "ArrowDown" });
 
     expect(slot(1).style.getPropertyValue("--y")).toBe("0.51");
@@ -383,6 +398,65 @@ describe("DrawExperience spread table", () => {
     fireEvent.click(handle(1));
     expect(screen.getByRole("button", { name: "刪除牌位" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "五張十字" })).toBeDisabled();
+  });
+
+  it("never moves or rotates positions during play", async () => {
+    renderTable();
+    await ready();
+    const second = handle(2);
+
+    fireEvent.keyDown(second, { key: "ArrowRight", code: "ArrowRight" });
+    fireEvent.keyDown(second, { key: "]", code: "BracketRight" });
+    expect(slot(2).style.getPropertyValue("--x")).toBe("0.5");
+    expect(slot(2).style.getPropertyValue("--rot")).toBe("0deg");
+
+    fireEvent.click(second);
+    expect(
+      screen.queryByRole("button", { name: /順時針轉 45°/u }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("旋轉（度）")).not.toBeInTheDocument();
+    expect(screen.getByText(/請按牌桌上方的「編輯牌陣」/u)).toBeInTheDocument();
+    // Questions stay editable in play.
+    expect(screen.getByLabelText(/這個牌位的問題/u)).toBeEnabled();
+  });
+
+  it("pauses shuffling and dealing while arranging, and resumes after", async () => {
+    renderTable();
+    await ready();
+    arrange();
+    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "完成編輯", pressed: true }),
+    ).toBeInTheDocument();
+
+    finishArranging();
+    expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
+    await shuffleAndDeal();
+  });
+
+  it("enlarges a revealed card and returns focus when closed", async () => {
+    renderTable();
+    await ready();
+    await shuffleAndDeal();
+    reveal(1);
+    const card = screen.getByRole("button", { name: /^牌位 1 主牌：/u });
+    card.focus();
+    fireEvent.click(card);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAccessibleName(/.+(正位|逆位)$/u);
+    expect(within(dialog).getByText("牌位 1 · 主牌")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("這件事的過去與起因是什麼？"),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(card).toHaveFocus();
+
+    fireEvent.click(card);
+    fireEvent.click(screen.getByRole("button", { name: "關閉放大檢視" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("restores the spread, draws and reveals after a reload", async () => {
@@ -467,9 +541,11 @@ describe("DrawExperience template library", () => {
     fireEvent.change(screen.getByLabelText(/這個牌位的問題/u), {
       target: { value: "這週最重要的一件事？" },
     });
+    arrange();
     fireEvent.click(
       within(slot(1)).getByRole("button", { name: "牌位 1 順時針轉 45°" }),
     );
+    finishArranging();
 
     await saveAs("每週一張");
     expect(

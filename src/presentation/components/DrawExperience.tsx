@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type {
   SpreadSessionStorage,
   SpreadTemplateStorage,
@@ -12,7 +12,8 @@ import {
   type ReadingRequester,
 } from "@/application/use-cases/requestReading";
 import type { RandomSource } from "@/domain/deck/draw";
-import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
+import type { CardInstance } from "@/domain/deck/types";
+import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
 import {
   LocalStorageTextStorage,
@@ -22,7 +23,11 @@ import {
 import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { DeckStack } from "@/presentation/components/draw/DeckStack";
-import { DrawnCard } from "@/presentation/components/draw/DrawnCard";
+import { CardViewer } from "@/presentation/components/draw/CardViewer";
+import {
+  DrawnCard,
+  type CardRole,
+} from "@/presentation/components/draw/DrawnCard";
 import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
 import { ReadingPanel } from "@/presentation/components/reading/ReadingPanel";
 import { createRequestId as createReadingRequestId } from "@/presentation/components/reading/readingSession";
@@ -35,6 +40,10 @@ import {
   visibleCenter,
 } from "@/presentation/components/spread/SpreadBoard";
 import { SpreadToolbar } from "@/presentation/components/spread/SpreadToolbar";
+import {
+  tableAbilities,
+  type TableMode,
+} from "@/presentation/components/spread/tableMode";
 import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
 import { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
 import {
@@ -134,6 +143,9 @@ export function DrawExperience({
     allRevealed: dealer.allRevealed,
     remaining: dealer.remaining,
   });
+  const [tableMode, setTableMode] = useState<TableMode>("play");
+  const abilities = tableAbilities(tableMode, dealer.layoutLocked);
+  const [inspected, setInspected] = useState<string>();
   const reading = useReadingSession({
     spread,
     registry,
@@ -150,6 +162,14 @@ export function DrawExperience({
   const handleRevealed = useCallback(
     (instanceId: string) => dispatch({ type: "revealed", instanceId }),
     [dispatch],
+  );
+  const drawn = drawnCardOf(spread, inspected);
+  const viewedCard = drawn ? deck.getCard(drawn.instance.cardId) : undefined;
+  const viewed =
+    drawn && viewedCard ? { ...drawn, card: viewedCard } : undefined;
+  const handleInspect = useCallback(
+    (instanceId: string) => setInspected(instanceId),
+    [],
   );
   const handleSelect = useCallback(
     (positionId?: string) => dispatch({ type: "select", positionId }),
@@ -192,12 +212,13 @@ export function DrawExperience({
           instance={instance}
           role={role}
           positionIndex={position.index}
-          interactive={!inFlight}
+          interactive={!inFlight && abilities.canPlay}
           inFlight={inFlight}
           dealOrder={Math.max(0, dealOrder)}
           initiallyRevealed={revealedInstanceIds.has(instance.instanceId)}
           motionMode={motionMode}
           onRevealed={handleRevealed}
+          onInspect={handleInspect}
         />
       ) : null;
     });
@@ -210,6 +231,7 @@ export function DrawExperience({
       data-phase={dealer.phase}
       data-motion={motionMode}
       data-all-revealed={dealer.allRevealed || undefined}
+      data-table-mode={tableMode}
       aria-busy={loading || undefined}
     >
       <div className="draw-table">
@@ -223,7 +245,7 @@ export function DrawExperience({
             <button
               className="shuffle-action"
               type="button"
-              disabled={!dealer.canShuffle}
+              disabled={!dealer.canShuffle || !abilities.canPlay}
               onClick={dealer.shuffle}
             >
               洗牌
@@ -258,6 +280,11 @@ export function DrawExperience({
           <SpreadToolbar
             positionCount={spread.positions.length}
             layoutLocked={dealer.layoutLocked}
+            arranging={tableMode === "arrange"}
+            canToggleArrange={abilities.canToggleArrange}
+            onToggleArrange={() =>
+              setTableMode((mode) => (mode === "arrange" ? "play" : "arrange"))
+            }
             zoom={viewport.view.scale}
             canZoomIn={viewport.canZoomIn}
             canZoomOut={viewport.canZoomOut}
@@ -278,16 +305,18 @@ export function DrawExperience({
           <DeckStack
             remaining={dealer.remaining}
             total={dealer.total}
-            canDraw={dealer.canDraw}
+            canDraw={dealer.canDraw && abilities.canPlay}
             label={
-              dealer.canDraw
+              dealer.canDraw && abilities.canPlay
                 ? `從牌堆發牌到 ${dealer.emptyCount} 個牌位`
                 : `牌堆：${status}`
             }
             hint={
-              dealer.canDraw
-                ? `點擊牌堆，一次發完 ${dealer.emptyCount} 個牌位`
-                : `${dealer.remaining} / ${dealer.total}`
+              tableMode === "arrange"
+                ? "編輯牌陣中，完成後才能發牌"
+                : dealer.canDraw
+                  ? `點擊牌堆，一次發完 ${dealer.emptyCount} 個牌位`
+                  : `${dealer.remaining} / ${dealer.total}`
             }
             onDraw={dealer.deal}
           />
@@ -295,7 +324,7 @@ export function DrawExperience({
           <SpreadBoard
             spread={spread}
             selectedId={selectedId}
-            locked={dealer.layoutLocked}
+            arrangeable={abilities.canArrange}
             viewport={viewport}
             viewportRef={viewportRef}
             fieldRef={fieldRef}
@@ -314,6 +343,7 @@ export function DrawExperience({
               position={selected}
               total={spread.positions.length}
               locked={dealer.layoutLocked}
+              arrangeable={abilities.canArrange}
               onQuestion={(text) =>
                 dispatch({ type: "question", positionId: selected.id, text })
               }
@@ -329,7 +359,9 @@ export function DrawExperience({
             />
           ) : (
             <p className="spread-details__hint">
-              點選牌位即可編輯問題、排序或刪除。拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦號碼後用方向鍵、數字鍵盤操作。
+              {tableMode === "arrange"
+                ? "編輯牌陣中：拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦號碼後用方向鍵、數字鍵盤操作。完成後按「完成編輯」。"
+                : "點選牌位即可編輯問題、排序或刪除；翻開的牌點一下可放大。要移動或旋轉牌位，請按「編輯牌陣」。"}
             </p>
           )}
           <PositionList
@@ -357,6 +389,36 @@ export function DrawExperience({
           <span>牌陣自動保存在這台裝置</span>
         </div>
       </div>
+      {viewed && (
+        <CardViewer
+          card={viewed.card}
+          orientation={viewed.instance.orientation}
+          role={viewed.role}
+          positionIndex={viewed.position.index}
+          question={viewed.position.question}
+          onClose={() => setInspected(undefined)}
+        />
+      )}
     </div>
   );
+}
+
+/** The drawn card with `instanceId`, if it is still on the table. */
+function drawnCardOf(
+  spread: Spread,
+  instanceId: string | undefined,
+):
+  | { position: SpreadPosition; role: CardRole; instance: CardInstance }
+  | undefined {
+  if (!instanceId) return undefined;
+  for (const position of spread.positions) {
+    const result = position.drawResult;
+    if (result?.primary.instanceId === instanceId) {
+      return { position, role: "primary", instance: result.primary };
+    }
+    if (result?.jumper?.instanceId === instanceId) {
+      return { position, role: "jumper", instance: result.jumper };
+    }
+  }
+  return undefined;
 }

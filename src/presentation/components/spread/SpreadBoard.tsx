@@ -3,6 +3,10 @@
 import type { CSSProperties, ReactNode, RefObject } from "react";
 import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { TableOrnament } from "@/presentation/components/draw/TableOrnament";
+import {
+  FIELD_MARGIN_CQW,
+  SLOT_WIDTH_CQW,
+} from "@/presentation/components/spread/boardGeometry";
 import { PositionSlot } from "@/presentation/components/spread/PositionSlot";
 import type { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
 
@@ -11,7 +15,8 @@ type Viewport = ReturnType<typeof useBoardViewport>;
 interface SpreadBoardProps {
   readonly spread: Spread;
   readonly selectedId?: string;
-  readonly locked: boolean;
+  /** Positions may be moved and rotated. */
+  readonly arrangeable: boolean;
   readonly viewport: Viewport;
   readonly viewportRef: RefObject<HTMLDivElement | null>;
   readonly fieldRef: RefObject<HTMLDivElement | null>;
@@ -41,7 +46,7 @@ export function visibleCenter(
 export function SpreadBoard({
   spread,
   selectedId,
-  locked,
+  arrangeable,
   viewport,
   viewportRef,
   fieldRef,
@@ -54,6 +59,8 @@ export function SpreadBoard({
   const { view, gestureHandlers } = viewport;
   const canvasStyle = {
     transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+    "--slot-w": `${SLOT_WIDTH_CQW}cqw`,
+    "--field-margin": `${FIELD_MARGIN_CQW}cqw`,
   } as CSSProperties;
 
   return (
@@ -61,6 +68,7 @@ export function SpreadBoard({
       ref={viewportRef}
       className="spread-board"
       data-zoomed={view.scale > 1 || undefined}
+      data-arranging={arrangeable || undefined}
       {...gestureHandlers}
     >
       <div
@@ -78,7 +86,7 @@ export function SpreadBoard({
               key={position.id}
               position={position}
               selected={position.id === selectedId}
-              locked={locked}
+              arrangeable={arrangeable}
               field={fieldRef}
               onSelect={onSelect}
               onMove={onMove}

@@ -387,8 +387,8 @@
   touch-action: none;
 }
 
+/* --slot-w and --field-margin come from boardGeometry.ts. */
 .spread-board__canvas {
-  --slot-w: 11cqw;
   --slot-h: calc(var(--slot-w) * 1.5);
   position: absolute;
   inset: 0;
@@ -414,7 +414,8 @@
 /* Coordinates 0–1 map onto this inset area, so cards at an edge stay whole. */
 .spread-board__field {
   position: absolute;
-  inset: calc(var(--slot-h) / 2 + 1.4cqw) calc(var(--slot-w) / 2 + 1.4cqw);
+  inset: calc(var(--slot-h) / 2 + var(--field-margin))
+    calc(var(--slot-w) / 2 + var(--field-margin));
 }
 
 .spread-board__empty {
@@ -440,8 +441,9 @@
   left: calc(var(--x) * 100%);
   width: var(--slot-w);
   aspect-ratio: 2 / 3;
-  cursor: grab;
-  touch-action: none;
+  cursor: pointer;
+  /* Taps select and reveal; only arranging captures drags. */
+  touch-action: manipulation;
   -webkit-touch-callout: none;
   transform: translate(-50%, -50%) rotate(var(--rot));
 }
@@ -455,8 +457,30 @@
   cursor: grabbing;
 }
 
-.spread-slot[data-locked] {
-  cursor: default;
+.spread-slot[data-arrangeable] {
+  cursor: grab;
+  touch-action: none;
+}
+
+/* Arrange mode: a dashed frame says the layout is open for editing. */
+.spread-board[data-arranging] {
+  outline: 2px dashed rgba(230, 197, 122, 0.55);
+  outline-offset: -0.5rem;
+}
+
+.spread-board[data-arranging]::after {
+  position: absolute;
+  top: 0.9rem;
+  left: 50%;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(6, 5, 14, 0.8);
+  color: var(--color-gold);
+  content: "編輯牌陣中";
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
 /* Press and hold switches to rotating: a dial ring and the live angle. */

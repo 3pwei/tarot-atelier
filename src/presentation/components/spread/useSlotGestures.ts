@@ -43,7 +43,8 @@ interface Session {
 
 interface SlotGestureOptions {
   readonly position: SpreadPosition;
-  readonly locked: boolean;
+  /** Moving and rotating are allowed only while the layout is arranged. */
+  readonly arrangeable: boolean;
   readonly field: RefObject<HTMLElement | null>;
   readonly slot: RefObject<HTMLElement | null>;
   readonly onMove: (positionId: string, point: TablePoint) => void;
@@ -61,7 +62,7 @@ interface SlotGestureOptions {
  */
 export function useSlotGestures({
   position,
-  locked,
+  arrangeable,
   field,
   slot,
   onMove,
@@ -131,7 +132,7 @@ export function useSlotGestures({
   }
 
   function start(event: PointerEvent<HTMLElement>, fromHandle: boolean) {
-    if (locked) return;
+    if (!arrangeable) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
     const point = relativePoint(event.clientX, event.clientY);
     if (!point) return;

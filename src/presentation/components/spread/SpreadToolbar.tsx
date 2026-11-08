@@ -6,6 +6,10 @@ import { MAX_SPREAD_POSITIONS } from "@/domain/spread/types";
 interface SpreadToolbarProps {
   readonly positionCount: number;
   readonly layoutLocked: boolean;
+  /** Arrange mode: positions can be moved and rotated, play is paused. */
+  readonly arranging: boolean;
+  readonly canToggleArrange: boolean;
+  readonly onToggleArrange: () => void;
   /** Table zoom factor; shown as ×1.25 rather than a percentage. */
   readonly zoom: number;
   readonly canZoomIn: boolean;
@@ -20,6 +24,9 @@ interface SpreadToolbarProps {
 export function SpreadToolbar({
   positionCount,
   layoutLocked,
+  arranging,
+  canToggleArrange,
+  onToggleArrange,
   zoom,
   canZoomIn,
   canZoomOut,
@@ -44,6 +51,15 @@ export function SpreadToolbar({
           onClick={onAdd}
         >
           ＋ 新增牌位
+        </button>
+        <button
+          type="button"
+          className="ghost-action ghost-action--gold spread-toolbar__arrange"
+          aria-pressed={arranging}
+          disabled={!canToggleArrange}
+          onClick={onToggleArrange}
+        >
+          {arranging ? "完成編輯" : "編輯牌陣"}
         </button>
         <span
           className="spread-toolbar__count"

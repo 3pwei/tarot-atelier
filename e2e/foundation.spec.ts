@@ -87,6 +87,8 @@ test("pointer reveal burns away the card back from the touched point", async ({
     page.locator("[data-index='1'] [data-draw-card='primary']"),
   ).toHaveAttribute("data-reveal-state", "revealed", { timeout: 10_000 });
   await expect(
-    page.getByRole("button", { name: /^牌位 1 主牌：.+，(正位|逆位)$/u }),
+    page.getByRole("button", {
+      name: /^牌位 1 主牌：.+，(正位|逆位)，點擊放大$/u,
+    }),
   ).toBeVisible();
 });
