@@ -465,14 +465,35 @@ test("during play, dragging or holding a position never moves or rotates it", as
   ).toBeEnabled();
 });
 
+test("position numbers stay out of the way of dealt cards during play", async ({
+  page,
+}) => {
+  await expect(handle(page, 1)).toBeVisible();
+  const empty = await handle(page, 1).boundingBox();
+  const card = await slot(page, 1).boundingBox();
+  if (!empty || !card) throw new Error("position 1 is not visible");
+  // A small numeral below the empty position, not a badge over it.
+  expect(empty.y).toBeGreaterThanOrEqual(card.y + card.height - 1);
+
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await dealAll(page, 3);
+  for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
+
+  await page.getByRole("button", { name: "編輯牌陣" }).click();
+  for (const index of [1, 2, 3])
+    await expect(handle(page, index)).toBeVisible();
+});
+
 test("a revealed card opens large and fits the screen", async ({ page }) => {
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
   await dealAll(page, 3);
   await reveal(page, 1);
 
+  // A jumper may cover the middle of the main card, so open it by keyboard.
   await page
     .getByRole("button", { name: /^牌位 1 主牌：.+點擊放大$/u })
-    .click();
+    .focus();
+  await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("牌位 1 · 主牌")).toBeVisible();
