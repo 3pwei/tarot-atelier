@@ -275,6 +275,7 @@ test("corrupted saved data falls back to a working table", async ({ page }) => {
 test("the table fits the viewport without horizontal scrolling", async ({
   page,
 }) => {
+  await arrange(page);
   await page.getByRole("button", { name: "圓環", exact: true }).click();
   await expect(page.locator("[data-slot]")).toHaveCount(8);
   const dimensions = await page.evaluate(() => ({
