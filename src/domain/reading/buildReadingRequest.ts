@@ -16,6 +16,7 @@ export type ReadingRequestIssue =
   | { readonly code: "missing-question"; readonly index: number }
   | { readonly code: "question-too-long"; readonly index: number }
   | { readonly code: "main-question-too-long" }
+  | { readonly code: "missing-main-question" }
   | { readonly code: "undrawn-position"; readonly index: number }
   | { readonly code: "mixed-decks" }
   | { readonly code: "unknown-deck"; readonly deckId: string }

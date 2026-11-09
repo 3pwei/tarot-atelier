@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerReadings, type EndpointAnswer } from "./support/readingEndpoint";
-import { dealAll, reveal } from "./support/spreadTable";
+import { askMainQuestion, dealAll, reveal } from "./support/spreadTable";
 
 // Deals and burns three cards before reading; software-rendered CI browsers need headroom.
 test.describe.configure({ timeout: 90_000 });
@@ -19,12 +19,13 @@ function offSiteRequests(page: Page, baseURL: string | undefined): string[] {
 async function finishSpread(page: Page, answer: EndpointAnswer) {
   const received = await answerReadings(page, answer);
   await page.goto("/");
-  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+  await askMainQuestion(page, "面試結果");
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
   const panel = page.locator(".reading-panel");
-  await expect(panel.getByText("所有牌翻開後，就能產生解讀。")).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "翻開所有牌後即可解讀" }),
+  ).toBeDisabled();
 
-  await page.getByPlaceholder("這次占卜想整體看見什麼？").fill("面試結果");
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
   await dealAll(page, 3);
   for (const index of [1, 2, 3]) await reveal(page, index);
@@ -40,12 +41,10 @@ test("reads a finished spread with AI through the site's own endpoint", async ({
   const external = offSiteRequests(page, baseURL);
   const { panel, received } = await finishSpread(page, { kind: "reading" });
 
-  await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();
-  await expect(panel.getByText(/Cloudflare Workers AI/u)).toBeVisible();
-  await expect(panel.getByText("工坊標準塔羅")).toBeVisible();
   await expect(panel.getByRole("radio")).toHaveCount(0);
 
   await panel.getByRole("button", { name: "產生解讀" }).click();
+  await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();
   const sections = panel.locator("details.reading-section");
   await expect(sections).toHaveCount(3 + 3);
   await expect(sections.first()).toHaveAttribute("open", "");

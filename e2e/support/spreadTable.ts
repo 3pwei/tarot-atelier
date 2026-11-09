@@ -32,3 +32,13 @@ export async function reveal(page: Page, index: number) {
     slot(page, index).locator("[data-reveal-state='revealed']"),
   ).toHaveCount(count, { timeout: 20_000 });
 }
+
+/** Dealing needs a main question; asks one and waits until play can start. */
+export async function askMainQuestion(
+  page: Page,
+  question = "這段時間的方向？",
+) {
+  await expect(page.getByText("請先輸入這次想問的主問題")).toBeVisible();
+  await page.getByRole("textbox", { name: /^主問題/u }).fill(question);
+  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+}

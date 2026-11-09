@@ -4,8 +4,10 @@ import {
   addPosition,
   assignDraw,
   canAddPosition,
+  clearDraws,
   countCharacters,
   createSpread,
+  dealingIssues,
   isSpreadReady,
   movePosition,
   nextPositionToDraw,
@@ -336,5 +338,42 @@ describe("suggestPlacement", () => {
         ).toBe(true);
       }
     }
+  });
+});
+
+describe("clearDraws", () => {
+  it("returns every drawn card and keeps positions, numbers and questions", () => {
+    let spread = setMainQuestion(spreadOf(3, "原本的問題"), "主問題");
+    spread = unwrap(assignDraw(spread, "p1", draw("a", "b")));
+    spread = unwrap(assignDraw(spread, "p3", draw("c")));
+
+    const cleared = clearDraws(spread);
+    expect(cleared.positions.every((p) => p.drawResult === undefined)).toBe(
+      true,
+    );
+    expect(cleared.positions.map((p) => [p.id, p.index, p.question])).toEqual(
+      spread.positions.map((p) => [p.id, p.index, p.question]),
+    );
+    expect(cleared.mainQuestion).toBe("主問題");
+    expect(Object.isFrozen(cleared.positions)).toBe(true);
+  });
+});
+
+describe("dealingIssues", () => {
+  it("needs a main question before anything else, and keeps the spread valid without one", () => {
+    const spread = spreadOf(2);
+    expect(dealingIssues(spread)).toEqual([{ code: "missing-main-question" }]);
+    expect(dealingIssues(setMainQuestion(spread, "   "))[0]).toEqual({
+      code: "missing-main-question",
+    });
+    expect(validateSpread(spread)).toEqual([]);
+    expect(dealingIssues(setMainQuestion(spread, "方向？"))).toEqual([]);
+  });
+
+  it("adds the spread's own issues after the main question", () => {
+    expect(dealingIssues(spreadOf(1, ""))).toEqual([
+      { code: "missing-main-question" },
+      { code: "missing-question", index: 1 },
+    ]);
   });
 });

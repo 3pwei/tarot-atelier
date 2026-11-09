@@ -1,6 +1,6 @@
 # Readings
 
-Once every card on the table is revealed, the reading panel can read the spread with one button, 「產生解讀」. Published builds read with **AI first** (Phase 05): the site's own endpoint asks Cloudflare Workers AI on its free allocation. When AI cannot answer, the browser falls back to **pre-written readings**, composed in the browser from content written ahead of time (Phase 04), and says why. Pre-written readings are labelled 「範例解牌，不是 AI」 wherever they appear; `next dev` reads with them alone.
+Once every card on the table is revealed, the reading panel can read the spread with one button, 「產生解讀」. Before that, the same button reads 「翻開所有牌後即可解讀」 and is disabled. The panel shows only the disclaimer and that button until a reading exists; the reading is then labelled by its source. Published builds read with **AI first** (Phase 05): the site's own endpoint asks Cloudflare Workers AI on its free allocation. When AI cannot answer, the browser falls back to **pre-written readings**, composed in the browser from content written ahead of time (Phase 04), and says why. Pre-written readings are labelled 「範例解牌，不是 AI」 wherever they appear; `next dev` reads with them alone.
 
 ## Flow
 

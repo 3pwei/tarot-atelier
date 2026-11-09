@@ -37,19 +37,14 @@ export const FALLBACK_MESSAGES: Readonly<
 
 /** How each source is labelled, so nothing pre-written passes for AI. */
 export const SOURCE_COPY: Readonly<
-  Record<
-    ReadingSource,
-    { readonly badge: string; readonly note: string; readonly loading: string }
-  >
+  Record<ReadingSource, { readonly badge: string; readonly loading: string }>
 > = Object.freeze({
   prewritten: {
     badge: "範例解牌，不是 AI",
-    note: "依牌義預先撰寫並組合而成，不是即時生成的 AI 解讀。",
     loading: "正在組合解讀…",
   },
   ai: {
     badge: "AI 解讀",
-    note: "由 AI 依牌義即時生成。產生時，牌陣與問題會送到 Cloudflare Workers AI 處理，不會被保存。",
     loading: "正在產生解讀，約需十幾秒…",
   },
 });
@@ -73,6 +68,8 @@ export function issueMessage(issue: ReadingRequestIssue): string {
       return `牌位 ${issue.index} 的問題太長。`;
     case "main-question-too-long":
       return "主問題太長。";
+    case "missing-main-question":
+      return "還沒有主問題。";
     case "undrawn-position":
       return `牌位 ${issue.index} 還沒有抽牌。`;
     case "mixed-decks":
@@ -91,8 +88,6 @@ export const READING_COPY = Object.freeze({
   cancel: "取消",
   retry: "再試一次",
   stale: "牌陣已改變，下方是先前的解讀。按「重新產生」以更新。",
-  deck: "使用的牌組",
-  mainQuestion: "主問題",
   symbolism: "單牌象徵",
   interpretation: "與問題的關聯",
   jumperMessage: "跳牌補充",
@@ -103,5 +98,5 @@ export const READING_COPY = Object.freeze({
     "塔羅解讀僅供娛樂與自我反思，不能預測未來，也不構成醫療、法律或財務建議。",
   professional: (topics: string) =>
     `你的問題涉及${topics}。牌卡只能提供反思的角度，重要決定請諮詢合格的專業人士。`,
-  waiting: "所有牌翻開後，就能產生解讀。",
+  waiting: "翻開所有牌後即可解讀",
 });

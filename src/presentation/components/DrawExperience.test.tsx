@@ -63,7 +63,12 @@ function renderTable(
   return { ...view, storage, templateStorage };
 }
 
-async function ready() {
+/** Asks a main question, which dealing needs, and waits until play can start. */
+async function ready(mainQuestion = "這段時間的方向？") {
+  await screen.findByText("請先輸入這次想問的主問題");
+  fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
+    target: { value: mainQuestion },
+  });
   await screen.findByText("準備好了，請洗牌");
 }
 
@@ -188,27 +193,6 @@ describe("DrawExperience spread table", () => {
     ).toBeInTheDocument();
   });
 
-  it("deals only the new empty positions after the table grows", async () => {
-    renderTable();
-    await ready();
-    await shuffleAndDeal();
-    for (const index of [1, 2, 3]) reveal(index);
-    await screen.findByText("牌陣已完成");
-
-    addPosition();
-    fireEvent.change(screen.getByLabelText(/這個牌位的問題/u), {
-      target: { value: "還有什麼要知道？" },
-    });
-    finishArranging();
-    fireEvent.click(
-      await screen.findByRole("button", { name: "從牌堆發牌到 1 個牌位" }),
-    );
-
-    await screen.findByRole("button", { name: "以火焰揭示牌位 4 主牌" });
-    expect(document.querySelectorAll("[data-draw-card]")).toHaveLength(4);
-    expect(screen.getByText("剩餘 74 張")).toBeInTheDocument();
-  });
-
   it("puts a jumper on the same numbered position as its primary card", async () => {
     let calls = 0;
     const random = () => {
@@ -238,15 +222,12 @@ describe("DrawExperience spread table", () => {
     await ready();
     // An empty table has nothing unrevealed, but nothing to read either.
     expect(
-      screen.getByText("所有牌翻開後，就能產生解讀。"),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "產生解讀" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "翻開所有牌後即可解讀" }),
+    ).toBeDisabled();
     await shuffleAndDeal();
     expect(
-      screen.getByText("所有牌翻開後，就能產生解讀。"),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: "翻開所有牌後即可解讀" }),
+    ).toBeDisabled();
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
 
@@ -254,20 +235,6 @@ describe("DrawExperience spread table", () => {
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
     expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
     expect(screen.getAllByText("單牌象徵").length).toBeGreaterThan(0);
-  });
-
-  it("waits again when an empty position is added after reading", async () => {
-    renderTable();
-    await ready();
-    await shuffleAndDeal();
-    [1, 2, 3].forEach((index) => reveal(index));
-    await screen.findByText("牌陣已完成");
-    expect(screen.getByRole("button", { name: "產生解讀" })).toBeEnabled();
-
-    addPosition();
-    expect(
-      screen.getByText("所有牌翻開後，就能產生解讀。"),
-    ).toBeInTheDocument();
   });
 
   it("never shows players the jumper probability", async () => {
@@ -402,21 +369,60 @@ describe("DrawExperience spread table", () => {
     expect(slot(1).style.getPropertyValue("--x")).toBe("0.1");
   });
 
-  it("moves a drawn position without redrawing it", async () => {
+  it("asks before clearing the draws to edit the layout, and keeps the layout", async () => {
     renderTable();
-    await ready();
+    await ready("今年的重心？");
     await shuffleAndDeal();
-    const before = slot(1).querySelector("[data-draw-card='primary']");
+    reveal(1);
 
     arrange();
-    fireEvent.keyDown(handle(1), { key: "ArrowDown", code: "ArrowDown" });
+    const dialog = screen.getByRole("alertdialog", {
+      name: "清除這次的抽牌結果？",
+    });
+    expect(within(dialog).getByRole("button", { name: "取消" })).toHaveFocus();
+    fireEvent.click(within(dialog).getByRole("button", { name: "取消" }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "編輯牌陣", pressed: false }),
+    ).toBeInTheDocument();
+    expect(slot(1).querySelector("[data-draw-card='primary']")).not.toBeNull();
 
-    expect(slot(1).style.getPropertyValue("--y")).toBe("0.51");
-    expect(slot(1).querySelector("[data-draw-card='primary']")).toBe(before);
-    expect(screen.getByText("剩餘 75 張")).toBeInTheDocument();
-    fireEvent.click(handle(1));
-    expect(screen.getByRole("button", { name: "刪除牌位" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "五張十字" })).toBeDisabled();
+    arrange();
+    fireEvent.click(screen.getByRole("button", { name: "清除並編輯" }));
+    expect(
+      screen.getByRole("button", { name: "完成編輯", pressed: true }),
+    ).toBeInTheDocument();
+    expect(document.querySelector("[data-draw-card]")).toBeNull();
+    expect(screen.getByText("剩餘 78 張")).toBeInTheDocument();
+    // Positions, their questions and the main question stay.
+    expect(
+      within(screen.getByRole("list", { name: "牌位與問題" })).getAllByRole(
+        "listitem",
+      ),
+    ).toHaveLength(3);
+    expect(screen.getByRole("textbox", { name: /^主問題/u })).toHaveValue(
+      "今年的重心？",
+    );
+    // Editing is open at once: a position can be removed.
+    fireEvent.click(handle(3));
+    expect(screen.getByRole("button", { name: "刪除牌位" })).toBeEnabled();
+  });
+
+  it("requires a main question before shuffling", async () => {
+    renderTable();
+    expect(
+      await screen.findByText("請先輸入這次想問的主問題"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
+      target: { value: "   " },
+    });
+    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
+      target: { value: "下個月的方向" },
+    });
+    expect(await screen.findByText("準備好了，請洗牌")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
   });
 
   it("never moves or rotates positions during play", async () => {
@@ -443,7 +449,9 @@ describe("DrawExperience spread table", () => {
     for (const name of editing) {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
-    expect(screen.getByLabelText(/主問題/u)).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: /^主問題/u }),
+    ).toBeInTheDocument();
     // Starting over belongs to play.
     expect(
       screen.getByRole("button", { name: "清除本次牌陣" }),
@@ -509,7 +517,7 @@ describe("DrawExperience spread table", () => {
     const storage = new MemoryStorage();
     const first = renderTable({ storage });
     await ready();
-    fireEvent.change(screen.getByLabelText(/主問題/u), {
+    fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
       target: { value: "今年的重心？" },
     });
     await shuffleAndDeal();
@@ -522,7 +530,9 @@ describe("DrawExperience spread table", () => {
 
     renderTable({ storage });
     expect(await screen.findByText("已載入上次的牌陣。")).toBeInTheDocument();
-    expect(screen.getByLabelText(/主問題/u)).toHaveValue("今年的重心？");
+    expect(screen.getByRole("textbox", { name: /^主問題/u })).toHaveValue(
+      "今年的重心？",
+    );
     expect(slot(1).querySelector("[data-draw-card='primary']")).toHaveAttribute(
       "data-reveal-state",
       "revealed",

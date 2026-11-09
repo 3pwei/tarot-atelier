@@ -34,6 +34,7 @@ export type SpreadRemoval =
 export type SpreadIssue =
   | { readonly code: "no-positions" }
   | { readonly code: "too-many-positions" }
+  | { readonly code: "missing-main-question" }
   | { readonly code: "missing-question"; readonly index: number }
   | { readonly code: "question-too-long"; readonly index: number }
   | { readonly code: "main-question-too-long" };
@@ -320,6 +321,19 @@ export function assignDraw(
   }));
 }
 
+/** Returns every drawn card to the deck; positions and questions stay. */
+export function clearDraws(spread: Spread): Spread {
+  return Object.freeze({
+    ...spread,
+    positions: Object.freeze(
+      spread.positions.map((position) => {
+        const { drawResult, ...empty } = position;
+        return drawResult ? Object.freeze(empty) : position;
+      }),
+    ),
+  });
+}
+
 export function hasDraws(spread: Spread): boolean {
   return spread.positions.some((position) => position.drawResult);
 }
@@ -353,6 +367,20 @@ export function validateSpread(spread: Spread): readonly SpreadIssue[] {
     }
   }
   return issues;
+}
+
+/**
+ * What stops a new deal. Beyond a valid spread, dealing needs a main
+ * question, so every reading has one to answer. Spreads saved without one
+ * stay valid and readable.
+ */
+export function dealingIssues(spread: Spread): readonly SpreadIssue[] {
+  const missingMain =
+    countCharacters(spread.mainQuestion.trim()) < MIN_QUESTION_LENGTH;
+  return [
+    ...(missingMain ? [{ code: "missing-main-question" } as const] : []),
+    ...validateSpread(spread),
+  ];
 }
 
 export function isSpreadReady(spread: Spread): boolean {

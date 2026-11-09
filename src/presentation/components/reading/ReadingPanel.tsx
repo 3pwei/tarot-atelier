@@ -1,13 +1,11 @@
 "use client";
 
 import { useId } from "react";
-import type { Deck } from "@/domain/deck/deck";
 import type {
   CardReading,
   ReadingResult,
   ReadingSource,
 } from "@/domain/reading/types";
-import type { Spread } from "@/domain/spread/types";
 import {
   FAILURE_MESSAGES,
   FALLBACK_MESSAGES,
@@ -21,34 +19,10 @@ import type { ReadingSession } from "@/presentation/components/reading/useReadin
 
 interface ReadingPanelProps {
   readonly session: ReadingSession;
-  readonly deck: Deck;
-  readonly spread: Spread;
   /** Every card on the table has been revealed. */
   readonly revealed: boolean;
   /** Where readings come from when generated: AI first, or pre-written. */
   readonly source: ReadingSource;
-}
-
-function SpreadSummary({
-  deck,
-  spread,
-}: Pick<ReadingPanelProps, "deck" | "spread">) {
-  return (
-    <div className="reading-summary">
-      <dl className="reading-summary__facts">
-        <div>
-          <dt>{READING_COPY.deck}</dt>
-          <dd>{deck.manifest.name.zhHant}</dd>
-        </div>
-        {spread.mainQuestion.trim() ? (
-          <div>
-            <dt>{READING_COPY.mainQuestion}</dt>
-            <dd>{spread.mainQuestion.trim()}</dd>
-          </div>
-        ) : null}
-      </dl>
-    </div>
-  );
 }
 
 function CardBlock({
@@ -149,20 +123,12 @@ function ResultSections({ result }: { readonly result: ReadingResult }) {
  * reads, labels pre-written readings as such and always carries the
  * entertainment disclaimer.
  */
-export function ReadingPanel({
-  session,
-  deck,
-  spread,
-  revealed,
-  source,
-}: ReadingPanelProps) {
+export function ReadingPanel({ session, revealed, source }: ReadingPanelProps) {
   const titleId = useId();
   const { state, build, stale } = session;
   const loading = state.status === "loading";
   const result = state.status === "ready" ? state.result : undefined;
   const topics = result?.sensitiveTopics ?? [];
-  // A shown reading is labelled by where it actually came from.
-  const copy = SOURCE_COPY[result?.source ?? source];
 
   return (
     <section
@@ -172,16 +138,21 @@ export function ReadingPanel({
     >
       <header className="reading-panel__head">
         <h2 id={titleId}>{READING_COPY.title}</h2>
-        <span className="reading-badge">{copy.badge}</span>
+        {/* Labelled once there is a reading, by where it actually came from. */}
+        {result ? (
+          <span className="reading-badge">
+            {SOURCE_COPY[result.source].badge}
+          </span>
+        ) : null}
       </header>
-      <p className="reading-panel__note">{copy.note}</p>
+      <p className="reading-disclaimer">{READING_COPY.disclaimer}</p>
 
       {!revealed ? (
-        <p className="reading-panel__waiting">{READING_COPY.waiting}</p>
+        <button type="button" className="reading-generate" disabled>
+          {READING_COPY.waiting}
+        </button>
       ) : (
         <>
-          <SpreadSummary deck={deck} spread={spread} />
-
           {build.ok ? null : (
             <ul className="reading-issues" role="alert">
               {build.issues.map((issue) => (
@@ -207,7 +178,7 @@ export function ReadingPanel({
             ) : (
               <button
                 type="button"
-                className="ghost-action ghost-action--gold"
+                className="reading-generate"
                 disabled={!build.ok}
                 onClick={session.generate}
               >
@@ -257,8 +228,6 @@ export function ReadingPanel({
           {result ? <ResultSections result={result} /> : null}
         </>
       )}
-
-      <p className="reading-disclaimer">{READING_COPY.disclaimer}</p>
     </section>
   );
 }

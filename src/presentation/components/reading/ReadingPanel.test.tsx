@@ -6,7 +6,6 @@ import {
   type ReadingOutcome,
   type ReadingRequester,
 } from "@/application/use-cases/requestReading";
-import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
 import { buildReadingRequest } from "@/domain/reading/buildReadingRequest";
 import {
   MAJOR,
@@ -56,8 +55,6 @@ function Harness(props: {
   return (
     <ReadingPanel
       session={session}
-      deck={atelierStandardDeck}
-      spread={props.spread ?? spread}
       revealed={props.revealed ?? true}
       source={props.source ?? "prewritten"}
     />
@@ -97,30 +94,28 @@ function generate() {
 }
 
 describe("ReadingPanel", () => {
-  it("labels the reading as a sample, not AI, and carries the disclaimer", () => {
+  it("shows only the disclaimer and one button before a reading", () => {
     render(<Harness requester={realRequester()} />);
-    expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
-    expect(screen.getByText(/不是即時生成的 AI 解讀/u)).toBeInTheDocument();
     expect(screen.getByText(/僅供娛樂與自我反思/u)).toBeInTheDocument();
-  });
-
-  it("shows the deck and main question, not a second list of positions", () => {
-    render(<Harness requester={realRequester()} />);
-    expect(screen.getByText("工坊標準塔羅")).toBeInTheDocument();
-    expect(screen.getByText("我的工作方向")).toBeInTheDocument();
-    // The list beside the table already pairs each question with its cards.
+    expect(screen.getByRole("button", { name: "產生解讀" })).toBeEnabled();
+    // No source badge, notes, deck or second list of positions yet.
+    expect(screen.queryByText("範例解牌，不是 AI")).not.toBeInTheDocument();
+    expect(screen.queryByText("工坊標準塔羅")).not.toBeInTheDocument();
+    expect(screen.queryByText("我的工作方向")).not.toBeInTheDocument();
     expect(screen.queryByText("現況是什麼？")).not.toBeInTheDocument();
-    expect(screen.queryByText("星星 正位")).not.toBeInTheDocument();
   });
 
-  it("waits until every card is revealed", () => {
+  it("labels a finished reading by where it came from", async () => {
+    render(<Harness requester={realRequester()} />);
+    generate();
+    expect(await screen.findByText("範例解牌，不是 AI")).toBeInTheDocument();
+  });
+
+  it("keeps the button disabled until every card is revealed", () => {
     render(<Harness requester={realRequester()} revealed={false} />);
     expect(
-      screen.getByText("所有牌翻開後，就能產生解讀。"),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "產生解讀" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "翻開所有牌後即可解讀" }),
+    ).toBeDisabled();
   });
 
   it("offers no tone choice", () => {
@@ -194,13 +189,6 @@ describe("ReadingPanel", () => {
     render(<Harness requester={realRequester()} spread={risky} />);
     generate();
     expect(await screen.findByText(/涉及財務/u)).toBeInTheDocument();
-  });
-
-  it("labels AI readings and says where the question goes before generating", () => {
-    render(<Harness requester={realRequester()} source="ai" />);
-    expect(screen.getByText("AI 解讀")).toBeInTheDocument();
-    expect(screen.getByText(/Cloudflare Workers AI/u)).toBeInTheDocument();
-    expect(screen.queryByText("範例解牌，不是 AI")).not.toBeInTheDocument();
   });
 
   it("shows how long an AI reading takes while it is generated", async () => {

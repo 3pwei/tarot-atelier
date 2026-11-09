@@ -8,7 +8,7 @@ import {
   type JumperMode,
   type RandomSource,
 } from "@/domain/deck/draw";
-import { validateSpread } from "@/domain/spread/spread";
+import { dealingIssues } from "@/domain/spread/spread";
 import { collectDrawnInstances } from "@/domain/spread/spreadSnapshot";
 import type { Spread } from "@/domain/spread/types";
 import {
@@ -57,7 +57,7 @@ function createPile(
 }
 
 export function spreadBlocker(spread: Spread): string | undefined {
-  const first = validateSpread(spread)[0];
+  const first = dealingIssues(spread)[0];
   if (!first) return undefined;
   switch (first.code) {
     case "no-positions":
@@ -70,6 +70,8 @@ export function spreadBlocker(spread: Spread): string | undefined {
       return "牌位最多 12 個";
     case "main-question-too-long":
       return "主問題超過 300 字";
+    case "missing-main-question":
+      return "請先輸入這次想問的主問題";
   }
 }
 

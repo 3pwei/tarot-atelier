@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
 import type { CardDefinition, Orientation } from "@/domain/deck/types";
 import { CardArtwork } from "@/presentation/components/CardArtwork";
+import { useModalDialog } from "@/presentation/components/dialog/useModalDialog";
 import type { CardRole } from "@/presentation/components/draw/DrawnCard";
 
 const ROLE_LABELS: Readonly<Record<CardRole, string>> = {
@@ -34,35 +35,13 @@ export function CardViewer({
 }: CardViewerProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
-  const latestClose = useRef(onClose);
-  useEffect(() => {
-    latestClose.current = onClose;
-  });
-
-  useEffect(() => {
-    const opener =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    closeRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        latestClose.current();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      opener?.focus();
-    };
-  }, []);
+  const modal = useModalDialog(onClose, closeRef);
 
   const orientationLabel = orientation === "reversed" ? "逆位" : "正位";
 
   return (
     <div
-      className="card-viewer"
+      className="dialog-backdrop"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -72,13 +51,7 @@ export function CardViewer({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        // The close button is the only control, so Tab stays inside.
-        onKeyDown={(event) => {
-          if (event.key === "Tab") {
-            event.preventDefault();
-            closeRef.current?.focus();
-          }
-        }}
+        onKeyDown={modal.onKeyDown}
       >
         <button
           ref={closeRef}
