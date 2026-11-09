@@ -14,12 +14,11 @@ export function MainQuestionField({ value, onChange }: MainQuestionFieldProps) {
   const id = useId();
   return (
     <label className="field spread-main-question" htmlFor={id}>
-      <span>
-        主問題 <em className="optional">選填</em>
-      </span>
+      <span>主問題</span>
       <input
         id={id}
         type="text"
+        required
         value={value}
         placeholder="這次占卜想整體看見什麼？"
         aria-describedby={`${id}-count`}

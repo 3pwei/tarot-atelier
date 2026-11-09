@@ -32,5 +32,5 @@ The site is a static export, so the key-holding code needs a server.
 
 - milespapa-games now holds a built function as well as static files. Its rules and check need a matching change, made in that repository with the first AI release.
 - Previews and production need one-time Cloudflare setup (bindings and a secret). Without it the endpoint answers 503 and every reading falls back; nothing breaks.
-- Questions are sent to Cloudflare Workers AI. The UI says so before generating; nothing is stored, and logs carry only outcomes and token counts.
+- Questions are sent to Cloudflare Workers AI. Nothing is stored, and logs carry only outcomes and token counts. The panel's notice about this was removed by owner decision on 2026-11-09; see `security.md`.
 - `next dev` has no Functions. E2E answers the endpoint with a stand-in; unit tests cover the server with a fake model and D1 on Node's SQLite.

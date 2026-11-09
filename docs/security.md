@@ -1,7 +1,7 @@
 # Security baseline
 
 - AI readings (Phase 05) go through this site's own Pages Function to Cloudflare Workers AI, on the free allocation only. No analytics, upload or paid service is connected.
-- What leaves the device for an AI reading: the deck, the drawn cards and the main and position questions. The panel says so before generating. The endpoint stores none of it; D1 keeps only daily counters keyed by a salted hash of the visitor's address and the day, deleted after two days.
+- What leaves the device for an AI reading: the deck, the drawn cards and the main and position questions. The panel no longer says so: the owner removed that line on 2026-11-09 to keep the panel to the disclaimer and one button. The disclosure therefore needs a home elsewhere (for example a privacy page) before a public launch. The endpoint stores none of it; D1 keeps only daily counters keyed by a salted hash of the visitor's address and the day, deleted after two days.
 - Server logs carry outcomes, configuration problems and token counts, never questions or reading text. Tests assert this.
 - The endpoint refuses other origins, bodies over 16 KB, unknown decks and cards, and every answer that fails the result schema, does not answer the request or states certainty.
 - The prompt keeps player text out of the instructions and passes it as JSON data, so a question cannot change the model's rules or the output format.

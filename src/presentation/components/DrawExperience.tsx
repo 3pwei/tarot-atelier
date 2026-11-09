@@ -13,6 +13,7 @@ import {
 } from "@/application/use-cases/requestReading";
 import type { RandomSource } from "@/domain/deck/draw";
 import type { CardInstance } from "@/domain/deck/types";
+import { hasDraws } from "@/domain/spread/spread";
 import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
 import {
@@ -23,6 +24,7 @@ import {
 import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { DeckStack } from "@/presentation/components/draw/DeckStack";
+import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
 import { CardViewer } from "@/presentation/components/draw/CardViewer";
 import {
   DrawnCard,
@@ -179,9 +181,23 @@ export function DrawExperience({
     },
     [arranging, dispatch],
   );
+  const [confirmingArrange, setConfirmingArrange] = useState(false);
   const toggleArrange = () => {
-    if (arranging) dispatch({ type: "select", positionId: undefined });
-    setTableMode(arranging ? "play" : "arrange");
+    if (arranging) {
+      dispatch({ type: "select", positionId: undefined });
+      setTableMode("play");
+    } else if (hasDraws(spread)) {
+      // Drawn positions cannot be rearranged; ask before returning the cards.
+      setConfirmingArrange(true);
+    } else {
+      setTableMode("arrange");
+    }
+  };
+  const arrangeAfterClearing = () => {
+    dispatch({ type: "clear-draws" });
+    setInspected(undefined);
+    setConfirmingArrange(false);
+    setTableMode("arrange");
   };
   const handleMove = useCallback(
     (positionId: string, point: TablePoint) =>
@@ -385,8 +401,6 @@ export function DrawExperience({
 
         <ReadingPanel
           session={reading}
-          deck={deck}
-          spread={spread}
           revealed={spreadRevealed}
           source={readingProvider.source}
         />
@@ -398,6 +412,15 @@ export function DrawExperience({
           <span>牌陣自動保存在這台裝置</span>
         </div>
       </div>
+      {confirmingArrange && (
+        <ConfirmDialog
+          title="清除這次的抽牌結果？"
+          message="編輯牌陣前，會先把這次抽到的牌收回牌堆，解讀也會一起清除。牌位、問題和主問題都會保留。"
+          confirmLabel="清除並編輯"
+          onConfirm={arrangeAfterClearing}
+          onCancel={() => setConfirmingArrange(false)}
+        />
+      )}
       {viewed && (
         <CardViewer
           card={viewed.card}

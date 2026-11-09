@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { askMainQuestion } from "./support/spreadTable";
 
 test("deck library exposes 78 definitions and has no horizontal overflow", async ({
   page,
@@ -31,7 +32,7 @@ test("draw experience supports keyboard shuffle, dealing, and burn reveal", asyn
   // Burns three or more cards in turn.
   test.slow();
   await page.goto("/");
-  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+  await askMainQuestion(page);
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
 
   const pile = page.getByRole("button", { name: "從牌堆發牌到 3 個牌位" });
@@ -70,7 +71,7 @@ test("pointer reveal burns away the card back from the touched point", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+  await askMainQuestion(page);
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
   await page.getByRole("button", { name: "從牌堆發牌到 3 個牌位" }).click();
 

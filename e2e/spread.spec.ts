@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { dealAll, reveal, slot } from "./support/spreadTable";
+import { askMainQuestion, dealAll, reveal, slot } from "./support/spreadTable";
 
 // Each test deals and burns several cards; software-rendered CI browsers need headroom.
 test.describe.configure({ timeout: 90_000 });
@@ -118,7 +118,7 @@ async function finishArranging(page: Page) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+  await askMainQuestion(page);
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
 });
 
@@ -230,7 +230,7 @@ test("keyboard and numeric keypad move a position", async ({ page }) => {
 });
 
 test("the spread survives a page reload", async ({ page }) => {
-  await page.getByLabel(/主問題/u).fill("下個月的方向");
+  await page.getByRole("textbox", { name: /^主問題/u }).fill("下個月的方向");
   await arrange(page);
   await page.getByRole("button", { name: "五張十字", exact: true }).click();
   await finishArranging(page);
@@ -241,7 +241,9 @@ test("the spread survives a page reload", async ({ page }) => {
 
   await page.reload();
   await expect(page.getByText("已載入上次的牌陣。")).toBeVisible();
-  await expect(page.getByLabel(/主問題/u)).toHaveValue("下個月的方向");
+  await expect(page.getByRole("textbox", { name: /^主問題/u })).toHaveValue(
+    "下個月的方向",
+  );
   await expect(page.locator("[data-slot]")).toHaveCount(5);
   await expect(
     slot(page, 1).locator("[data-reveal-state='revealed']").first(),

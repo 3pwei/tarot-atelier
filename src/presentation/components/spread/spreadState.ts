@@ -2,6 +2,7 @@ import type { DrawResult } from "@/domain/deck/draw";
 import {
   addPosition,
   assignDraw,
+  clearDraws,
   hasDraws,
   movePosition,
   nudgePosition,
@@ -98,6 +99,8 @@ export type SpreadAction =
   | { readonly type: "revealed"; readonly instanceId: string }
   | { readonly type: "select"; readonly positionId?: string }
   | { readonly type: "clear" }
+  /** Returns the drawn cards so the layout can be edited again. */
+  | { readonly type: "clear-draws" }
   | { readonly type: "announce"; readonly text: string };
 
 export type CreateId = () => string;
@@ -394,6 +397,18 @@ export function createSpreadReducer(createId: CreateId) {
           state,
         );
       }
+      case "clear-draws":
+        return announce(
+          {
+            ...state,
+            spread: clearDraws(state.spread),
+            revealedInstanceIds: new Set(),
+            selectedId: undefined,
+            generation: state.generation + 1,
+          },
+          "已清除這次的抽牌結果，可以編輯牌陣了。",
+          state,
+        );
       case "announce":
         return announce(state, action.text);
     }

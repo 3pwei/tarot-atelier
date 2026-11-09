@@ -534,7 +534,8 @@
   cursor: zoom-in;
 }
 
-.card-viewer {
+/* Shared by every modal dialog. */
+.dialog-backdrop {
   position: fixed;
   z-index: 50;
   display: grid;
@@ -617,6 +618,37 @@
 .card-viewer__close:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+
+.confirm-dialog {
+  display: grid;
+  width: min(100%, 24rem);
+  gap: 0.75rem;
+  padding: 1.4rem;
+  border: 1px solid rgba(230, 197, 122, 0.3);
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #160f2b, #0a0818);
+}
+
+.confirm-dialog h2 {
+  margin: 0;
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+
+.confirm-dialog p {
+  margin: 0;
+  color: var(--color-moon);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
 @keyframes viewer-fade {
@@ -754,7 +786,7 @@
   .drawn-card__body::before,
   .drawn-card__body::after,
   .deck-stack__pile::before,
-  .card-viewer {
+  .dialog-backdrop {
     animation: none !important;
   }
 }

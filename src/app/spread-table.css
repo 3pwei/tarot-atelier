@@ -43,10 +43,6 @@
   letter-spacing: 0.12em;
 }
 
-.field em.optional {
-  color: rgba(207, 198, 220, 0.6);
-}
-
 .field input,
 .field textarea,
 .field select {
@@ -699,9 +695,10 @@
 
 /* ── Details: inspector and reading list ─────────────── */
 
+/* The hint (or the position editor) spans the top; positions sit below. */
 .spread-details {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 1.25rem;
   padding: 0 clamp(1rem, 3vw, 2rem) clamp(1rem, 2.6vw, 1.5rem);
@@ -774,6 +771,7 @@
 
 .position-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
   margin: 0;
   padding: 0;
@@ -855,8 +853,8 @@
     margin-left: 0;
   }
 
-  .spread-details {
-    grid-template-columns: 1fr;
+  .position-list {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .spread-slot .drawn-card__badge {
