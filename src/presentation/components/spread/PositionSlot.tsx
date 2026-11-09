@@ -44,6 +44,8 @@ interface PositionSlotProps {
   readonly selected: boolean;
   /** The position may be moved and rotated (arrange mode, nothing in flight). */
   readonly arrangeable: boolean;
+  /** Its dealt cards lie on the table, not still on their way. */
+  readonly settled: boolean;
   readonly field: RefObject<HTMLElement | null>;
   readonly onSelect: (positionId: string) => void;
   readonly onMove: (positionId: string, point: TablePoint) => void;
@@ -91,6 +93,7 @@ export function PositionSlot({
   position,
   selected,
   arrangeable,
+  settled,
   field,
   onSelect,
   onMove,
@@ -146,6 +149,7 @@ export function PositionSlot({
       data-selected={selected || undefined}
       data-missing-question={question.length === 0 || undefined}
       data-arrangeable={arrangeable || undefined}
+      data-settled={settled || undefined}
       data-rotating={gestures.rotating || undefined}
       onPointerDown={gestures.onSlotPointerDown}
       onClickCapture={gestures.onClickCapture}

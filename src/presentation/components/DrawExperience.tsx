@@ -333,6 +333,7 @@ export function DrawExperience({
             spread={spread}
             selectedId={selectedId}
             arrangeable={abilities.canArrange}
+            awaitingIds={dealer.awaitingIds}
             viewport={viewport}
             viewportRef={viewportRef}
             fieldRef={fieldRef}

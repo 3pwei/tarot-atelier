@@ -110,6 +110,8 @@ export function useSpreadDealer({
   const [phase, setPhase] = useState<DrawState>("idle");
   /** Positions whose cards are in flight, in dealing order. */
   const [flyingIds, setFlyingIds] = useState<readonly string[]>([]);
+  /** Flying positions whose primary card has already touched down. */
+  const [landedIds, setLandedIds] = useState<readonly string[]>([]);
 
   // A restored or cleared spread gets a fresh pile without its table cards.
   if (pile.generation !== generation) {
@@ -157,6 +159,7 @@ export function useSpreadDealer({
       experience.reveal();
       setPhase(experience.state);
       setFlyingIds([]);
+      setLandedIds([]);
     },
     (gsap, done) => {
       const from = flightOrigin.current;
@@ -173,12 +176,18 @@ export function useSpreadDealer({
           const slotId =
             element.closest<HTMLElement>("[data-slot]")?.dataset.slot;
           const position = spread.positions.find((p) => p.id === slotId);
+          const role =
+            element.dataset.drawCard === "jumper" ? "jumper" : "primary";
           return {
             element,
             from,
             frame: { rotation: position?.rotation ?? 0, scale: tableScale },
             order: Math.max(0, flyingIds.indexOf(slotId ?? "")),
-            role: element.dataset.drawCard === "jumper" ? "jumper" : "primary",
+            role,
+            onLanded:
+              role === "primary" && slotId
+                ? () => setLandedIds((ids) => [...ids, slotId])
+                : undefined,
           };
         }),
         done,
@@ -226,6 +235,11 @@ export function useSpreadDealer({
     emptyCount: empty.length,
     blocker,
     flyingIds,
+    /** Positions whose card is still on its way; they keep their number. */
+    awaitingIds:
+      phase === "drawing"
+        ? flyingIds.filter((id) => !landedIds.includes(id))
+        : [],
     canShuffle,
     canDraw,
     layoutLocked: loading || phase === "shuffling" || phase === "drawing",

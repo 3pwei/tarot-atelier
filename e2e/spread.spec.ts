@@ -561,3 +561,40 @@ test("the table looks the same while shuffling and dealing, except for the cards
   await expect(board.locator(".spread-slot__frame")).toHaveCount(3);
   for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 });
+
+test("with the full animation, dealt cards land visible and numbers leave as each lands", async ({
+  page,
+}) => {
+  // Test machines often have few cores and get the simpler CSS motion; force
+  // the GSAP path that most players see.
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 8 }),
+  );
+  await page.reload();
+  await expect(page.locator(".draw-experience")).toHaveAttribute(
+    "data-motion",
+    "enhanced",
+  );
+  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await page.getByRole("button", { name: /從牌堆發牌到/u }).click();
+  // While the last card is still on its way, its position keeps its number.
+  const last = await slot(page, 3).evaluate((element) => ({
+    waiting: !element.hasAttribute("data-settled"),
+    numberShown:
+      getComputedStyle(element.querySelector(".spread-slot__handle")!)
+        .display !== "none",
+  }));
+  if (last.waiting) expect(last.numberShown).toBe(true);
+
+  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
+    timeout: 15_000,
+  });
+  for (const index of [1, 2, 3]) {
+    const card = slot(page, index).locator("[data-draw-card='primary']");
+    await expect(card).toHaveCSS("opacity", "1");
+    await expect(card).not.toHaveAttribute("data-flight", /.+/u);
+    await expect(handle(page, index)).toBeHidden();
+  }
+});

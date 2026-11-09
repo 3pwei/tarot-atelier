@@ -17,6 +17,8 @@ interface SpreadBoardProps {
   readonly selectedId?: string;
   /** Positions may be moved and rotated. */
   readonly arrangeable: boolean;
+  /** Positions whose dealt card has not landed yet. */
+  readonly awaitingIds: readonly string[];
   readonly viewport: Viewport;
   readonly viewportRef: RefObject<HTMLDivElement | null>;
   readonly fieldRef: RefObject<HTMLDivElement | null>;
@@ -47,6 +49,7 @@ export function SpreadBoard({
   spread,
   selectedId,
   arrangeable,
+  awaitingIds,
   viewport,
   viewportRef,
   fieldRef,
@@ -87,6 +90,10 @@ export function SpreadBoard({
               position={position}
               selected={position.id === selectedId}
               arrangeable={arrangeable}
+              settled={
+                Boolean(position.drawResult) &&
+                !awaitingIds.includes(position.id)
+              }
               field={fieldRef}
               onSelect={onSelect}
               onMove={onMove}

@@ -656,7 +656,7 @@
  * deal begins. The drawn cards carry the number in their own labels.
  */
 .spread-board:not([data-arranging])
-  .spread-slot:has([data-draw-card="primary"]:not([data-flight="pending"]))
+  .spread-slot[data-settled]
   .spread-slot__handle {
   display: none;
 }

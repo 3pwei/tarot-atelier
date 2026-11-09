@@ -116,6 +116,9 @@ interface FlightPlan {
   readonly frame?: FlightFrame;
   /** Dealing order; each step leaves the deck `DEAL_STAGGER_MS` later. */
   readonly order?: number;
+  /** Called when the card touches down. The timeline writes no state itself:
+   * a reverted GSAP context would restore anything it wrote to the DOM. */
+  readonly onLanded?: () => void;
 }
 
 /** Converts a screen-space offset into the slot's local (unrotated, unzoomed) space. */
@@ -159,7 +162,7 @@ export function buildDrawTimeline(
   const timeline = gsap.timeline({ onComplete });
 
   flights.forEach(
-    ({ element, from, role, frame = SCREEN_FRAME, order = 0 }) => {
+    ({ element, from, role, frame = SCREEN_FRAME, order = 0, onLanded }) => {
       const to = element.getBoundingClientRect();
       // Screen-space offsets from the landing point.
       const startX = from.left + from.width / 2 - (to.left + to.width / 2);
@@ -235,9 +238,8 @@ export function buildDrawTimeline(
           "--lift": 0,
           duration: 0.32,
           ease: "back.out(2.2)",
-        })
-        // Lets the slot drop its number now, not when the whole deal began.
-        .set(element, { attr: { "data-flight": "landed" } });
+        });
+      if (onLanded) timeline.call(onLanded);
     },
   );
 
