@@ -167,15 +167,27 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   const drawnName = await page
     .getByRole("button", { name: /^牌位 1 主牌：/u })
     .getAttribute("aria-label");
+
+  // Editing a dealt layout asks first; cancelling keeps every card.
   await arrange(page);
-  await handle(page, 1).focus();
-  await page.keyboard.press("Shift+ArrowDown");
+  const dialog = page.getByRole("alertdialog", {
+    name: "清除這次的抽牌結果？",
+  });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "取消" }).click();
   await expect(
     page.getByRole("button", { name: drawnName ?? "" }),
   ).toBeVisible();
   await expect(page.locator(".draw-status > span").last()).toHaveText(
     remaining ?? "",
   );
+
+  // Confirming returns the cards and opens editing at once.
+  await arrange(page);
+  await dialog.getByRole("button", { name: "清除並編輯" }).click();
+  await expect(page.locator("[data-draw-card]")).toHaveCount(0);
+  await handle(page, 1).focus();
+  await page.keyboard.press("Shift+ArrowDown");
   expect(await relativePosition(page, 1)).toMatchObject({ y: 0.55 });
 });
 
@@ -482,6 +494,7 @@ test("position numbers stay out of the way of dealt cards during play", async ({
   for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 
   await page.getByRole("button", { name: "編輯牌陣" }).click();
+  await page.getByRole("button", { name: "清除並編輯" }).click();
   for (const index of [1, 2, 3])
     await expect(handle(page, index)).toBeVisible();
 });
