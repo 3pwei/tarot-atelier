@@ -144,7 +144,6 @@ export function PositionSlot({
       data-slot={position.id}
       data-index={position.index}
       data-selected={selected || undefined}
-      data-drawn={hasCards || undefined}
       data-missing-question={question.length === 0 || undefined}
       data-arrangeable={arrangeable || undefined}
       data-rotating={gestures.rotating || undefined}
@@ -192,13 +191,11 @@ export function PositionSlot({
           ? "方向鍵或數字鍵盤移動，Shift 加大步幅；[ 與 ] 旋轉；Enter 編輯。觸控或滑鼠：拖曳移動，長按後拖曳旋轉。"
           : "Enter 編輯問題。要移動或旋轉，請先按「編輯牌陣」。"}
       </span>
-      {hasCards ? (
-        <div className="spread-slot__cards">{children}</div>
-      ) : (
-        <div className="spread-slot__frame" aria-hidden="true">
-          <span>{question ? "✦" : "?"}</span>
-        </div>
-      )}
+      {/* The frame stays under the cards, so dealing never empties the table. */}
+      <div className="spread-slot__frame" aria-hidden="true">
+        <span>{question ? "✦" : "?"}</span>
+      </div>
+      {hasCards && <div className="spread-slot__cards">{children}</div>}
     </div>
   );
 }

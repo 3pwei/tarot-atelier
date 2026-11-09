@@ -101,11 +101,6 @@
   box-shadow: 0 0 0.8rem rgba(230, 197, 122, 0.8);
 }
 
-.draw-experience[data-phase="shuffling"] .draw-status__light,
-.draw-experience[data-phase="drawing"] .draw-status__light {
-  animation: status-pulse 0.9s ease-in-out infinite;
-}
-
 .draw-experience[data-phase="revealed"]:not([data-all-revealed])
   .draw-status__light {
   background: var(--ember);
@@ -761,12 +756,5 @@
   .deck-stack__pile::before,
   .card-viewer {
     animation: none !important;
-  }
-}
-
-@keyframes status-pulse {
-  50% {
-    opacity: 0.35;
-    transform: scale(0.75);
   }
 }

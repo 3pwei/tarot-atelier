@@ -235,7 +235,9 @@ export function buildDrawTimeline(
           "--lift": 0,
           duration: 0.32,
           ease: "back.out(2.2)",
-        });
+        })
+        // Lets the slot drop its number now, not when the whole deal began.
+        .set(element, { attr: { "data-flight": "landed" } });
     },
   );
 

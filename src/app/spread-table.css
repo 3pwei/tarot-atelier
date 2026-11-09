@@ -651,10 +651,13 @@
   color: #ff9a3c;
 }
 
+/*
+ * A position drops its number once its own card has landed, not when the
+ * deal begins. The drawn cards carry the number in their own labels.
+ */
 .spread-board:not([data-arranging])
-  .spread-slot[data-drawn]
+  .spread-slot:has([data-draw-card="primary"]:not([data-flight="pending"]))
   .spread-slot__handle {
-  /* The drawn cards carry the position number in their own labels. */
   display: none;
 }
 

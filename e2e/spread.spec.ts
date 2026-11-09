@@ -509,19 +509,19 @@ test("a revealed card opens large and fits the screen", async ({ page }) => {
   await expect(dialog).toHaveCount(0);
 });
 
-test("the board keeps its size and its ornament still while shuffling and dealing", async ({
+test("the table looks the same while shuffling and dealing, except for the cards", async ({
   page,
 }) => {
   const board = page.locator(".spread-board");
   const ornament = board.locator(".table-ornament");
-  // The background stays still so the eye follows the cards. Read once,
-  // without retrying, so a spin that stops later still fails.
-  const expectStill = async () =>
-    expect(
-      await ornament.evaluate(
-        (element) => getComputedStyle(element).animationName,
-      ),
-    ).toBe("none");
+  const light = page.locator(".draw-status__light");
+  // Read once, without retrying, so an effect that stops later still fails.
+  const animationOf = (target: Locator) =>
+    target.evaluate((element) => getComputedStyle(element).animationName);
+  const expectStill = async () => {
+    expect(await animationOf(ornament)).toBe("none");
+    expect(await animationOf(light)).toBe("none");
+  };
   const sizeOf = async () => {
     const box = await board.boundingBox();
     if (!box) throw new Error("the board is not visible");
@@ -538,8 +538,26 @@ test("the board keeps its size and its ornament still while shuffling and dealin
 
   await page.getByRole("button", { name: /從牌堆發牌到/u }).click();
   await expectStill();
+  // The last card leaves the deck last. Read in one step: while it is still
+  // flying, its position keeps both its frame and its number.
+  const lastPosition = await slot(page, 3).evaluate((element) => {
+    const card = element.querySelector("[data-draw-card='primary']");
+    const number = element.querySelector(".spread-slot__handle");
+    return {
+      flying: card?.getAttribute("data-flight") === "pending",
+      frame: element.querySelector(".spread-slot__frame") !== null,
+      numberShown:
+        number !== null && getComputedStyle(number).display !== "none",
+    };
+  });
+  expect(lastPosition.frame).toBe(true);
+  if (lastPosition.flying) expect(lastPosition.numberShown).toBe(true);
+
   await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
     timeout: 15_000,
   });
   expect(await sizeOf()).toEqual(before);
+  // Once landed, the cards cover their frames and the numbers step aside.
+  await expect(board.locator(".spread-slot__frame")).toHaveCount(3);
+  for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 });
