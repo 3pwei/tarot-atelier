@@ -406,11 +406,6 @@
   pointer-events: none;
 }
 
-.draw-experience[data-phase="shuffling"] .spread-board__canvas .table-ornament,
-.draw-experience[data-phase="drawing"] .spread-board__canvas .table-ornament {
-  animation: ornament-turn 6s linear infinite;
-}
-
 /* Coordinates 0–1 map onto this inset area, so cards at an edge stay whole. */
 .spread-board__field {
   position: absolute;

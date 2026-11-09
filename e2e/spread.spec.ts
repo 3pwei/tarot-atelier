@@ -509,10 +509,19 @@ test("a revealed card opens large and fits the screen", async ({ page }) => {
   await expect(dialog).toHaveCount(0);
 });
 
-test("the board keeps its size while shuffling and dealing", async ({
+test("the board keeps its size and its ornament still while shuffling and dealing", async ({
   page,
 }) => {
   const board = page.locator(".spread-board");
+  const ornament = board.locator(".table-ornament");
+  // The background stays still so the eye follows the cards. Read once,
+  // without retrying, so a spin that stops later still fails.
+  const expectStill = async () =>
+    expect(
+      await ornament.evaluate(
+        (element) => getComputedStyle(element).animationName,
+      ),
+    ).toBe("none");
   const sizeOf = async () => {
     const box = await board.boundingBox();
     if (!box) throw new Error("the board is not visible");
@@ -521,11 +530,16 @@ test("the board keeps its size while shuffling and dealing", async ({
   const before = await sizeOf();
 
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await expectStill();
   await expect(
     page.getByRole("button", { name: /從牌堆發牌到/u }),
   ).toBeVisible();
   expect(await sizeOf()).toEqual(before);
 
-  await dealAll(page, 3);
+  await page.getByRole("button", { name: /從牌堆發牌到/u }).click();
+  await expectStill();
+  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
+    timeout: 15_000,
+  });
   expect(await sizeOf()).toEqual(before);
 });
