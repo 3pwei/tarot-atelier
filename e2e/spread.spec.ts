@@ -508,3 +508,24 @@ test("a revealed card opens large and fits the screen", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });
+
+test("the board keeps its size while shuffling and dealing", async ({
+  page,
+}) => {
+  const board = page.locator(".spread-board");
+  const sizeOf = async () => {
+    const box = await board.boundingBox();
+    if (!box) throw new Error("the board is not visible");
+    return { width: Math.round(box.width), height: Math.round(box.height) };
+  };
+  const before = await sizeOf();
+
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: /從牌堆發牌到/u }),
+  ).toBeVisible();
+  expect(await sizeOf()).toEqual(before);
+
+  await dealAll(page, 3);
+  expect(await sizeOf()).toEqual(before);
+});
