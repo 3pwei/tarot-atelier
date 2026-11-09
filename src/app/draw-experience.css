@@ -107,6 +107,12 @@
   box-shadow: 0 0 0.9rem rgba(255, 154, 60, 0.9);
 }
 
+/* The main question sits in the bar beside the status. */
+.draw-table__question {
+  flex: 1 1 18rem;
+  max-width: 34rem;
+}
+
 .draw-table__controls {
   display: flex;
   flex-wrap: wrap;
@@ -761,9 +767,10 @@
     gap: 1rem;
   }
 
-  .draw-table__controls {
+  .draw-table__controls,
+  .draw-table__question {
     width: 100%;
-    justify-content: space-between;
+    max-width: none;
   }
 
   .drawn-card--jumper {

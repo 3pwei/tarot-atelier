@@ -265,6 +265,20 @@ export function DrawExperience({
             <strong aria-live="polite">{status}</strong>
             <span>剩餘 {dealer.remaining} 張</span>
           </div>
+          {/* The question comes first: dealing needs it. */}
+          <div className="draw-table__question">
+            <MainQuestionField
+              value={spread.mainQuestion}
+              onChange={(text) => dispatch({ type: "main-question", text })}
+            />
+          </div>
+        </div>
+
+        <p className="spread-notice" role="status">
+          {state.notice?.text}
+        </p>
+
+        <div className="spread-setup">
           <div className="draw-table__controls">
             <button
               className="shuffle-action"
@@ -275,17 +289,6 @@ export function DrawExperience({
               洗牌
             </button>
           </div>
-        </div>
-
-        <p className="spread-notice" role="status">
-          {state.notice?.text}
-        </p>
-
-        <div className="spread-setup">
-          <MainQuestionField
-            value={spread.mainQuestion}
-            onChange={(text) => dispatch({ type: "main-question", text })}
-          />
           {arranging && (
             <TemplateShelf
               library={state.library}
