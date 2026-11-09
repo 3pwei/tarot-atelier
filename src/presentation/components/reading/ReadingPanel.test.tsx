@@ -104,14 +104,13 @@ describe("ReadingPanel", () => {
     expect(screen.getByText(/僅供娛樂與自我反思/u)).toBeInTheDocument();
   });
 
-  it("shows the deck, the main question and every position's question and draw", () => {
+  it("shows the deck and main question, not a second list of positions", () => {
     render(<Harness requester={realRequester()} />);
     expect(screen.getByText("工坊標準塔羅")).toBeInTheDocument();
     expect(screen.getByText("我的工作方向")).toBeInTheDocument();
-    expect(screen.getByText("現況是什麼？")).toBeInTheDocument();
-    expect(screen.getByText("星星 正位")).toBeInTheDocument();
-    expect(screen.getByText("高塔 逆位")).toBeInTheDocument();
-    expect(screen.getByText("跳牌：聖杯三 正位")).toBeInTheDocument();
+    // The list beside the table already pairs each question with its cards.
+    expect(screen.queryByText("現況是什麼？")).not.toBeInTheDocument();
+    expect(screen.queryByText("星星 正位")).not.toBeInTheDocument();
   });
 
   it("waits until every card is revealed", () => {
@@ -157,7 +156,6 @@ describe("ReadingPanel", () => {
 
     expect(await screen.findByText(/已取消這次解讀/u)).toBeInTheDocument();
     expect(calls[0]?.signal?.aborted).toBe(true);
-    expect(screen.getByText("現況是什麼？")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "再試一次" }),
     ).not.toBeInTheDocument();

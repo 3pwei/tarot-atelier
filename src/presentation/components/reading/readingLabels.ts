@@ -93,7 +93,6 @@ export const READING_COPY = Object.freeze({
   stale: "牌陣已改變，下方是先前的解讀。按「重新產生」以更新。",
   deck: "使用的牌組",
   mainQuestion: "主問題",
-  jumper: "跳牌",
   symbolism: "單牌象徵",
   interpretation: "與問題的關聯",
   jumperMessage: "跳牌補充",

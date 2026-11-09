@@ -44,6 +44,8 @@ interface PositionSlotProps {
   readonly selected: boolean;
   /** The position may be moved and rotated (arrange mode, nothing in flight). */
   readonly arrangeable: boolean;
+  /** Its dealt cards lie on the table, not still on their way. */
+  readonly settled: boolean;
   readonly field: RefObject<HTMLElement | null>;
   readonly onSelect: (positionId: string) => void;
   readonly onMove: (positionId: string, point: TablePoint) => void;
@@ -91,6 +93,7 @@ export function PositionSlot({
   position,
   selected,
   arrangeable,
+  settled,
   field,
   onSelect,
   onMove,
@@ -144,9 +147,9 @@ export function PositionSlot({
       data-slot={position.id}
       data-index={position.index}
       data-selected={selected || undefined}
-      data-drawn={hasCards || undefined}
       data-missing-question={question.length === 0 || undefined}
       data-arrangeable={arrangeable || undefined}
+      data-settled={settled || undefined}
       data-rotating={gestures.rotating || undefined}
       onPointerDown={gestures.onSlotPointerDown}
       onClickCapture={gestures.onClickCapture}
@@ -192,13 +195,11 @@ export function PositionSlot({
           ? "方向鍵或數字鍵盤移動，Shift 加大步幅；[ 與 ] 旋轉；Enter 編輯。觸控或滑鼠：拖曳移動，長按後拖曳旋轉。"
           : "Enter 編輯問題。要移動或旋轉，請先按「編輯牌陣」。"}
       </span>
-      {hasCards ? (
-        <div className="spread-slot__cards">{children}</div>
-      ) : (
-        <div className="spread-slot__frame" aria-hidden="true">
-          <span>{question ? "✦" : "?"}</span>
-        </div>
-      )}
+      {/* The frame stays under the cards, so dealing never empties the table. */}
+      <div className="spread-slot__frame" aria-hidden="true">
+        <span>{question ? "✦" : "?"}</span>
+      </div>
+      {hasCards && <div className="spread-slot__cards">{children}</div>}
     </div>
   );
 }

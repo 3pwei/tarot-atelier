@@ -43,7 +43,6 @@ test("reads a finished spread with AI through the site's own endpoint", async ({
   await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();
   await expect(panel.getByText(/Cloudflare Workers AI/u)).toBeVisible();
   await expect(panel.getByText("工坊標準塔羅")).toBeVisible();
-  await expect(panel.locator(".reading-summary__positions li")).toHaveCount(3);
   await expect(panel.getByRole("radio")).toHaveCount(0);
 
   await panel.getByRole("button", { name: "產生解讀" }).click();

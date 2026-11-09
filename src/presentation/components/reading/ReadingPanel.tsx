@@ -2,7 +2,6 @@
 
 import { useId } from "react";
 import type { Deck } from "@/domain/deck/deck";
-import type { CardInstance } from "@/domain/deck/types";
 import type {
   CardReading,
   ReadingResult,
@@ -30,11 +29,6 @@ interface ReadingPanelProps {
   readonly source: ReadingSource;
 }
 
-function cardLabel(deck: Deck, card: CardInstance): string {
-  const name = deck.getCard(card.cardId)?.name.zhHant ?? card.cardId;
-  return `${name} ${card.orientation === "reversed" ? "逆位" : "正位"}`;
-}
-
 function SpreadSummary({
   deck,
   spread,
@@ -53,30 +47,6 @@ function SpreadSummary({
           </div>
         ) : null}
       </dl>
-      <ol className="reading-summary__positions">
-        {spread.positions.map((position) => (
-          <li key={position.id}>
-            <span className="reading-index" aria-hidden="true">
-              {position.index}
-            </span>
-            <span className="reading-summary__question">
-              <span className="sr-only">牌位 {position.index}：</span>
-              {position.question.trim()}
-            </span>
-            {position.drawResult ? (
-              <span className="reading-summary__cards">
-                {cardLabel(deck, position.drawResult.primary)}
-                {position.drawResult.jumper ? (
-                  <span className="reading-summary__jumper">
-                    {READING_COPY.jumper}：
-                    {cardLabel(deck, position.drawResult.jumper)}
-                  </span>
-                ) : null}
-              </span>
-            ) : null}
-          </li>
-        ))}
-      </ol>
     </div>
   );
 }

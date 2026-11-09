@@ -406,11 +406,6 @@
   pointer-events: none;
 }
 
-.draw-experience[data-phase="shuffling"] .spread-board__canvas .table-ornament,
-.draw-experience[data-phase="drawing"] .spread-board__canvas .table-ornament {
-  animation: ornament-turn 6s linear infinite;
-}
-
 /* Coordinates 0–1 map onto this inset area, so cards at an edge stay whole. */
 .spread-board__field {
   position: absolute;
@@ -656,10 +651,13 @@
   color: #ff9a3c;
 }
 
+/*
+ * A position drops its number once its own card has landed, not when the
+ * deal begins. The drawn cards carry the number in their own labels.
+ */
 .spread-board:not([data-arranging])
-  .spread-slot[data-drawn]
+  .spread-slot[data-settled]
   .spread-slot__handle {
-  /* The drawn cards carry the position number in their own labels. */
   display: none;
 }
 

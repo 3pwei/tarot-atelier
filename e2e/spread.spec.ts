@@ -508,3 +508,93 @@ test("a revealed card opens large and fits the screen", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });
+
+test("the table looks the same while shuffling and dealing, except for the cards", async ({
+  page,
+}) => {
+  const board = page.locator(".spread-board");
+  const ornament = board.locator(".table-ornament");
+  const light = page.locator(".draw-status__light");
+  // Read once, without retrying, so an effect that stops later still fails.
+  const animationOf = (target: Locator) =>
+    target.evaluate((element) => getComputedStyle(element).animationName);
+  const expectStill = async () => {
+    expect(await animationOf(ornament)).toBe("none");
+    expect(await animationOf(light)).toBe("none");
+  };
+  const sizeOf = async () => {
+    const box = await board.boundingBox();
+    if (!box) throw new Error("the board is not visible");
+    return { width: Math.round(box.width), height: Math.round(box.height) };
+  };
+  const before = await sizeOf();
+
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await expectStill();
+  await expect(
+    page.getByRole("button", { name: /從牌堆發牌到/u }),
+  ).toBeVisible();
+  expect(await sizeOf()).toEqual(before);
+
+  await page.getByRole("button", { name: /從牌堆發牌到/u }).click();
+  await expectStill();
+  // The last card leaves the deck last. Read in one step: while it is still
+  // flying, its position keeps both its frame and its number.
+  const lastPosition = await slot(page, 3).evaluate((element) => {
+    const card = element.querySelector("[data-draw-card='primary']");
+    const number = element.querySelector(".spread-slot__handle");
+    return {
+      flying: card?.getAttribute("data-flight") === "pending",
+      frame: element.querySelector(".spread-slot__frame") !== null,
+      numberShown:
+        number !== null && getComputedStyle(number).display !== "none",
+    };
+  });
+  expect(lastPosition.frame).toBe(true);
+  if (lastPosition.flying) expect(lastPosition.numberShown).toBe(true);
+
+  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
+    timeout: 15_000,
+  });
+  expect(await sizeOf()).toEqual(before);
+  // Once landed, the cards cover their frames and the numbers step aside.
+  await expect(board.locator(".spread-slot__frame")).toHaveCount(3);
+  for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
+});
+
+test("with the full animation, dealt cards land visible and numbers leave as each lands", async ({
+  page,
+}) => {
+  // Test machines often have few cores and get the simpler CSS motion; force
+  // the GSAP path that most players see.
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 8 }),
+  );
+  await page.reload();
+  await expect(page.locator(".draw-experience")).toHaveAttribute(
+    "data-motion",
+    "enhanced",
+  );
+  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await page.getByRole("button", { name: /從牌堆發牌到/u }).click();
+  // While the last card is still on its way, its position keeps its number.
+  const last = await slot(page, 3).evaluate((element) => ({
+    waiting: !element.hasAttribute("data-settled"),
+    numberShown:
+      getComputedStyle(element.querySelector(".spread-slot__handle")!)
+        .display !== "none",
+  }));
+  if (last.waiting) expect(last.numberShown).toBe(true);
+
+  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
+    timeout: 15_000,
+  });
+  for (const index of [1, 2, 3]) {
+    const card = slot(page, index).locator("[data-draw-card='primary']");
+    await expect(card).toHaveCSS("opacity", "1");
+    await expect(card).not.toHaveAttribute("data-flight", /.+/u);
+    await expect(handle(page, index)).toBeHidden();
+  }
+});
