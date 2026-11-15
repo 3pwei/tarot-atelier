@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 const TICKS = Array.from({ length: 72 }, (_, index) => {
   const angle = (index * Math.PI) / 36;
   const inner = index % 6 === 0 ? 168 : 176;
@@ -15,7 +17,8 @@ const SIGILS = Array.from({ length: 12 }, (_, index) => {
 });
 
 /** A faint engraved astrolabe under the altar, purely decorative. */
-export function TableOrnament() {
+/** A fixed SVG; memoised so table re-renders never rebuild it. */
+export const TableOrnament = memo(function TableOrnament() {
   return (
     <svg
       className="table-ornament"
@@ -59,4 +62,4 @@ export function TableOrnament() {
       </g>
     </svg>
   );
-}
+});

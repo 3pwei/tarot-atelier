@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from "react";
 import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
+import { createFrameCoalescer } from "@/presentation/components/spread/frameCoalescer";
 import {
   distanceFrom,
   LONG_PRESS_MS,
@@ -72,6 +73,7 @@ export function useSlotGestures({
   const [rotating, setRotating] = useState(false);
   const suppressClick = useRef(false);
   const detach = useRef<() => void>(() => undefined);
+  const updates = useRef(createFrameCoalescer());
   const latest = useRef({ position, onMove, onRotate, onHandleTap });
   useEffect(() => {
     latest.current = { position, onMove, onRotate, onHandleTap };
@@ -125,9 +127,13 @@ export function useSlotGestures({
       return;
     }
     session.turned = true;
-    latest.current.onRotate(
-      latest.current.position.id,
-      rotationFromDrag(session.startRotation, session.startAngle, angle),
+    const degrees = rotationFromDrag(
+      session.startRotation,
+      session.startAngle,
+      angle,
+    );
+    updates.current.schedule(() =>
+      latest.current.onRotate(latest.current.position.id, degrees),
     );
   }
 
@@ -180,15 +186,20 @@ export function useSlotGestures({
       if (element) element.dataset.dragging = "true";
       const next = relativePoint(move.clientX, move.clientY);
       if (!next) return;
-      latest.current.onMove(latest.current.position.id, {
+      const point = {
         x: next.x - session.offset.x,
         y: next.y - session.offset.y,
-      });
+      };
+      updates.current.schedule(() =>
+        latest.current.onMove(latest.current.position.id, point),
+      );
     };
 
     const onPointerEnd = (end: globalThis.PointerEvent) => {
       if (end.pointerId !== session.pointerId) return;
       if (timer) clearTimeout(timer);
+      // The last move lands before the gesture is reported finished.
+      updates.current.flush();
       const gestured = session.mode !== "pending";
       if (session.fromHandle && !session.turned && end.type === "pointerup") {
         latest.current.onHandleTap();
@@ -210,6 +221,7 @@ export function useSlotGestures({
     window.addEventListener("pointercancel", onPointerEnd);
     detach.current = () => {
       if (timer) clearTimeout(timer);
+      updates.current.flush();
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerEnd);
       window.removeEventListener("pointercancel", onPointerEnd);
