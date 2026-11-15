@@ -34,7 +34,6 @@ export default defineConfig([
             { name: "next", message: "Domain must remain framework-free." },
             { name: "zustand", message: "Domain must remain framework-free." },
             { name: "gsap", message: "Domain must remain framework-free." },
-            { name: "three", message: "Domain must remain framework-free." },
           ],
           patterns: [
             {
@@ -46,7 +45,6 @@ export default defineConfig([
                   "server",
                 ]),
                 "next/**",
-                "@react-three/**",
               ],
               message:
                 "Domain dependencies may only point to domain or shared pure utilities.",

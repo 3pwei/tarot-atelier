@@ -2,7 +2,6 @@ import Image from "next/image";
 import { DeckLibrary } from "@/presentation/components/DeckLibrary";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
 import { HeroReveal } from "@/presentation/components/HeroReveal";
-import { LazyAtmosphere } from "@/presentation/effects/LazyAtmosphere";
 
 const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -26,7 +25,7 @@ const foundationItems = [
 export function HomePage() {
   return (
     <div className="site-shell">
-      <LazyAtmosphere />
+      <div className="page-glow" aria-hidden />
       <header className="site-header content-wrap">
         <a className="brand" href="#top" aria-label="Tarot Atelier 首頁">
           <Image
