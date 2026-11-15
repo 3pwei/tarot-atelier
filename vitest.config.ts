@@ -17,6 +17,7 @@ export default defineConfig({
       "src/**/*.test.{ts,tsx}",
       "tests/**/*.test.{ts,tsx}",
       "scripts/**/*.test.ts",
+      "perf/**/*.test.ts",
     ],
     coverage: {
       reporter: ["text", "html"],
