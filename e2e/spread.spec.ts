@@ -129,9 +129,13 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   await arrange(page);
   const before = await relativePosition(page, 3);
   await dragBy(page, slot(page, 3), -30, -40, isMobile);
-  const after = await relativePosition(page, 3);
-  expect(after.x).toBeLessThan(before.x);
-  expect(after.y).toBeLessThan(before.y);
+  // Gesture updates render on the next frame; wait for it.
+  await expect
+    .poll(async () => {
+      const after = await relativePosition(page, 3);
+      return after.x < before.x && after.y < before.y;
+    })
+    .toBe(true);
 
   await handle(page, 2).click();
   await page.getByLabel("旋轉（度）").fill("45");
@@ -423,7 +427,8 @@ test("press and hold, then drag, rotates a position around its centre", async ({
     { x: center.x + box.width * 0.35, y: center.y },
     { isMobile, holdMs: 700 },
   );
-  expect(await rotationOf(page, 2)).toBe(90);
+  // Gesture updates render on the next frame; wait for it.
+  await expect.poll(() => rotationOf(page, 2)).toBe(90);
   expect(await relativePosition(page, 2)).toEqual(before);
   await expect(target).not.toHaveAttribute("data-rotating", "true");
 
@@ -438,7 +443,7 @@ test("press and hold, then drag, rotates a position around its centre", async ({
     { x: knobBox.x + knobBox.width / 2, y: knobBox.y + knobBox.height / 2 },
     { isMobile, holdMs: 0 },
   );
-  expect(await rotationOf(page, 2)).toBe(180);
+  await expect.poll(() => rotationOf(page, 2)).toBe(180);
   expect(await relativePosition(page, 2)).toEqual(before);
 });
 
