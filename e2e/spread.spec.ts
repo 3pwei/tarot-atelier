@@ -435,11 +435,18 @@ test("press and hold, then drag, rotates a position around its centre", async ({
   // The turning-arrow handle rotates straight away, without holding.
   await handle(page, 2).click();
   const knob = target.getByRole("button", { name: "牌位 2 順時針轉 45°" });
+  // A turned position reaches further; bring its knob on screen and measure
+  // again, since the sweep is made in screen coordinates.
+  await knob.scrollIntoViewIfNeeded();
   const knobBox = await knob.boundingBox();
-  if (!knobBox) throw new Error("rotate handle is not visible");
+  const turnedBox = await target.boundingBox();
+  if (!knobBox || !turnedBox) throw new Error("rotate handle is not visible");
   await sweep(
     page,
-    center,
+    {
+      x: turnedBox.x + turnedBox.width / 2,
+      y: turnedBox.y + turnedBox.height / 2,
+    },
     { x: knobBox.x + knobBox.width / 2, y: knobBox.y + knobBox.height / 2 },
     { isMobile, holdMs: 0 },
   );

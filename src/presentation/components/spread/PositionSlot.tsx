@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from "react";
 import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
+import { angleLabel } from "@/presentation/components/spread/useSlotPreview";
 import { useSlotGestures } from "@/presentation/components/spread/useSlotGestures";
 
 export const KEY_STEP = 0.01;
@@ -185,9 +186,13 @@ export function PositionSlot({
         </button>
       )}
       {gestures.rotating && (
-        <span className="spread-slot__angle" aria-hidden="true">
-          {position.rotation}°
-        </span>
+        // The text lives in an attribute so a turn in progress can update it
+        // without re-rendering the table (see useSlotPreview).
+        <span
+          className="spread-slot__angle"
+          data-angle={angleLabel(position.rotation)}
+          aria-hidden="true"
+        />
       )}
       <span id={hintId} className="sr-only">
         {`位置：橫向 ${percent(position.x)}、縱向 ${percent(position.y)}（0–100），旋轉 ${position.rotation} 度。`}
