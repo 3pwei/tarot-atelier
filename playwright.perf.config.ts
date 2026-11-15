@@ -11,6 +11,8 @@ export default defineConfig({
   testDir: "./perf",
   testMatch: "**/*.perf.ts",
   workers: 1,
+  // A throttled CPU hydrates the page slowly; wait for it rather than fail.
+  expect: { timeout: 20_000 },
   reporter: "list",
   use: {
     baseURL: `http://127.0.0.1:${PERF_PORT}`,

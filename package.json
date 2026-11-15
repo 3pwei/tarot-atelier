@@ -22,6 +22,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "perf": "pnpm build && playwright test -c playwright.perf.config.ts",
+    "thumbnails": "node scripts/thumbnails/cli.ts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
