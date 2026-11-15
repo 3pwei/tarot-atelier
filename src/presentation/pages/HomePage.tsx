@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { DeckLibrary } from "@/presentation/components/DeckLibrary";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
-import { HeroReveal } from "@/presentation/components/HeroReveal";
 
 const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -40,35 +39,33 @@ export function HomePage() {
       </header>
 
       <main id="top">
-        <HeroReveal>
-          <section className="hero content-wrap" aria-labelledby="hero-title">
-            <div className="hero-copy">
-              <Image
-                className="hero-logo"
-                src={`${publicBasePath}/brand/tarot-atelier-mark.svg`}
-                alt="Tarot Atelier 原創占位標誌"
-                width={136}
-                height={136}
-                priority
-                data-reveal
-              />
-              <p className="eyebrow" data-reveal>
-                A digital atelier for reflection
-              </p>
-              <h1 id="hero-title" data-reveal>
-                在星光與金箔之間，
-                <span className="gold-text">鋪開你的牌桌</span>
-              </h1>
-              <p className="hero-intro" data-reveal>
-                在牌桌上自由擺放 1–12
-                個牌位，為每個位置寫下自己的問題，再看牌一張張落進你指定的位置。
-              </p>
-              <a className="primary-link" href="#draw-experience" data-reveal>
-                進入抽牌儀式
-              </a>
-            </div>
-          </section>
-        </HeroReveal>
+        <section className="hero content-wrap" aria-labelledby="hero-title">
+          <div className="hero-copy">
+            <Image
+              className="hero-logo"
+              src={`${publicBasePath}/brand/tarot-atelier-mark.svg`}
+              alt="Tarot Atelier 原創占位標誌"
+              width={136}
+              height={136}
+              priority
+              data-reveal
+            />
+            <p className="eyebrow" data-reveal>
+              A digital atelier for reflection
+            </p>
+            <h1 id="hero-title" data-reveal>
+              在星光與金箔之間，
+              <span className="gold-text">鋪開你的牌桌</span>
+            </h1>
+            <p className="hero-intro" data-reveal>
+              在牌桌上自由擺放 1–12
+              個牌位，為每個位置寫下自己的問題，再看牌一張張落進你指定的位置。
+            </p>
+            <a className="primary-link" href="#draw-experience" data-reveal>
+              進入抽牌儀式
+            </a>
+          </div>
+        </section>
 
         <section
           id="draw-experience"

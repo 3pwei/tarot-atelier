@@ -30,6 +30,7 @@ import {
   DrawnCard,
   type CardRole,
 } from "@/presentation/components/draw/DrawnCard";
+import { motionTimingStyle } from "@/presentation/components/draw/dealMotion";
 import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
 import { ReadingPanel } from "@/presentation/components/reading/ReadingPanel";
 import { createRequestId as createReadingRequestId } from "@/presentation/components/reading/readingSession";
@@ -254,6 +255,7 @@ export function DrawExperience({
       className="draw-experience"
       data-phase={dealer.phase}
       data-motion={motionMode}
+      style={motionTimingStyle()}
       data-all-revealed={dealer.allRevealed || undefined}
       data-table-mode={tableMode}
       aria-busy={loading || undefined}

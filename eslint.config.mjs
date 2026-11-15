@@ -33,7 +33,6 @@ export default defineConfig([
             { name: "react", message: "Domain must remain framework-free." },
             { name: "next", message: "Domain must remain framework-free." },
             { name: "zustand", message: "Domain must remain framework-free." },
-            { name: "gsap", message: "Domain must remain framework-free." },
           ],
           patterns: [
             {

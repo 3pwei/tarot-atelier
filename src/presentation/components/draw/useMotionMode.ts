@@ -3,18 +3,15 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * enhanced: GSAP timelines and full-resolution burn.
- * css: low-concurrency devices; CSS keyframes and a lighter burn.
- * reduced: user asked for reduced motion; transitions are skipped.
+ * animated: lightweight CSS motion, the same on every device.
+ * reduced: the person asked their system for less motion; transitions are skipped.
  */
-export type MotionMode = "enhanced" | "css" | "reduced";
+export type MotionMode = "animated" | "reduced";
 
 const REDUCED_QUERY = "(prefers-reduced-motion: reduce)";
 
 function detectMotionMode(): MotionMode {
-  if (window.matchMedia?.(REDUCED_QUERY).matches) return "reduced";
-  const cores = navigator.hardwareConcurrency;
-  return cores > 0 && cores <= 4 ? "css" : "enhanced";
+  return window.matchMedia?.(REDUCED_QUERY).matches ? "reduced" : "animated";
 }
 
 function subscribe(onChange: () => void): () => void {
@@ -27,6 +24,6 @@ export function useMotionMode(): MotionMode {
   return useSyncExternalStore<MotionMode>(
     subscribe,
     detectMotionMode,
-    () => "enhanced",
+    () => "animated",
   );
 }

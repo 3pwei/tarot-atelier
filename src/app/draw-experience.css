@@ -295,7 +295,6 @@
 /* Drawn cards */
 
 .drawn-card {
-  --lift: 0;
   position: relative;
   display: grid;
   width: var(--drawn-card-width);
@@ -349,9 +348,7 @@
   height: 22%;
   background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7), transparent);
   content: "";
-  opacity: calc(0.9 - var(--lift) * 0.45);
-  transform: translateY(calc(var(--lift) * 2.2rem))
-    scale(calc(1 + var(--lift) * 0.35));
+  opacity: 0.9;
   pointer-events: none;
 }
 
@@ -485,8 +482,9 @@
   letter-spacing: 0.2em;
 }
 
-/* Hidden until GSAP (or the CSS fallback) brings cards in from the deck. */
-.draw-experience[data-motion="enhanced"] .drawn-card[data-flight="pending"] {
+/* Hidden until its flight is planned; the flight then starts on the deck. */
+.draw-experience[data-motion="animated"]
+  .drawn-card[data-flight="pending"]:not([data-flight-planned]) {
   opacity: 0;
 }
 
@@ -663,26 +661,32 @@
   }
 }
 
-/* ── CSS-only motion for low-concurrency devices ──────── */
+/* ── Shuffle and deal ─────────────────────────────────── */
+/* Transform and opacity only, so the compositor runs them off the main
+   thread. Durations come from dealMotion.ts through custom properties. */
 
-.draw-experience[data-motion="css"][data-phase="shuffling"]
+.draw-experience[data-motion="animated"][data-phase="shuffling"]
   .deck-stack__card:nth-child(odd) {
-  animation: css-riffle-left 650ms ease-in-out 2;
+  animation: riffle-left calc(var(--shuffle-duration) / 2) ease-in-out 2;
 }
 
-.draw-experience[data-motion="css"][data-phase="shuffling"]
+.draw-experience[data-motion="animated"][data-phase="shuffling"]
   .deck-stack__card:nth-child(even) {
-  animation: css-riffle-right 650ms ease-in-out 2;
+  animation: riffle-right calc(var(--shuffle-duration) / 2) ease-in-out 2;
 }
 
-.draw-experience[data-motion="css"] .drawn-card[data-flight="pending"] {
-  animation: css-card-arrive 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  /* Matches DEAL_STAGGER_MS when a whole spread is dealt. */
-  animation-delay: calc(var(--deal-order, 0) * 180ms);
+.draw-experience[data-motion="animated"]
+  .drawn-card[data-flight="pending"][data-flight-planned] {
+  animation: deal-flight var(--flight-duration)
+    cubic-bezier(0.45, 0.05, 0.25, 1) both;
+  animation-delay: calc(var(--deal-order, 0) * var(--deal-stagger));
 }
 
-.draw-experience[data-motion="css"] .drawn-card--jumper[data-flight="pending"] {
-  animation-delay: calc(var(--deal-order, 0) * 180ms + 220ms);
+.draw-experience[data-motion="animated"]
+  .drawn-card--jumper[data-flight="pending"][data-flight-planned] {
+  animation-delay: calc(
+    var(--deal-order, 0) * var(--deal-stagger) + var(--jumper-delay)
+  );
 }
 
 /* ── Keyframes ───────────────────────────────────────── */
@@ -726,22 +730,36 @@
   }
 }
 
-@keyframes css-riffle-left {
+@keyframes riffle-left {
   50% {
     transform: translateX(-55%) rotate(-9deg);
   }
 }
 
-@keyframes css-riffle-right {
+@keyframes riffle-right {
   50% {
     transform: translateX(55%) rotate(9deg);
   }
 }
 
-@keyframes css-card-arrive {
-  from {
-    opacity: 0;
-    transform: translate(-40%, 12%) rotate(-8deg) scale(0.8);
+@keyframes deal-flight {
+  0% {
+    transform: translate(var(--flight-start-x), var(--flight-start-y))
+      rotate(var(--flight-start-rotate)) scale(var(--flight-start-scale));
+  }
+
+  50% {
+    transform: translate(var(--flight-peak-x), var(--flight-peak-y))
+      rotate(var(--flight-peak-rotate)) scale(1.06);
+  }
+
+  /* A soft press into the table. */
+  88% {
+    transform: translate(0, 0) rotate(0deg) scale(1.03);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
   }
 }
 

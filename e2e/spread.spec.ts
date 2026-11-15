@@ -577,18 +577,12 @@ test("the table looks the same while shuffling and dealing, except for the cards
   for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 });
 
-test("with the full animation, dealt cards land visible and numbers leave as each lands", async ({
+test("dealt cards fly in, land visible and numbers leave as each lands", async ({
   page,
 }) => {
-  // Test machines often have few cores and get the simpler CSS motion; force
-  // the GSAP path that most players see.
-  await page.addInitScript(() =>
-    Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 8 }),
-  );
-  await page.reload();
   await expect(page.locator(".draw-experience")).toHaveAttribute(
     "data-motion",
-    "enhanced",
+    "animated",
   );
   await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
 
