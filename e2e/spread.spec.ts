@@ -129,9 +129,13 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   await arrange(page);
   const before = await relativePosition(page, 3);
   await dragBy(page, slot(page, 3), -30, -40, isMobile);
-  const after = await relativePosition(page, 3);
-  expect(after.x).toBeLessThan(before.x);
-  expect(after.y).toBeLessThan(before.y);
+  // Gesture updates render on the next frame; wait for it.
+  await expect
+    .poll(async () => {
+      const after = await relativePosition(page, 3);
+      return after.x < before.x && after.y < before.y;
+    })
+    .toBe(true);
 
   await handle(page, 2).click();
   await page.getByLabel("旋轉（度）").fill("45");
@@ -423,22 +427,30 @@ test("press and hold, then drag, rotates a position around its centre", async ({
     { x: center.x + box.width * 0.35, y: center.y },
     { isMobile, holdMs: 700 },
   );
-  expect(await rotationOf(page, 2)).toBe(90);
+  // Gesture updates render on the next frame; wait for it.
+  await expect.poll(() => rotationOf(page, 2)).toBe(90);
   expect(await relativePosition(page, 2)).toEqual(before);
   await expect(target).not.toHaveAttribute("data-rotating", "true");
 
   // The turning-arrow handle rotates straight away, without holding.
   await handle(page, 2).click();
   const knob = target.getByRole("button", { name: "牌位 2 順時針轉 45°" });
+  // A turned position reaches further; bring its knob on screen and measure
+  // again, since the sweep is made in screen coordinates.
+  await knob.scrollIntoViewIfNeeded();
   const knobBox = await knob.boundingBox();
-  if (!knobBox) throw new Error("rotate handle is not visible");
+  const turnedBox = await target.boundingBox();
+  if (!knobBox || !turnedBox) throw new Error("rotate handle is not visible");
   await sweep(
     page,
-    center,
+    {
+      x: turnedBox.x + turnedBox.width / 2,
+      y: turnedBox.y + turnedBox.height / 2,
+    },
     { x: knobBox.x + knobBox.width / 2, y: knobBox.y + knobBox.height / 2 },
     { isMobile, holdMs: 0 },
   );
-  expect(await rotationOf(page, 2)).toBe(180);
+  await expect.poll(() => rotationOf(page, 2)).toBe(180);
   expect(await relativePosition(page, 2)).toEqual(before);
 });
 
@@ -577,18 +589,12 @@ test("the table looks the same while shuffling and dealing, except for the cards
   for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 });
 
-test("with the full animation, dealt cards land visible and numbers leave as each lands", async ({
+test("dealt cards fly in, land visible and numbers leave as each lands", async ({
   page,
 }) => {
-  // Test machines often have few cores and get the simpler CSS motion; force
-  // the GSAP path that most players see.
-  await page.addInitScript(() =>
-    Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 8 }),
-  );
-  await page.reload();
   await expect(page.locator(".draw-experience")).toHaveAttribute(
     "data-motion",
-    "enhanced",
+    "animated",
   );
   await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
 

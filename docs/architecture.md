@@ -23,8 +23,7 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 
 - Accessible controls remain React DOM.
 - CSS handles layout, gold-foil surfaces, and lightweight ambient presentation.
-- GSAP is dynamically imported by client components only when motion is allowed.
-- Three/R3F is isolated behind `LazyAtmosphere`; reduced-motion users receive a static CSS fallback, and the Canvas never owns controls.
+- Motion is CSS keyframes on `transform` and `opacity`, the same on every device; see [ADR 0004](decisions/0004-css-motion-on-every-device.md).
 - `src/app` is a thin Next.js composition layer; product UI lives in `presentation`.
 
 ## Draw experience
@@ -32,9 +31,9 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 - `DrawExperience` in `domain/deck/draw.ts` owns the remaining stable card IDs and enforces `idle → shuffling → ready → drawing → revealed`. The presentation mirrors this state and cannot draw again while an animation is active.
 - Fisher–Yates and every probability rule receive an injectable `RandomSource`. Seeded implementations are limited to tests and reproducible demos; they are not cryptographic randomness.
 - A `DrawResult` contains the primary `CardInstance`, optional jumper, ISO draw time, and each card's orientation. Removing IDs and deciding both orientations happen atomically in domain code.
-- Enhanced devices use dynamically imported GSAP timelines (`presentation/components/draw/drawTimelines.ts`): a two-pass riffle shuffle and a curved flight from the deck to the altar. Low-concurrency devices use CSS keyframes, while `prefers-reduced-motion` skips transitional motion.
+- Shuffle and deal are CSS keyframes, the same on every device. `presentation/components/draw/dealMotion.ts` holds their timings, which reach the stylesheet as custom properties, and plans each card's curved flight from the deck in its slot's frame. `useDealFlights` measures the landing point, writes the flight as custom properties, and only then lets the keyframes start, so a card lands exactly on a moved, rotated position of a zoomed table. `prefers-reduced-motion` skips transitional motion.
 - A landed card stays face-down until the person reveals it. Each card tracks its own `sealed → igniting → burning → revealed` presentation state; the domain state is unchanged. Shuffling is disabled until every drawn card is revealed, so a card can never be discarded unseen.
-- The burn reveal (`presentation/effects/burn/`) rasterises the exact DOM card-back SVG into a canvas, so nothing visibly swaps when it starts. A pure distance field (`burnField.ts`, unit-tested) is warped by fractal noise and stretched upward, and spreads from the pointer position (keyboard activation ignites the bottom edge). Each frame shades scorch, an incandescent rim and char, then adds embers and a downsampled bloom. All of this happens in canvas, with no CSS filter animated per frame. Reduced motion reveals instantly.
+- The burn reveal (`presentation/effects/burn/`) rasterises the exact DOM card-back SVG into a canvas, so nothing visibly swaps when it starts. A pure distance field (`burnField.ts`, unit-tested) is warped by fractal noise and stretched upward, and spreads from the pointer position (keyboard activation ignites the bottom edge). It runs at one canvas pixel per CSS pixel on every screen, because the shading is computed on the CPU. Each frame shades scorch, an incandescent rim and char, then adds embers and a downsampled bloom. All of this happens in canvas, with no CSS filter animated per frame. Reduced motion reveals instantly.
 - Decorative glows animate only `opacity` and `transform`. Animating `filter` or `box-shadow` forces a repaint every frame and is avoided.
 
 ## Spread table

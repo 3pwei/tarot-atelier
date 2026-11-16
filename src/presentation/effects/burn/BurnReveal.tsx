@@ -11,14 +11,11 @@ import {
   type IgnitionPoint,
 } from "./burnField";
 
-export type BurnQuality = "full" | "lite";
-
 interface BurnRevealProps {
   /** Returns the card-back SVG to rasterise; it must use literal colours. */
   readonly getSource: () => SVGSVGElement | null;
   readonly ignition: IgnitionPoint;
   readonly seed: string;
-  readonly quality: BurnQuality;
   /** The burning layer is painted and the DOM back may be hidden. */
   readonly onReady: () => void;
   /** The flame has consumed the whole card. */
@@ -27,14 +24,14 @@ interface BurnRevealProps {
 
 /** Space around the card for embers that drift beyond its edge, in CSS px. */
 const PAD = { top: 72, side: 28, bottom: 20 } as const;
-const DURATION_MS: Readonly<Record<BurnQuality, number>> = {
-  full: 2600,
-  lite: 2100,
-};
-const EMBERS_PER_FRAME: Readonly<Record<BurnQuality, number>> = {
-  full: 7,
-  lite: 3,
-};
+const DURATION_MS = 2100;
+const EMBERS_PER_FRAME = 3;
+/**
+ * The burn is computed pixel by pixel on the CPU, so it runs at one canvas
+ * pixel per CSS pixel even on high-density screens: a quarter of the work on a
+ * 2× screen, and the flame's soft edge hides the difference.
+ */
+const PIXEL_RATIO = 1;
 const MAX_PARTICLES = 260;
 const MAX_RIM_SAMPLES = 4096;
 const BLOOM_DOWNSAMPLE = 8;
@@ -187,7 +184,6 @@ export function BurnReveal({
   getSource,
   ignition,
   seed,
-  quality,
   onReady,
   onComplete,
 }: BurnRevealProps) {
@@ -215,8 +211,7 @@ export function BurnReveal({
 
     let disposed = false;
     let frame = 0;
-    const pixelRatio =
-      quality === "full" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+    const pixelRatio = PIXEL_RATIO;
     const cssWidth = card.offsetWidth;
     const cssHeight = card.offsetHeight;
     const width = Math.max(1, Math.round(cssWidth * pixelRatio));
@@ -257,7 +252,7 @@ export function BurnReveal({
         const bands = scaleBands(DEFAULT_BANDS_CSS_PX, pixelRatio);
         const rim = new Int32Array(MAX_RIM_SAMPLES);
         const particles: Particle[] = [];
-        const duration = DURATION_MS[quality];
+        const duration = DURATION_MS;
         const offsetX = PAD.side * pixelRatio;
         const offsetY = PAD.top * pixelRatio;
         let startedAt = 0;
@@ -316,7 +311,7 @@ export function BurnReveal({
               rimCount,
               width,
               pixelRatio,
-              EMBERS_PER_FRAME[quality],
+              EMBERS_PER_FRAME,
             );
           }
           drawParticles(sceneContext, particles, now);
@@ -344,7 +339,7 @@ export function BurnReveal({
       disposed = true;
       cancelAnimationFrame(frame);
     };
-  }, [ignitionX, ignitionY, quality, seed]);
+  }, [ignitionX, ignitionY, seed]);
 
   return (
     <div

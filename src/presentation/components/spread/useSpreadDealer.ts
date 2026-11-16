@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type Dispatch, type RefObject } from "react";
+import { useState, type Dispatch, type RefObject } from "react";
 import type { Deck } from "@/domain/deck/deck";
 import {
   DrawExperience,
@@ -12,17 +12,14 @@ import { dealingIssues } from "@/domain/spread/spread";
 import { collectDrawnInstances } from "@/domain/spread/spreadSnapshot";
 import type { Spread } from "@/domain/spread/types";
 import {
-  buildDrawTimeline,
-  buildShuffleTimeline,
-  DEAL_STAGGER_MS,
-} from "@/presentation/components/draw/drawTimelines";
+  dealDurationMs,
+  SHUFFLE_MS,
+  type ScreenBox,
+} from "@/presentation/components/draw/dealMotion";
 import type { MotionMode } from "@/presentation/components/draw/useMotionMode";
 import { usePhaseAnimation } from "@/presentation/components/draw/usePhaseAnimation";
 import type { SpreadAction } from "@/presentation/components/spread/spreadState";
-
-/** Matches the CSS keyframe lengths used when GSAP is not loaded. */
-const CSS_SHUFFLE_MS = 1300;
-const CSS_DRAW_MS = 950;
+import { useDealFlights } from "@/presentation/components/spread/useDealFlights";
 
 /**
  * Product rule: every draw uses the fixed `rare` jumper rate. The rate is a
@@ -105,7 +102,7 @@ export function useSpreadDealer({
   tableScale,
   dispatch,
 }: DealerOptions) {
-  const flightOrigin = useRef<DOMRect | null>(null);
+  const [flightOrigin, setFlightOrigin] = useState<ScreenBox | null>(null);
   const [pile, setPile] = useState<Pile>(() =>
     createPile(deck, spread, randomSource, generation),
   );
@@ -136,67 +133,42 @@ export function useSpreadDealer({
   const canShuffle = dealable && (phase === "idle" || phase === "revealed");
   const canDraw = dealable && (phase === "ready" || phase === "revealed");
 
-  usePhaseAnimation(
-    phase === "shuffling",
-    motionMode,
-    CSS_SHUFFLE_MS,
-    () => {
-      experience.completeShuffle();
-      setPhase(experience.state);
-    },
-    (gsap, done) => {
-      const cards = gsap.utils.toArray<HTMLElement>("[data-shuffle-card]");
-      const width = cards[0]?.offsetWidth ?? 160;
-      if (cards.length < 2) done();
-      else buildShuffleTimeline(gsap, cards, width, done);
-    },
-    root,
-  );
+  usePhaseAnimation(phase === "shuffling", motionMode, SHUFFLE_MS, () => {
+    experience.completeShuffle();
+    setPhase(experience.state);
+  });
 
   usePhaseAnimation(
     phase === "drawing",
     motionMode,
-    CSS_DRAW_MS + Math.max(0, flyingIds.length - 1) * DEAL_STAGGER_MS,
+    dealDurationMs(
+      flyingIds.map((id) => ({
+        hasJumper: Boolean(
+          spread.positions.find((position) => position.id === id)?.drawResult
+            ?.jumper,
+        ),
+      })),
+    ),
     () => {
       experience.reveal();
       setPhase(experience.state);
       setFlyingIds([]);
       setLandedIds([]);
     },
-    (gsap, done) => {
-      const from = flightOrigin.current;
-      const elements = gsap.utils.toArray<HTMLElement>(
-        "[data-flight='pending']",
-      );
-      if (!from || elements.length === 0) {
-        done();
-        return;
-      }
-      buildDrawTimeline(
-        gsap,
-        elements.map((element) => {
-          const slotId =
-            element.closest<HTMLElement>("[data-slot]")?.dataset.slot;
-          const position = spread.positions.find((p) => p.id === slotId);
-          const role =
-            element.dataset.drawCard === "jumper" ? "jumper" : "primary";
-          return {
-            element,
-            from,
-            frame: { rotation: position?.rotation ?? 0, scale: tableScale },
-            order: Math.max(0, flyingIds.indexOf(slotId ?? "")),
-            role,
-            onLanded:
-              role === "primary" && slotId
-                ? () => setLandedIds((ids) => [...ids, slotId])
-                : undefined,
-          };
-        }),
-        done,
-      );
-    },
-    root,
   );
+
+  useDealFlights({
+    active: phase === "drawing" && motionMode === "animated",
+    root,
+    deck: flightOrigin,
+    frameOf: (slotId) => ({
+      rotation:
+        spread.positions.find((position) => position.id === slotId)?.rotation ??
+        0,
+      scale: tableScale,
+    }),
+    onLanded: (slotId) => setLandedIds((ids) => [...ids, slotId]),
+  });
 
   function shuffle() {
     if (!canShuffle) return;
@@ -208,9 +180,10 @@ export function useSpreadDealer({
   function deal() {
     if (!canDraw || empty.length === 0) return;
     if (experience.state === "revealed") experience.continueDrawing();
-    flightOrigin.current =
+    setFlightOrigin(
       root.current?.querySelector("[data-deck-top]")?.getBoundingClientRect() ??
-      null;
+        null,
+    );
     const results = experience.drawSeries(empty.length);
     if (results.length === 0) return;
     const dealt = results.flatMap((result, order) => {

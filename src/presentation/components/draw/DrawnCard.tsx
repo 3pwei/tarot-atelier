@@ -161,7 +161,6 @@ export function DrawnCard({
               getSource={getSource}
               ignition={ignition}
               seed={`${instance.instanceId}:${role}`}
-              quality={motionMode === "css" ? "lite" : "full"}
               onReady={markBurning}
               onComplete={finish}
             />

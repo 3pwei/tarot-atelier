@@ -400,6 +400,9 @@
   color: rgba(230, 197, 122, 0.12);
   transform: translate(-50%, -50%);
   pointer-events: none;
+  /* Painted once on its own layer, so positions moving over it never
+     repaint the large ornament. */
+  will-change: transform;
 }
 
 /* Coordinates 0–1 map onto this inset area, so cards at an edge stay whole. */
@@ -443,9 +446,12 @@
   z-index: 3;
 }
 
-.spread-slot[data-dragging] {
+.spread-slot[data-dragging],
+.spread-slot[data-rotating] {
   z-index: 4;
   cursor: grabbing;
+  /* Its own layer while it moves: the board underneath is not repainted. */
+  will-change: translate, transform;
 }
 
 .spread-slot[data-arrangeable] {
@@ -493,6 +499,10 @@
   content: "";
   transform: translate(-50%, -50%);
   pointer-events: none;
+}
+
+.spread-slot__angle::after {
+  content: attr(data-angle);
 }
 
 .spread-slot__angle {

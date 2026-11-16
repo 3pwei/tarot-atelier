@@ -1,57 +1,30 @@
 "use client";
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 import type { MotionMode } from "@/presentation/components/draw/useMotionMode";
 
-type Gsap = typeof import("gsap").gsap;
-
 /**
- * Runs a phase transition: GSAP on capable devices, a fixed CSS duration on
- * low-concurrency devices, and instantly when motion is reduced.
+ * Ends a phase whose motion is played by CSS keyframes: after `durationMs`,
+ * or at once when motion is reduced.
  */
 export function usePhaseAnimation(
   active: boolean,
   motionMode: MotionMode,
-  cssDurationMs: number,
+  durationMs: number,
   finish: () => void,
-  animate: (gsap: Gsap, done: () => void) => void,
-  scope: RefObject<HTMLElement | null>,
 ) {
-  const latest = useRef({ finish, animate });
+  const latest = useRef(finish);
   useEffect(() => {
-    latest.current = { finish, animate };
+    latest.current = finish;
   });
 
   useEffect(() => {
     if (!active) return;
-    let disposed = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let revert: () => void = () => undefined;
-    const done = () => {
-      if (!disposed) latest.current.finish();
-    };
-
     if (motionMode === "reduced") {
-      done();
-    } else if (motionMode === "css") {
-      timer = setTimeout(done, cssDurationMs);
-    } else {
-      void import("gsap")
-        .then(({ gsap }) => {
-          if (disposed || !scope.current) return;
-          const context = gsap.context(
-            () => latest.current.animate(gsap, done),
-            scope.current,
-          );
-          revert = () => context.revert();
-        })
-        .catch(done);
+      latest.current();
+      return;
     }
-
-    return () => {
-      disposed = true;
-      if (timer) clearTimeout(timer);
-      revert();
-    };
-  }, [active, motionMode, cssDurationMs, scope]);
+    const timer = setTimeout(() => latest.current(), durationMs);
+    return () => clearTimeout(timer);
+  }, [active, motionMode, durationMs]);
 }
