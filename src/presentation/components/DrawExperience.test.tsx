@@ -119,6 +119,16 @@ function finishArranging() {
   fireEvent.click(screen.getByRole("button", { name: "完成編輯" }));
 }
 
+/** Layout changes are kept only once saved to the library. */
+function saveAndFinishArranging(name: string) {
+  fireEvent.click(screen.getByRole("button", { name: "儲存目前牌陣" }));
+  fireEvent.change(screen.getByLabelText("牌陣名稱"), {
+    target: { value: name },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "儲存" }));
+  finishArranging();
+}
+
 function chooseBlank() {
   arrangeIfNeeded();
   fireEvent.click(screen.getByRole("button", { name: "空白牌桌" }));
@@ -261,7 +271,7 @@ describe("DrawExperience spread table", () => {
 
     const question = screen.getByLabelText(/這個牌位的問題/u);
     fireEvent.change(question, { target: { value: "   " } });
-    finishArranging();
+    saveAndFinishArranging("一張牌");
     // A blank question still blocks play after arranging.
     expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
 
@@ -270,7 +280,7 @@ describe("DrawExperience spread table", () => {
     fireEvent.change(screen.getByLabelText(/這個牌位的問題/u), {
       target: { value: "我該把力氣放在哪裡？" },
     });
-    finishArranging();
+    saveAndFinishArranging("一張牌");
     await screen.findByText("準備好了，請洗牌");
     expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
   });

@@ -25,6 +25,10 @@ import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { DeckStack } from "@/presentation/components/draw/DeckStack";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
+import {
+  hasUnsavedLayout,
+  revertTarget,
+} from "@/presentation/components/spread/editBaseline";
 import { CardViewer } from "@/presentation/components/draw/CardViewer";
 import {
   DrawnCard,
@@ -183,22 +187,47 @@ export function DrawExperience({
     [arranging, dispatch],
   );
   const [confirmingArrange, setConfirmingArrange] = useState(false);
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const beginArranging = () => {
+    dispatch({ type: "begin-edit" });
+    setTableMode("arrange");
+  };
+  const closeArranging = () => {
+    dispatch({ type: "select", positionId: undefined });
+    setConfirmingLeave(false);
+    setTableMode("play");
+  };
+  const finishArranging = () => {
+    dispatch({ type: "end-edit" });
+    closeArranging();
+  };
+  const discardArranging = () => {
+    dispatch({ type: "revert-edit" });
+    closeArranging();
+  };
+  const leaveTarget = state.editBaseline
+    ? revertTarget(state.editBaseline, spread, state.library)
+    : undefined;
   const toggleArrange = () => {
     if (arranging) {
-      dispatch({ type: "select", positionId: undefined });
-      setTableMode("play");
+      // Unsaved layout changes are lost on leaving; ask first.
+      if (leaveTarget && hasUnsavedLayout(spread, leaveTarget)) {
+        setConfirmingLeave(true);
+      } else {
+        finishArranging();
+      }
     } else if (hasDraws(spread)) {
       // Drawn positions cannot be rearranged; ask before returning the cards.
       setConfirmingArrange(true);
     } else {
-      setTableMode("arrange");
+      beginArranging();
     }
   };
   const arrangeAfterClearing = () => {
     dispatch({ type: "clear-draws" });
     setInspected(undefined);
     setConfirmingArrange(false);
-    setTableMode("arrange");
+    beginArranging();
   };
   const handleMove = useCallback(
     (positionId: string, point: TablePoint) =>
@@ -424,6 +453,19 @@ export function DrawExperience({
           confirmLabel="清除並編輯"
           onConfirm={arrangeAfterClearing}
           onCancel={() => setConfirmingArrange(false)}
+        />
+      )}
+      {confirmingLeave && leaveTarget && (
+        <ConfirmDialog
+          title="牌陣還沒儲存"
+          message={
+            leaveTarget.kind === "template"
+              ? `離開後，剛才的修改會還原成牌陣庫裡的「${leaveTarget.template.name}」。確定要離開嗎？`
+              : "離開後，剛才的修改會還原成開始編輯前的牌陣。確定要離開嗎？"
+          }
+          confirmLabel="確定離開"
+          onConfirm={discardArranging}
+          onCancel={() => setConfirmingLeave(false)}
         />
       )}
       {viewed && (

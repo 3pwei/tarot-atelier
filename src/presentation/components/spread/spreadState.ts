@@ -1,5 +1,11 @@
 import type { DrawResult } from "@/domain/deck/draw";
 import {
+  captureEditBaseline,
+  revertTarget,
+  targetLayout,
+  type EditBaseline,
+} from "@/presentation/components/spread/editBaseline";
+import {
   addPosition,
   assignDraw,
   clearDraws,
@@ -17,6 +23,7 @@ import {
 import {
   BUILT_IN_TEMPLATES,
   createBlankSpread,
+  createSpreadFromLayout,
   createSpreadFromTemplate,
   defaultTemplate,
   deleteTemplate,
@@ -45,6 +52,8 @@ export interface SpreadUiState {
   readonly generation: number;
   /** Latest announcement; `id` changes so repeats are re-announced. */
   readonly notice?: { readonly id: number; readonly text: string };
+  /** Set while the layout is being edited; see editBaseline.ts. */
+  readonly editBaseline?: EditBaseline;
 }
 
 export interface DealtPosition {
@@ -64,6 +73,9 @@ export type SpreadAction =
     }
   | { readonly type: "apply-template"; readonly templateId: string }
   | { readonly type: "blank" }
+  | { readonly type: "begin-edit" }
+  | { readonly type: "end-edit" }
+  | { readonly type: "revert-edit" }
   | { readonly type: "save-template"; readonly name: string }
   | { readonly type: "delete-template"; readonly templateId: string }
   | { readonly type: "restore-templates" }
@@ -275,6 +287,49 @@ function reduceTemplates(
   }
 }
 
+function withoutEditBaseline(state: SpreadUiState): SpreadUiState {
+  if (state.editBaseline === undefined) return state;
+  const next: { -readonly [K in keyof SpreadUiState]: SpreadUiState[K] } = {
+    ...state,
+  };
+  delete next.editBaseline;
+  return next;
+}
+
+/**
+ * A successful apply, blank table or save sets a new version to compare
+ * with, so leaving the edit right after it asks nothing. A refused one (an
+ * empty name, say) leaves the spread untouched and the baseline too.
+ */
+function rebaseEdit(
+  before: SpreadUiState,
+  after: SpreadUiState,
+): SpreadUiState {
+  if (after.editBaseline === undefined || after.spread === before.spread) {
+    return after;
+  }
+  return { ...after, editBaseline: captureEditBaseline(after.spread) };
+}
+
+/** Leaves the edit, laying the table out as it was before the changes. */
+function revertEdit(state: SpreadUiState, createId: CreateId): SpreadUiState {
+  const baseline = state.editBaseline;
+  if (!baseline) return state;
+  const target = revertTarget(baseline, state.spread, state.library);
+  const spread = createSpreadFromLayout({
+    layout: targetLayout(target),
+    ...(target.kind === "template" ? { templateId: target.template.id } : {}),
+    createId,
+    mainQuestion: state.spread.mainQuestion,
+  });
+  return announce(
+    { ...withoutEditBaseline(state), spread, selectedId: undefined },
+    target.kind === "template"
+      ? `已還原成牌陣庫裡的「${target.template.name}」。`
+      : "已還原成開始編輯前的牌陣。",
+  );
+}
+
 export function createSpreadReducer(createId: CreateId) {
   return function spreadReducer(
     state: SpreadUiState,
@@ -299,9 +354,16 @@ export function createSpreadReducer(createId: CreateId) {
       case "apply-template":
       case "blank":
       case "save-template":
+        return rebaseEdit(state, reduceTemplates(state, action, createId));
       case "delete-template":
       case "restore-templates":
         return reduceTemplates(state, action, createId);
+      case "begin-edit":
+        return { ...state, editBaseline: captureEditBaseline(state.spread) };
+      case "end-edit":
+        return withoutEditBaseline(state);
+      case "revert-edit":
+        return revertEdit(state, createId);
       case "add": {
         const id = createId();
         const update = addPosition(state.spread, {

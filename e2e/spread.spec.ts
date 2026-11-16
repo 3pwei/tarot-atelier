@@ -116,6 +116,14 @@ async function finishArranging(page: Page) {
   await page.getByRole("button", { name: "完成編輯" }).click();
 }
 
+/** Layout changes are kept only once saved to the library. */
+async function saveAndFinishArranging(page: Page, name: string) {
+  await page.getByRole("button", { name: "儲存目前牌陣" }).click();
+  await page.getByLabel("牌陣名稱").fill(name);
+  await page.getByRole("button", { name: "儲存", exact: true }).click();
+  await finishArranging(page);
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await askMainQuestion(page);
@@ -140,7 +148,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   await handle(page, 2).click();
   await page.getByLabel("旋轉（度）").fill("45");
   await page.getByRole("button", { name: "完成", exact: true }).click();
-  await finishArranging(page);
+  await saveAndFinishArranging(page, "挪過的三張");
   await page.getByRole("button", { name: "放大牌桌" }).click();
   await expect(
     page.getByRole("button", { name: /縮放 1.25 倍/u }),
@@ -219,7 +227,7 @@ test("custom spreads need questions and stop at twelve positions", async ({
     await page.keyboard.press("Enter");
     await page.getByLabel(/這個牌位的問題/u).fill(`第 ${index} 個問題`);
   }
-  await finishArranging(page);
+  await saveAndFinishArranging(page, "十二張");
   await expect(
     page.getByRole("button", { name: "洗牌", exact: true }),
   ).toBeEnabled();
@@ -416,6 +424,9 @@ test("press and hold, then drag, rotates a position around its centre", async ({
   await page.getByRole("button", { name: "放大牌桌" }).click();
   const target = slot(page, 2);
   const before = await relativePosition(page, 2);
+  // Zoomed in, the position can sit below the fold; the sweep is made in
+  // screen coordinates, so bring it on screen before measuring.
+  await target.scrollIntoViewIfNeeded();
   const box = await target.boundingBox();
   if (!box) throw new Error("slot 2 is not visible");
   const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
