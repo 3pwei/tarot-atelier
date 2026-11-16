@@ -53,6 +53,7 @@ import {
   tableAbilities,
   type TableMode,
 } from "@/presentation/components/spread/tableMode";
+import { SpreadPicker } from "@/presentation/components/spread/SpreadPicker";
 import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
 import { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
 import {
@@ -321,6 +322,18 @@ export function DrawExperience({
         </p>
 
         <div className="spread-setup">
+          {!arranging && (
+            <section className="template-shelf" aria-label="選擇牌陣">
+              <SpreadPicker
+                library={state.library}
+                activeTemplateId={spread.templateId}
+                disabled={filled > 0 || dealer.layoutLocked}
+                onApply={(templateId) =>
+                  dispatch({ type: "apply-template", templateId })
+                }
+              />
+            </section>
+          )}
           {arranging && (
             <TemplateShelf
               library={state.library}
@@ -344,18 +357,12 @@ export function DrawExperience({
             arranging={arranging}
             canToggleArrange={abilities.canToggleArrange}
             onToggleArrange={toggleArrange}
-            zoom={viewport.view.scale}
-            canZoomIn={viewport.canZoomIn}
-            canZoomOut={viewport.canZoomOut}
             onAdd={() =>
               dispatch({
                 type: "add",
                 near: visibleCenter(viewportRef.current, fieldRef.current),
               })
             }
-            onZoomIn={viewport.zoomIn}
-            onZoomOut={viewport.zoomOut}
-            onZoomReset={viewport.reset}
             canClear={dealer.canClear}
             onClear={session.clear}
           />

@@ -1,11 +1,16 @@
 "use client";
 
-import type { CSSProperties, ReactNode, RefObject } from "react";
+import {
+  useMemo,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { TableOrnament } from "@/presentation/components/draw/TableOrnament";
 import {
   FIELD_MARGIN_CQW,
-  SLOT_WIDTH_CQW,
+  slotWidthFor,
 } from "@/presentation/components/spread/boardGeometry";
 import { PositionSlot } from "@/presentation/components/spread/PositionSlot";
 import type { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
@@ -63,9 +68,13 @@ export function SpreadBoard({
   overlay,
 }: SpreadBoardProps) {
   const { view, gestureHandlers } = viewport;
+  const slotWidth = useMemo(
+    () => slotWidthFor(spread.positions),
+    [spread.positions],
+  );
   const canvasStyle = {
     transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
-    "--slot-w": `${SLOT_WIDTH_CQW}cqw`,
+    "--slot-w": `${slotWidth}cqw`,
     "--field-margin": `${FIELD_MARGIN_CQW}cqw`,
   } as CSSProperties;
 

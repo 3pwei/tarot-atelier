@@ -7,6 +7,7 @@ import {
   pickAll,
   reveal,
   slot,
+  zoomTableIn,
 } from "./support/spreadTable";
 
 // Each test deals and burns several cards; software-rendered CI browsers need headroom.
@@ -157,10 +158,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   await page.getByLabel("旋轉（度）").fill("45");
   await page.getByRole("button", { name: "完成", exact: true }).click();
   await saveAndFinishArranging(page, "挪過的三張");
-  await page.getByRole("button", { name: "放大牌桌" }).click();
-  await expect(
-    page.getByRole("button", { name: /縮放 1.25 倍/u }),
-  ).toBeVisible();
+  await zoomTableIn(page);
 
   await deckPile(page).click();
   await pickAll(page, 3);
@@ -427,8 +425,7 @@ test("press and hold, then drag, rotates a position around its centre", async ({
   isMobile,
 }) => {
   await arrange(page);
-  await page.getByRole("button", { name: "放大牌桌" }).click();
-  await page.getByRole("button", { name: "放大牌桌" }).click();
+  await zoomTableIn(page, 2);
   const target = slot(page, 2);
   const before = await relativePosition(page, 2);
   // Zoomed in, the position can sit below the fold; the sweep is made in
@@ -635,4 +632,16 @@ test("chosen cards fly in, land visible and numbers leave as each lands", async 
     await expect(card).not.toHaveAttribute("data-flight", /.+/u);
     await expect(handle(page, index)).toBeHidden();
   }
+});
+
+test("spreads are chosen straight from play, and there are no zoom buttons", async ({
+  page,
+}) => {
+  const picker = page.getByRole("region", { name: "選擇牌陣" });
+  await picker.getByRole("button", { name: "圓環", exact: true }).click();
+  await expect(page.locator("[data-slot]")).toHaveCount(8);
+  await picker.getByRole("button", { name: "五張十字", exact: true }).click();
+  await expect(page.locator("[data-slot]")).toHaveCount(5);
+  await expect(page.getByRole("button", { name: "放大牌桌" })).toHaveCount(0);
+  await expect(page.getByRole("group", { name: "牌桌縮放" })).toHaveCount(0);
 });

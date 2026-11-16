@@ -2,12 +2,18 @@ import { describe, expect, it } from "vitest";
 import { BUILT_IN_TEMPLATES } from "@/domain/spread/templates";
 import {
   cardsOverlap,
+  LARGEST_SLOT_WIDTH_CQW,
+  LAYOUT_SLOT_WIDTH_CQW,
   overlappingPairs,
-  SLOT_WIDTH_CQW,
+  slotWidthFor,
+  STANDARD_SLOT_WIDTH_CQW,
 } from "@/presentation/components/spread/boardGeometry";
 
-/** The card width before cards were enlarged (2026-11-08). */
-const PREVIOUS_SLOT_WIDTH_CQW = 11;
+function template(id: string) {
+  const found = BUILT_IN_TEMPLATES.find((item) => item.id === id);
+  if (!found) throw new Error(`no built-in template ${id}`);
+  return found;
+}
 
 describe("board geometry", () => {
   it("tells overlapping cards from cards side by side", () => {
@@ -29,14 +35,47 @@ describe("board geometry", () => {
   });
 
   it.each(BUILT_IN_TEMPLATES.map((template) => [template.name, template]))(
-    "makes no new overlaps in the built-in %s spread at the current card size",
-    (_, template) => {
-      const before = overlappingPairs(
-        template.positions,
-        PREVIOUS_SLOT_WIDTH_CQW,
+    "makes no new overlaps in the built-in %s spread at its card size",
+    (_, spread) => {
+      const before = overlappingPairs(spread.positions, LAYOUT_SLOT_WIDTH_CQW);
+      const now = overlappingPairs(
+        spread.positions,
+        slotWidthFor(spread.positions),
       );
-      const now = overlappingPairs(template.positions, SLOT_WIDTH_CQW);
       expect(now.filter((pair) => !before.includes(pair))).toEqual([]);
     },
   );
+});
+
+describe("slotWidthFor", () => {
+  it("enlarges cards 1.5 times when the spread has room", () => {
+    expect(slotWidthFor(template("three-card").positions)).toBe(
+      LARGEST_SLOT_WIDTH_CQW,
+    );
+    expect(LARGEST_SLOT_WIDTH_CQW).toBe(STANDARD_SLOT_WIDTH_CQW * 1.5);
+  });
+
+  it("shrinks cards just enough when the spread has no room for 1.5 times", () => {
+    const cross = template("five-card").positions;
+    const width = slotWidthFor(cross);
+    expect(width).toBeLessThan(LARGEST_SLOT_WIDTH_CQW);
+    expect(width).toBeGreaterThanOrEqual(STANDARD_SLOT_WIDTH_CQW);
+    expect(slotWidthFor(cross)).toBe(width);
+  });
+
+  it("never goes below the standard size, even for a crowded layout", () => {
+    const stacked = [
+      { x: 0.5, y: 0.5, rotation: 0 },
+      { x: 0.53, y: 0.5, rotation: 0 },
+    ];
+    expect(slotWidthFor(stacked)).toBeGreaterThanOrEqual(
+      STANDARD_SLOT_WIDTH_CQW,
+    );
+  });
+
+  it("keeps a single card at the largest size", () => {
+    expect(slotWidthFor([{ x: 0.5, y: 0.5, rotation: 0 }])).toBe(
+      LARGEST_SLOT_WIDTH_CQW,
+    );
+  });
 });

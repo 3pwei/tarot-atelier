@@ -5,6 +5,7 @@ import {
   fannedDeck,
   reveal,
   slot,
+  zoomTableIn,
 } from "../e2e/support/spreadTable";
 import { measure, preparePage, trackScriptKilobytes } from "./support/probe";
 
@@ -116,8 +117,7 @@ test("drag a position and pan a zoomed table", async ({ page }, testInfo) => {
     .getByRole("button", { name: "確定離開" })
     .click();
 
-  await page.getByRole("button", { name: "放大牌桌" }).click();
-  await page.getByRole("button", { name: "放大牌桌" }).click();
+  await zoomTableIn(page, 2);
   const box = await board.boundingBox();
   if (!box) throw new Error("the spread board is not visible");
   // A corner of the cloth, away from the positions in the middle.

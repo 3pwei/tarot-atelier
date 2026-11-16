@@ -98,7 +98,6 @@
 
 .spread-toolbar__presets,
 .spread-toolbar__row,
-.spread-toolbar__zoom,
 .spread-toolbar__confirm,
 .position-inspector__actions {
   display: flex;
@@ -121,8 +120,8 @@
   color: #ffb877;
 }
 
-.spread-toolbar__zoom {
-  gap: 0.25rem;
+/* Starting over sits apart, at the end of the row. */
+.spread-toolbar__restart {
   margin-left: auto;
 }
 
@@ -191,11 +190,6 @@
   padding: 0.3rem 0.6rem;
   place-items: center;
   font-variant-numeric: tabular-nums;
-}
-
-.icon-action--wide {
-  min-width: 4rem;
-  font-size: 0.78rem;
 }
 
 .preset-chip:disabled,
@@ -862,10 +856,6 @@
     grid-template-columns: 1fr;
     padding-right: 0.75rem;
     padding-left: 0.75rem;
-  }
-
-  .spread-toolbar__zoom {
-    margin-left: 0;
   }
 
   .position-list {
