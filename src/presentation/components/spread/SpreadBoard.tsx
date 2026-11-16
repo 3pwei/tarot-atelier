@@ -27,6 +27,8 @@ interface SpreadBoardProps {
   readonly onMove: (positionId: string, point: TablePoint) => void;
   readonly onNudge: (positionId: string, delta: TablePoint) => void;
   readonly onRotate: (positionId: string, degrees: number) => void;
+  /** The deck and its motion, drawn on the cloth above the positions. */
+  readonly overlay?: ReactNode;
 }
 
 /** The table centre currently in view, in relative coordinates. */
@@ -58,6 +60,7 @@ export function SpreadBoard({
   onMove,
   onNudge,
   onRotate,
+  overlay,
 }: SpreadBoardProps) {
   const { view, gestureHandlers } = viewport;
   const canvasStyle = {
@@ -110,6 +113,7 @@ export function SpreadBoard({
           </p>
         )}
       </div>
+      {overlay}
     </div>
   );
 }

@@ -37,7 +37,7 @@ test("draw experience supports keyboard shuffle, choosing, and burn reveal", asy
   const deck = page.getByRole("button", { name: "按住牌堆洗牌" });
   await deck.focus();
   await page.keyboard.down(" ");
-  await expect(page.getByText("洗牌中，放開後攤開牌")).toBeVisible();
+  await expect(page.getByText("洗牌中，放開後收牌攤開")).toBeVisible();
   await page.keyboard.up(" ");
 
   await pickAll(page, 3);

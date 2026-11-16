@@ -1,9 +1,10 @@
 import { jumperNeighbourIndex } from "@/domain/deck/draw";
 
 /**
- * The shuffled pile laid out face down for the person to choose from. Every
- * card has a fixed slot for as long as the fan is open; a chosen card leaves
- * a gap instead of shifting the others, so nothing else moves or re-renders.
+ * The shuffled pile laid out face down on the wheel for the person to choose
+ * from. Every card has a fixed slot for as long as it is laid out; a chosen
+ * card leaves a gap instead of shifting the others, so nothing else moves or
+ * re-renders. Where each slot sits is cardWheel.ts's concern.
  */
 export interface CardFan {
   /** Cards in the pile when it was fanned out. */
@@ -45,42 +46,4 @@ export function jumperSlot(fan: CardFan, slot: number): number | undefined {
 
 export function takeSlots(fan: CardFan, slots: readonly number[]): CardFan {
   return { ...fan, taken: new Set([...fan.taken, ...slots]) };
-}
-
-/** Where a card sits in the fan, relative to the fan's left edge. */
-export interface FanPlacement {
-  readonly x: number;
-  readonly y: number;
-  readonly rotation: number;
-}
-
-export interface FanGeometry {
-  /** Horizontal distance between neighbouring cards. */
-  readonly spacing: number;
-  /** Angle between the first and last card, in degrees. */
-  readonly sweep: number;
-  /** How far the ends sit below the middle. */
-  readonly sag: number;
-}
-
-export const FAN_GEOMETRY: FanGeometry = { spacing: 14, sweep: 28, sag: 34 };
-
-/** Lays `size` cards along a shallow arc; computed once per fan. */
-export function fanPlacements(
-  size: number,
-  geometry: FanGeometry = FAN_GEOMETRY,
-): readonly FanPlacement[] {
-  return Array.from({ length: size }, (_, slot) => {
-    const along = size > 1 ? slot / (size - 1) - 0.5 : 0;
-    return {
-      x: slot * geometry.spacing,
-      y: along * along * 4 * geometry.sag,
-      rotation: along * geometry.sweep,
-    };
-  });
-}
-
-/** Width the fan needs beyond one card, so it can scroll when wider than the screen. */
-export function fanSpan(size: number, geometry: FanGeometry = FAN_GEOMETRY) {
-  return Math.max(0, size - 1) * geometry.spacing;
 }

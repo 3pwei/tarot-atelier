@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  fanPlacements,
-  fanSpan,
   jumperSlot,
   openFan,
   openSlots,
@@ -40,27 +38,5 @@ describe("the fanned pile", () => {
     takeSlots(fan, [0]);
 
     expect(fan.taken.size).toBe(0);
-  });
-});
-
-describe("fan placements", () => {
-  it("spreads the cards evenly along a symmetric arc", () => {
-    const placements = fanPlacements(5, { spacing: 10, sweep: 20, sag: 8 });
-
-    expect(placements.map((p) => p.x)).toEqual([0, 10, 20, 30, 40]);
-    expect(placements[0]?.rotation).toBe(-10);
-    expect(placements[2]?.rotation).toBe(0);
-    expect(placements[4]?.rotation).toBe(10);
-    expect(placements[0]?.y).toBe(8);
-    expect(placements[2]?.y).toBe(0);
-  });
-
-  it("puts a single card upright in the middle", () => {
-    expect(fanPlacements(1)).toEqual([{ x: 0, y: 0, rotation: 0 }]);
-  });
-
-  it("is as wide as the gaps between the cards", () => {
-    expect(fanSpan(78, { spacing: 14, sweep: 0, sag: 0 })).toBe(77 * 14);
-    expect(fanSpan(0)).toBe(0);
   });
 });

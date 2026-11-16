@@ -302,46 +302,115 @@
     transform 1400ms ease-out;
 }
 
-/* ── Fanned deck ─────────────────────────────────────── */
-/* Each card is placed once from fan geometry (cardFan.ts); afterwards only a
-   lifted or pulled card changes. The scroller moves the fan as one layer. */
+/* ── Deck on the table ─────────────────────────────────── */
+/* Drawn above the positions but outside the zoomed canvas (SpreadBoard's
+   overlay). Sizes follow the table through container units. */
 
-.card-fan {
-  --fan-card-width: clamp(3.6rem, 9vw, 5.2rem);
-  --fan-card-height: calc(var(--fan-card-width) * 1.5);
-  /* A row of its own under the board, so a card is pulled up towards the
-     position it goes to and the board keeps its size. Fills the row and
-     scrolls inside it, rather than growing to fit. */
-  grid-column: 1 / -1;
-  justify-self: stretch;
+.table-deck {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  container-type: size;
+  pointer-events: none;
+}
+
+.table-deck__pack {
+  position: absolute;
+  right: 3cqw;
+  bottom: 5cqh;
+  pointer-events: auto;
+  transition: opacity 240ms ease;
+}
+
+.table-deck .deck-stack {
+  --deck-card-width: clamp(2.6rem, 8cqw, 5rem);
+}
+
+.deck-stack__back {
+  display: block;
   width: 100%;
-  min-width: 0;
+  height: 100%;
 }
 
-.card-fan__scroller {
-  overflow-x: auto;
-  overflow-y: hidden;
-  /* Room above the cards to pull one out, and below for the arc's ends. */
-  padding: 6rem 1.5rem 2.5rem;
-  overscroll-behavior-x: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(230, 197, 122, 0.35) transparent;
+/* Washing: the pack's cards are out on the cloth. It stays mounted, and
+   focusable, because the held key or pointer belongs to it. */
+.table-deck[data-washing] .table-deck__pack {
+  opacity: 0;
 }
 
-.card-fan__track {
-  position: relative;
-  width: calc(var(--fan-span) + var(--fan-card-width));
-  height: var(--fan-card-height);
-  margin-inline: auto;
+/* Positions step back while the cards are washed over them. */
+.draw-experience[data-phase="shuffling"] .spread-slot {
+  opacity: 0.3;
+  transition: opacity 300ms ease;
 }
 
-.card-fan__card {
+.table-wash__card {
   position: absolute;
   top: 0;
-  /* Laid out at its place, so focus and scrolling find the card where it is
-     drawn; it never changes while the fan is open. */
-  left: var(--fan-x);
-  width: var(--fan-card-width);
+  left: 0;
+  width: clamp(2.4rem, 7cqw, 4.4rem);
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 6% / 4%;
+  box-shadow:
+    0 0 0 1px rgba(251, 234, 184, 0.18),
+    0 6px 14px rgba(0, 0, 0, 0.5);
+  transform: translate(
+      calc(var(--wash-a-x) * 1cqw - 50%),
+      calc(var(--wash-a-y) * 1cqh - 50%)
+    )
+    rotate(var(--wash-a-r));
+}
+
+.table-wash__card img,
+.table-wash__card .procedural-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.draw-experience[data-motion="animated"] .table-wash__card {
+  animation:
+    wash-spill 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    wash-wander var(--wash-loop) ease-in-out 420ms infinite alternate;
+}
+
+/* Let go: every card sweeps from where it is into one pile in the middle. */
+.table-wash[data-gathering] .table-wash__card {
+  transform: translate(
+      calc(var(--wash-rest-x) * 1cqw - 50%),
+      calc(var(--wash-rest-y) * 1cqh - 50%)
+    )
+    rotate(var(--wash-rest-r));
+  transition: transform var(--gather-duration) cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.card-wheel {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.draw-experience[data-motion="animated"] .card-wheel__wheel {
+  animation: wheel-lay 460ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* The wheel's centre sits below the table; turning it moves one layer. */
+.card-wheel__wheel {
+  position: absolute;
+  top: var(--wheel-y);
+  left: var(--wheel-x);
+  width: 0;
+  height: 0;
+  transform: rotate(var(--wheel-turn, 0deg));
+  pointer-events: none;
+}
+
+.card-wheel__card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--wheel-card-width);
   aspect-ratio: 2 / 3;
   padding: 0;
   overflow: hidden;
@@ -349,55 +418,45 @@
   border-radius: 6% / 4%;
   background: #141029;
   box-shadow:
-    0 0 0 1px rgba(251, 234, 184, 0.18),
-    -2px 4px 10px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(251, 234, 184, 0.2),
+    -2px 3px 8px rgba(0, 0, 0, 0.5);
   cursor: pointer;
-  transform: translateY(var(--fan-y)) rotate(var(--fan-rotate));
-  transform-origin: 50% 120%;
-  transition:
-    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    translate 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  /* Scrolling the fan sideways stays native; only a lifted card is dragged. */
-  touch-action: pan-x;
+  pointer-events: auto;
+  /* Turning and pulling are handled here, so the page does not scroll. */
+  touch-action: none;
+  transform: translate(-50%, -50%) rotate(var(--card-angle))
+    translateY(calc(-1 * var(--wheel-radius)));
+  transition: transform 160ms ease-out;
 }
 
-.card-fan__card .procedural-svg,
-.card-fan__back {
+.card-wheel__back,
+.card-wheel__card .procedural-svg {
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
-.card-fan__card[data-lifted] {
-  z-index: 2;
-  transform: translateY(calc(var(--fan-y) - 1.4rem)) rotate(var(--fan-rotate));
+/* Chosen: it slides a little forward, out of line, without covering its
+   neighbours; a gold edge marks it. */
+.card-wheel__card[data-chosen] {
   box-shadow:
-    0 0 0 1px var(--color-gold),
-    0 10px 24px rgba(0, 0, 0, 0.55);
-  touch-action: none;
-  cursor: grab;
+    0 0 0 1.5px var(--color-gold),
+    0 4px 12px rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, -50%) rotate(var(--card-angle))
+    translateY(calc(-1 * var(--wheel-radius) - var(--nudge) - var(--pull, 0px)));
 }
 
-.card-fan__card[data-pulling] {
-  z-index: 3;
-  cursor: grabbing;
-  /* Follow the finger exactly, on its own layer. */
+.card-wheel__card[data-pulling] {
+  z-index: 2;
   transition: none;
-  will-change: translate;
 }
 
-.card-fan__card:focus-visible {
+.card-wheel__card:focus-visible {
   outline: none;
   box-shadow:
     var(--focus-ring),
-    0 10px 24px rgba(0, 0, 0, 0.55);
-}
-
-/* The fan unfolds from its middle as one layer: one element animates, not
-   78, so opening stays smooth on slow phones. */
-.draw-experience[data-motion="animated"] .card-fan__track {
-  animation: fan-unfold 480ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  transform-origin: 50% 100%;
+    0 4px 12px rgba(0, 0, 0, 0.55);
 }
 
 /* Drawn cards */
@@ -771,19 +830,7 @@
 
 /* ── Shuffle and pick ─────────────────────────────────── */
 /* Transform and opacity only, so the compositor runs them off the main
-   thread. Durations come from dealMotion.ts through custom properties. The
-   riffle repeats while the deck is held; the dealer ends the shuffle on a
-   riffle boundary, where every card is back at rest. */
-
-.draw-experience[data-motion="animated"][data-phase="shuffling"]
-  .deck-stack__card:nth-child(odd) {
-  animation: riffle-left var(--riffle-duration) ease-in-out infinite;
-}
-
-.draw-experience[data-motion="animated"][data-phase="shuffling"]
-  .deck-stack__card:nth-child(even) {
-  animation: riffle-right var(--riffle-duration) ease-in-out infinite;
-}
+   thread. Durations come from dealMotion.ts through custom properties. */
 
 .draw-experience[data-motion="animated"]
   .drawn-card[data-flight="pending"][data-flight-planned] {
@@ -837,22 +884,44 @@
   }
 }
 
-@keyframes fan-unfold {
+/* From the pack's corner out onto the cloth. */
+@keyframes wash-spill {
+  from {
+    transform: translate(calc(90cqw - 50%), calc(85cqh - 50%)) rotate(0deg);
+  }
+}
+
+@keyframes wash-wander {
+  0% {
+    transform: translate(
+        calc(var(--wash-a-x) * 1cqw - 50%),
+        calc(var(--wash-a-y) * 1cqh - 50%)
+      )
+      rotate(var(--wash-a-r));
+  }
+
+  50% {
+    transform: translate(
+        calc(var(--wash-b-x) * 1cqw - 50%),
+        calc(var(--wash-b-y) * 1cqh - 50%)
+      )
+      rotate(var(--wash-b-r));
+  }
+
+  100% {
+    transform: translate(
+        calc(var(--wash-c-x) * 1cqw - 50%),
+        calc(var(--wash-c-y) * 1cqh - 50%)
+      )
+      rotate(var(--wash-c-r));
+  }
+}
+
+/* The gathered pile settles onto the wheel along the bottom edge. */
+@keyframes wheel-lay {
   from {
     opacity: 0;
-    transform: translateY(1rem) scaleX(0.12);
-  }
-}
-
-@keyframes riffle-left {
-  50% {
-    transform: translateX(-55%) rotate(-9deg);
-  }
-}
-
-@keyframes riffle-right {
-  50% {
-    transform: translateX(55%) rotate(9deg);
+    transform: translateY(-28cqh) rotate(var(--wheel-turn, 0deg));
   }
 }
 

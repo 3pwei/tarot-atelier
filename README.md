@@ -24,7 +24,7 @@
 - Next.js App Router、React、TypeScript strict
 - Tailwind CSS 與共用 CSS design tokens
 - Zustand（僅前端互動狀態）
-- CSS keyframes（洗牌、攤牌、飛牌與標題進場動畫）
+- CSS keyframes（桌面大亂洗、牌輪、飛牌與標題進場動畫）
 - Vitest、React Testing Library、Playwright
 - ESLint、Prettier、GitHub Actions
 

@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   FLIGHT_MS,
   JUMPER_DELAY_MS,
-  RIFFLE_MS,
-  SHUFFLE_MS,
+  GATHER_MS,
+  WASH_ROUND_MS,
   landingDelayMs,
-  shuffleFinishDelayMs,
+  washAfterRelease,
   flightStyle,
   planFlight,
   toLocalOffset,
@@ -125,20 +125,17 @@ describe("flightStyle", () => {
   });
 });
 
-describe("shuffleFinishDelayMs", () => {
-  it("still shuffles a full round after a quick tap", () => {
-    expect(shuffleFinishDelayMs(0)).toBe(SHUFFLE_MS);
-    expect(shuffleFinishDelayMs(200)).toBe(SHUFFLE_MS - 200);
+describe("washAfterRelease", () => {
+  it("still washes a full round after a quick tap", () => {
+    expect(washAfterRelease(0)).toEqual({
+      washMs: WASH_ROUND_MS,
+      gatherMs: GATHER_MS,
+    });
+    expect(washAfterRelease(400).washMs).toBe(WASH_ROUND_MS - 400);
   });
 
-  it("finishes the riffle in progress after a long hold", () => {
-    const held = SHUFFLE_MS * 2 + 100;
-
-    expect(shuffleFinishDelayMs(held)).toBe(RIFFLE_MS - (held % RIFFLE_MS));
-  });
-
-  it("stops at once when let go exactly between riffles", () => {
-    expect(shuffleFinishDelayMs(RIFFLE_MS * 4)).toBe(0);
+  it("gathers straight away after a long hold", () => {
+    expect(washAfterRelease(WASH_ROUND_MS * 3).washMs).toBe(0);
   });
 });
 

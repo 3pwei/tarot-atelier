@@ -40,7 +40,7 @@ test("holding the deck keeps shuffling until it is let go", async ({
   await page.mouse.down();
   // Longer than one full round: still shuffling while held.
   await page.waitForTimeout(2_000);
-  await expect(page.getByText("洗牌中，放開後攤開牌")).toBeVisible();
+  await expect(page.getByText("洗牌中，放開後收牌攤開")).toBeVisible();
   await expect(fannedDeck(page)).toHaveCount(0);
 
   await page.mouse.up();
@@ -70,4 +70,32 @@ test("a lifted card pulled up and out goes to the next position", async ({
   await expect(
     page.getByRole("button", { name: "洗牌", exact: true }),
   ).toBeDisabled();
+});
+
+test("a sideways drag turns the wheel on a narrow table", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "the whole deck fits on a wide table");
+  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await expect(fannedDeck(page)).toBeVisible();
+  const wheel = page.locator(".card-wheel__wheel");
+  const board = await page.locator(".spread-board").boundingBox();
+  if (!board) throw new Error("the table is not visible");
+  const start = {
+    x: board.x + board.width / 2,
+    y: board.y + board.height - 16,
+  };
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 120, start.y, { steps: 10 });
+  await page.mouse.up();
+
+  const turn = await wheel.evaluate((element) =>
+    Number.parseFloat(element.style.getPropertyValue("--wheel-turn")),
+  );
+  expect(turn).toBeGreaterThan(0);
+  // A drag that turns the wheel draws nothing.
+  await expect(slot(page, 1).locator("[data-draw-card]")).toHaveCount(0);
 });

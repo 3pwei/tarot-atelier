@@ -5,24 +5,28 @@ import type { CSSProperties } from "react";
  * motion on the compositor, so it stays smooth on slow phones; these values
  * reach the stylesheet as custom properties and the dealer waits on them.
  */
-export const SHUFFLE_MS = 1300;
-/** One riffle; holding the deck repeats it until the person lets go. */
-export const RIFFLE_MS = SHUFFLE_MS / 2;
-/** Time for a chosen card to fly from the fan to its position. */
+/** A tap still washes the cards this long; holding the deck keeps going. */
+export const WASH_ROUND_MS = 1600;
+/** The washed cards sweep back into one pile in the middle of the table. */
+export const GATHER_MS = 520;
+/** Time for a chosen card to fly from the wheel to its position. */
 export const FLIGHT_MS = 900;
 /** The jumper follows the chosen card this long after it. */
 export const JUMPER_DELAY_MS = 420;
 
-/**
- * How long the shuffle carries on after the person lets go: the riffle in
- * progress always finishes, and a quick tap still shuffles a full round.
- */
-export function shuffleFinishDelayMs(heldMs: number): number {
-  const held = Math.max(0, heldMs);
-  const restOfRound = Math.max(0, SHUFFLE_MS - held);
-  const intoRiffle = held % RIFFLE_MS;
-  const restOfRiffle = intoRiffle === 0 ? 0 : RIFFLE_MS - intoRiffle;
-  return Math.max(restOfRound, restOfRiffle);
+/** What happens after the person lets go of the deck. */
+export interface WashFinish {
+  /** The cards keep washing this long: a quick tap still gets a full round. */
+  readonly washMs: number;
+  /** Then they gather into one pile. */
+  readonly gatherMs: number;
+}
+
+export function washAfterRelease(heldMs: number): WashFinish {
+  return {
+    washMs: Math.max(0, WASH_ROUND_MS - Math.max(0, heldMs)),
+    gatherMs: GATHER_MS,
+  };
 }
 
 /** When a chosen card, or the jumper that slipped out with it, has landed. */
@@ -33,8 +37,7 @@ export function landingDelayMs(role: FlightRole): number {
 /** Timing custom properties for the element that hosts the table. */
 export function motionTimingStyle(): CSSProperties {
   return {
-    "--shuffle-duration": `${SHUFFLE_MS}ms`,
-    "--riffle-duration": `${RIFFLE_MS}ms`,
+    "--gather-duration": `${GATHER_MS}ms`,
     "--flight-duration": `${FLIGHT_MS}ms`,
     "--jumper-delay": `${JUMPER_DELAY_MS}ms`,
   } as CSSProperties;
@@ -85,10 +88,10 @@ export function toLocalOffset(
 }
 
 /**
- * Plans a card's flight from where it left the fan to where it lands. The arc is planned
+ * Plans a card's flight from where it left the wheel to where it lands. The arc is planned
  * on screen and converted into the slot's frame, so the card lands exactly on
  * a rotated position of a zoomed table. The jumper arcs higher and spins, as
- * if it slipped out of the fan with the chosen one.
+ * if it slipped out of the wheel with the chosen one.
  */
 export function planFlight(
   origin: ScreenBox,
@@ -109,7 +112,7 @@ export function planFlight(
     start: toLocalOffset(startX, startY, frame),
     peak: toLocalOffset(peakX, peakY, frame),
     startScale: origin.width / Math.max(1, landedWidth * frame.scale),
-    // Leave the fan upright on screen, whatever the slot's rotation.
+    // Leave the wheel upright on screen, whatever the slot's rotation.
     startRotation: (isJumper ? -220 : -6) - frame.rotation,
   };
 }

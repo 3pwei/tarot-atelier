@@ -1,8 +1,6 @@
 import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 
-/** Cards rendered for the riffle; the rest of the deck is drawn as edge depth. */
-export const SHUFFLE_CARD_COUNT = 10;
 const MAX_EDGE_DEPTH_PX = 14;
 
 /** Press-and-hold handlers from useHoldToShuffle. */
@@ -20,7 +18,8 @@ interface DeckStackProps {
   /** True while the person is holding the deck down. */
   readonly holding: boolean;
   readonly label: string;
-  readonly hint: string;
+  /** The pre-rendered back; the SVG back draws it when there is none. */
+  readonly backUrl?: string;
   readonly hold: HoldHandlers;
 }
 
@@ -37,17 +36,16 @@ function edgeShadow(remaining: number, total: number): string {
   return [...layers, `0 ${depth + 14}px 28px rgba(0, 0, 0, 0.55)`].join(", ");
 }
 
-/** The pack before it is fanned out: hold it down to shuffle. */
+/** The pack lying on the table: hold it down to wash the cards. */
 export function DeckStack({
   remaining,
   total,
   canShuffle,
   holding,
   label,
-  hint,
+  backUrl,
   hold,
 }: DeckStackProps) {
-  const visibleCards = Math.min(SHUFFLE_CARD_COUNT, remaining);
   const style = {
     "--deck-edge": edgeShadow(remaining, total),
   } as CSSProperties;
@@ -66,30 +64,27 @@ export function DeckStack({
         style={style}
         {...hold}
       >
-        {visibleCards === 0 ? (
+        {remaining === 0 ? (
           <span className="deck-stack__empty" aria-hidden="true">
             ✦
           </span>
         ) : (
-          Array.from({ length: visibleCards }, (_, index) => {
-            const isTop = index === visibleCards - 1;
-            return (
-              <span
-                key={index}
-                className="deck-stack__card"
-                data-shuffle-card
-                data-deck-top={isTop || undefined}
-                aria-hidden="true"
-              >
-                <ProceduralBack label="" />
-              </span>
-            );
-          })
+          <span className="deck-stack__card" data-deck-top aria-hidden="true">
+            {backUrl ? (
+              // A static export serves files as they are; next/image adds nothing.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                className="deck-stack__back"
+                src={backUrl}
+                alt=""
+                draggable={false}
+              />
+            ) : (
+              <ProceduralBack label="" />
+            )}
+          </span>
         )}
       </button>
-      <p className="deck-stack__hint" aria-hidden="true">
-        {hint}
-      </p>
     </div>
   );
 }

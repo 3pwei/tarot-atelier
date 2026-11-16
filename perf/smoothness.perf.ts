@@ -20,8 +20,8 @@ const SCROLL_STEPS = 24;
 const SCROLL_STEP_PAUSE_MS = 120;
 const GESTURE_STEPS = 40;
 const HOLD_MS = 2_000;
-/** Long enough for the fan's opening slide to finish. */
-const FAN_SETTLE_MS = 1_200;
+/** Long enough for the wash to gather and the wheel to lay out. */
+const WHEEL_SETTLE_MS = 1_600;
 /** Long enough for a chosen card to land. */
 const FLIGHT_SETTLE_MS = 1_200;
 
@@ -41,7 +41,7 @@ test("home page at rest and scrolling", async ({ page }, testInfo) => {
   await scriptKilobytes();
 });
 
-test("hold to shuffle, fan out, choose cards and burn reveal", async ({
+test("hold to wash, lay out the wheel, choose cards and burn reveal", async ({
   page,
 }, testInfo) => {
   await openHome(page);
@@ -53,37 +53,40 @@ test("hold to shuffle, fan out, choose cards and burn reveal", async ({
 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await measure(page, testInfo, "hold-shuffle", () =>
+  await measure(page, testInfo, "hold-wash", () =>
     page.waitForTimeout(HOLD_MS),
   );
-  // Letting go finishes the riffle and fans out every remaining card.
-  await measure(page, testInfo, "fan-open", async () => {
+  // Letting go gathers the washed cards and lays every remaining card out.
+  await measure(page, testInfo, "wheel-open", async () => {
     await page.mouse.up();
     await expect(fannedDeck(page)).toBeVisible();
-    await page.waitForTimeout(FAN_SETTLE_MS);
+    await page.waitForTimeout(WHEEL_SETTLE_MS);
   });
 
-  const scroller = page.locator(".card-fan__scroller");
-  await scroller.hover();
-  await measure(page, testInfo, "fan-scroll", async () => {
-    for (let step = 0; step < SCROLL_STEPS / 2; step += 1) {
-      await page.mouse.wheel(step < SCROLL_STEPS / 4 ? 160 : -160, 0);
-      await page.waitForTimeout(SCROLL_STEP_PAUSE_MS);
-    }
-  });
+  const wheel = fannedDeck(page);
+  const wheelBox = await wheel.boundingBox();
+  if (!wheelBox) throw new Error("the wheel is not visible");
+  // A sideways drag along the arc turns the wheel where it is wider than the table.
+  const along = {
+    x: wheelBox.x + wheelBox.width * 0.7,
+    y: wheelBox.y + wheelBox.height * 0.75,
+  };
+  await measure(page, testInfo, "wheel-turn", () =>
+    dragPoint(page, along, -wheelBox.width * 0.4, 0),
+  );
 
-  const card = fannedDeck(page).locator("[data-fan-slot]").nth(30);
-  await card.scrollIntoViewIfNeeded();
+  const card = wheel.locator("[data-fan-slot]").nth(30);
   await card.focus();
   await page.keyboard.press("Enter");
-  const lifted = await card.boundingBox();
-  if (!lifted) throw new Error("the lifted card is not visible");
-  await measure(page, testInfo, "fan-pull", async () => {
-    const x = lifted.x + lifted.width / 2;
-    const y = lifted.y + lifted.height / 2;
+  await expect(card).toHaveAttribute("aria-pressed", "true");
+  const chosen = await card.boundingBox();
+  if (!chosen) throw new Error("the chosen card is not visible");
+  await measure(page, testInfo, "wheel-pull", async () => {
+    const x = chosen.x + chosen.width / 2;
+    const y = chosen.y + chosen.height * 0.3;
     await page.mouse.move(x, y);
     await page.mouse.down();
-    await page.mouse.move(x + 10, y - 140, { steps: GESTURE_STEPS });
+    await page.mouse.move(x, y - 90, { steps: GESTURE_STEPS });
     await page.mouse.up();
     await page.waitForTimeout(FLIGHT_SETTLE_MS);
   });

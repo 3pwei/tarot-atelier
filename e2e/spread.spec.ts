@@ -291,7 +291,9 @@ test("the spread survives a page reload", async ({ page }) => {
 });
 
 test("corrupted saved data falls back to a working table", async ({ page }) => {
-  await page.evaluate(() =>
+  // Written as the page reloads: a save still pending from the question
+  // typed before could otherwise overwrite it first.
+  await page.addInitScript(() =>
     window.localStorage.setItem(
       "tarot-atelier:spread-session",
       '{"schemaVersion":1,"session":{"deckId":"atelier-standard-tarot","spread":{"positions":"x"}}}',

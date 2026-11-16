@@ -26,7 +26,7 @@ import {
 } from "@/presentation/components/draw/cardFan";
 import {
   landingDelayMs,
-  shuffleFinishDelayMs,
+  washAfterRelease,
   type FlightRole,
   type ScreenBox,
 } from "@/presentation/components/draw/dealMotion";
@@ -103,15 +103,16 @@ interface DealerOptions {
   readonly dispatch: Dispatch<SpreadAction>;
 }
 
-/** Selector for a fanned card; the dealer reads where a jumper leaves from. */
+/** Selector for a card on the wheel; the dealer reads where a jumper leaves from. */
 export function fanSlotSelector(slot: number): string {
   return `[data-fan-slot="${slot}"]`;
 }
 
 /**
- * Mirrors the domain draw machine for a spread: hold to shuffle one pile, let
- * go to fan it out, then choose a card for each empty position in number
- * order. Nothing is drawn until a card is chosen.
+ * Mirrors the domain draw machine for a spread: hold the deck to wash one
+ * pile across the table, let go to gather it and lay it on the wheel, then
+ * choose a card for each empty position in number order. Nothing is drawn
+ * until a card is chosen.
  */
 export function useSpreadDealer({
   deck,
@@ -130,18 +131,25 @@ export function useSpreadDealer({
   );
   const [phase, setPhase] = useState<DrawState>("idle");
   const [holding, setHolding] = useState(false);
-  /** Set when the person lets go: how long the riffle carries on. */
+  /** Set when the person lets go: how long the wash and gather carry on. */
   const [finishDelay, setFinishDelay] = useState<number | undefined>();
+  /** True while the washed cards sweep into one pile. */
+  const [gathering, setGathering] = useState(false);
+  /** Changes on every shuffle, so each wash takes new paths. */
+  const [washSeed, setWashSeed] = useState(generation + 1);
   const [fan, setFan] = useState<CardFan | undefined>();
   /** Positions to fill from this fan, counted when it opened. */
   const [roundTotal, setRoundTotal] = useState(0);
   /** Cards on their way from the fan to the table. */
   const [flights, setFlights] = useState<readonly Flight[]>([]);
-  const landingTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(
-    () => () => landingTimers.current.forEach((timer) => clearTimeout(timer)),
+    () => () => timers.current.forEach((timer) => clearTimeout(timer)),
     [],
   );
+  function after(ms: number, run: () => void) {
+    timers.current.push(setTimeout(run, ms));
+  }
 
   // A restored or cleared spread gets a fresh pile without its table cards.
   if (pile.generation !== generation) {
@@ -149,6 +157,7 @@ export function useSpreadDealer({
     setPhase("idle");
     setHolding(false);
     setFinishDelay(undefined);
+    setGathering(false);
     setFan(undefined);
     setFlights([]);
   }
@@ -178,6 +187,7 @@ export function useSpreadDealer({
       experience.completeShuffle();
       setPhase(experience.state);
       setFinishDelay(undefined);
+      setGathering(false);
       setFan(openFan(experience.remainingCount));
       setRoundTotal(empty.length);
     },
@@ -194,26 +204,31 @@ export function useSpreadDealer({
     }),
   });
 
-  /** Pressing the deck starts the riffle; it keeps going while held. */
+  /** Pressing the deck washes the cards across the table while it is held. */
   function hold() {
     if (!canShuffle) return;
     experience.beginShuffle();
     setPhase(experience.state);
     setHolding(true);
     setFinishDelay(undefined);
+    setGathering(false);
+    setWashSeed((seed) => seed + 1);
   }
 
   function release(heldMs: number) {
     if (experience.state !== "shuffling") return;
+    const finish = washAfterRelease(heldMs);
     setHolding(false);
-    setFinishDelay(shuffleFinishDelayMs(heldMs));
+    setFinishDelay(finish.washMs + finish.gatherMs);
+    if (motionMode === "animated") {
+      after(finish.washMs, () => setGathering(true));
+    }
   }
 
   function land(flight: Flight) {
-    const timer = setTimeout(() => {
-      setFlights((current) => current.filter((item) => item !== flight));
-    }, landingDelayMs(flight.role));
-    landingTimers.current.push(timer);
+    after(landingDelayMs(flight.role), () =>
+      setFlights((current) => current.filter((item) => item !== flight)),
+    );
   }
 
   function launch(
@@ -273,6 +288,8 @@ export function useSpreadDealer({
   return {
     phase,
     holding,
+    gathering,
+    washSeed,
     remaining,
     total: deck.cards.length,
     allRevealed,
@@ -324,10 +341,10 @@ export function dealerStatus(options: {
     remaining,
   } = options;
   if (loading) return "正在讀取牌陣";
-  if (holding) return "洗牌中，放開後攤開牌";
+  if (holding) return "洗牌中，放開後收牌攤開";
   if (phase === "shuffling") return "正在洗牌";
   if (picking) {
-    return `請選第 ${pickNumber} 張（共 ${roundTotal} 張）：點一下讓牌浮起，往上拉出`;
+    return `請選第 ${pickNumber} 張（共 ${roundTotal} 張）：點一下讓牌往前，再往前拉出`;
   }
   if (flyingCount > 0) return "牌正在放到牌位";
   if (!allRevealed) return "點擊卡牌，以火焰逐一揭示牌面";

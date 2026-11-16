@@ -174,7 +174,7 @@ describe("DrawExperience spread table", () => {
     const fan = await fannedDeck();
     expect(fan.querySelectorAll("[data-fan-slot]")).toHaveLength(78);
     expect(
-      screen.getByText("請選第 1 張（共 3 張）：點一下讓牌浮起，往上拉出"),
+      screen.getByText("請選第 1 張（共 3 張）：點一下讓牌往前，再往前拉出"),
     ).toBeInTheDocument();
 
     choose(40);
