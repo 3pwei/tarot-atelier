@@ -424,6 +424,9 @@ test("press and hold, then drag, rotates a position around its centre", async ({
   await page.getByRole("button", { name: "放大牌桌" }).click();
   const target = slot(page, 2);
   const before = await relativePosition(page, 2);
+  // Zoomed in, the position can sit below the fold; the sweep is made in
+  // screen coordinates, so bring it on screen before measuring.
+  await target.scrollIntoViewIfNeeded();
   const box = await target.boundingBox();
   if (!box) throw new Error("slot 2 is not visible");
   const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
