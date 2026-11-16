@@ -97,6 +97,15 @@ export function createCardInstance(options: {
   });
 }
 
+/**
+ * Which card slips out with the chosen one: the next card in the pile, or the
+ * previous one when the chosen card is the last. The fanned deck uses the same
+ * rule to show which card leaves with it.
+ */
+export function jumperNeighbourIndex(index: number, count: number): number {
+  return index + 1 < count ? index + 1 : index - 1;
+}
+
 export function isJumperTriggered(
   mode: JumperMode,
   remainingCount: number,
@@ -163,23 +172,41 @@ export class DrawExperience {
     }
 
     this.#state = "shuffling";
-    this.#remainingCardIds = [
-      ...shuffleCardIds(this.#remainingCardIds, this.#random),
-    ];
   }
 
+  /**
+   * The order is decided here, when the person lets go of the deck, so how
+   * long they held it never predicts the cards.
+   */
   completeShuffle(): void {
     if (this.#state !== "shuffling") {
       throw new InvalidDrawTransitionError(this.#state, "complete shuffle");
     }
+    this.#remainingCardIds = [
+      ...shuffleCardIds(this.#remainingCardIds, this.#random),
+    ];
     this.#state = "ready";
   }
 
-  draw(): DrawResult | undefined {
+  /**
+   * Draws the card the person chose: the one at `index` in the pile's current
+   * order, 0 being the top. A jumper is the card lying next to it, as if it
+   * slipped out with the chosen one. Ends in `drawing` while it is in flight.
+   */
+  drawAt(index: number): DrawResult | undefined {
     if (this.#state !== "ready") {
       throw new InvalidDrawTransitionError(this.#state, "draw");
     }
     if (this.#remainingCardIds.length === 0) return undefined;
+    if (
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= this.#remainingCardIds.length
+    ) {
+      throw new RangeError(
+        `index must be an integer from 0 to ${this.#remainingCardIds.length - 1}`,
+      );
+    }
 
     this.#state = "drawing";
     this.#drawNumber += 1;
@@ -188,10 +215,15 @@ export class DrawExperience {
       this.#remainingCardIds.length,
       this.#random,
     );
-    const primaryId = this.#remainingCardIds.shift() as string;
+    const primaryId = this.#remainingCardIds[index] as string;
     const jumperId = shouldDrawJumper
-      ? this.#remainingCardIds.shift()
+      ? this.#remainingCardIds[
+          jumperNeighbourIndex(index, this.#remainingCardIds.length)
+        ]
       : undefined;
+    this.#remainingCardIds = this.#remainingCardIds.filter(
+      (cardId) => cardId !== primaryId && cardId !== jumperId,
+    );
 
     const result: DrawResult = {
       primary: this.#createInstance(primaryId, "primary"),
@@ -203,33 +235,8 @@ export class DrawExperience {
   }
 
   /**
-   * Deals up to `count` draws in one go from the same shuffled pile, each with
-   * its own jumper chance, the way a reader lays out a whole spread before
-   * turning any card. Stops early when the pile runs out and ends in
-   * `drawing` while the cards are in flight.
-   */
-  drawSeries(count: number): readonly DrawResult[] {
-    if (this.#state !== "ready") {
-      throw new InvalidDrawTransitionError(this.#state, "draw");
-    }
-    if (!Number.isInteger(count) || count < 1) {
-      throw new RangeError("count must be a positive integer");
-    }
-    const results: DrawResult[] = [];
-    while (results.length < count && this.#remainingCardIds.length > 0) {
-      if (results.length > 0) {
-        this.reveal();
-        this.continueDrawing();
-      }
-      const result = this.draw();
-      if (result) results.push(result);
-    }
-    return Object.freeze(results);
-  }
-
-  /**
-   * Deals the next card from the same shuffled pile, the way a reader lays out
-   * a spread without reshuffling between positions.
+   * Readies the next choice from the same shuffled pile, the way a reader
+   * lays out a spread without reshuffling between positions.
    */
   continueDrawing(): void {
     if (this.#state !== "revealed") {

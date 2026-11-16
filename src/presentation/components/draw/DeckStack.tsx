@@ -1,17 +1,27 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 
 /** Cards rendered for the riffle; the rest of the deck is drawn as edge depth. */
 export const SHUFFLE_CARD_COUNT = 10;
 const MAX_EDGE_DEPTH_PX = 14;
 
+/** Press-and-hold handlers from useHoldToShuffle. */
+export interface HoldHandlers {
+  readonly onPointerDown: (event: PointerEvent<HTMLElement>) => void;
+  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  readonly onKeyUp: (event: KeyboardEvent<HTMLElement>) => void;
+  readonly onClick: () => void;
+}
+
 interface DeckStackProps {
   readonly remaining: number;
   readonly total: number;
-  readonly canDraw: boolean;
+  readonly canShuffle: boolean;
+  /** True while the person is holding the deck down. */
+  readonly holding: boolean;
   readonly label: string;
   readonly hint: string;
-  readonly onDraw: () => void;
+  readonly hold: HoldHandlers;
 }
 
 /** Stacked 1px offsets suggest the thickness of the cards still in the pack. */
@@ -27,13 +37,15 @@ function edgeShadow(remaining: number, total: number): string {
   return [...layers, `0 ${depth + 14}px 28px rgba(0, 0, 0, 0.55)`].join(", ");
 }
 
+/** The pack before it is fanned out: hold it down to shuffle. */
 export function DeckStack({
   remaining,
   total,
-  canDraw,
+  canShuffle,
+  holding,
   label,
   hint,
-  onDraw,
+  hold,
 }: DeckStackProps) {
   const visibleCards = Math.min(SHUFFLE_CARD_COUNT, remaining);
   const style = {
@@ -41,14 +53,18 @@ export function DeckStack({
   } as CSSProperties;
 
   return (
-    <div className="deck-stack" data-can-draw={canDraw || undefined}>
+    <div
+      className="deck-stack"
+      data-can-shuffle={canShuffle || undefined}
+      data-holding={holding || undefined}
+    >
       <button
         type="button"
         className="deck-stack__pile"
-        disabled={!canDraw}
-        onClick={onDraw}
+        disabled={!canShuffle && !holding}
         aria-label={label}
         style={style}
+        {...hold}
       >
         {visibleCards === 0 ? (
           <span className="deck-stack__empty" aria-hidden="true">

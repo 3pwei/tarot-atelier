@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useRef,
-  useState,
-  type CSSProperties,
-  type MouseEvent,
-} from "react";
+import { useCallback, useRef, useState, type MouseEvent } from "react";
 import type { CardDefinition, CardInstance } from "@/domain/deck/types";
 import { CardArtwork } from "@/presentation/components/CardArtwork";
 import { BurnReveal } from "@/presentation/effects/burn/BurnReveal";
@@ -36,7 +30,6 @@ interface DrawnCardProps {
   /** The card is flying in from the deck right now. */
   readonly inFlight?: boolean;
   /** Position in a dealt series; staggers the CSS fallback flight. */
-  readonly dealOrder?: number;
   /** Spread position number, used in the accessible name. */
   readonly positionIndex?: number;
   readonly onRevealed: (instanceId: string) => void;
@@ -66,7 +59,6 @@ export function DrawnCard({
   motionMode,
   initiallyRevealed = false,
   inFlight = false,
-  dealOrder = 0,
   positionIndex,
   onRevealed,
   onInspect,
@@ -125,9 +117,6 @@ export function DrawnCard({
       data-draw-card={role}
       data-reveal-state={state}
       data-flight={inFlight ? "pending" : undefined}
-      style={
-        inFlight ? ({ "--deal-order": dealOrder } as CSSProperties) : undefined
-      }
       data-interactive={canReveal || undefined}
     >
       {role === "jumper" && <span className="drawn-card__badge">跳牌</span>}

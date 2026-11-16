@@ -5,75 +5,59 @@ import {
   flightStyle,
   planFlight,
   type FlightFrame,
+  type FlightRole,
   type ScreenBox,
 } from "@/presentation/components/draw/dealMotion";
 
-/** Name of the keyframes in draw-experience.css that carry a dealt card. */
-const DEAL_FLIGHT = "deal-flight";
+/** A chosen card, or its jumper, flying from the fan to its position. */
+export interface Flight {
+  readonly positionId: string;
+  readonly role: FlightRole;
+  /** Where it left the fan, on screen. */
+  readonly origin: ScreenBox;
+}
 
 interface DealFlightOptions {
-  /** True while dealt cards are on their way. */
-  readonly active: boolean;
+  readonly flights: readonly Flight[];
   readonly root: RefObject<HTMLElement | null>;
-  /** The top of the deck when dealing began. */
-  readonly deck: ScreenBox | null;
   /** The frame of the position a card lands in. */
-  readonly frameOf: (slotId: string) => FlightFrame;
-  /** Called once a position's main card has touched down. */
-  readonly onLanded: (slotId: string) => void;
+  readonly frameOf: (positionId: string) => FlightFrame;
+}
+
+function landingCard(host: HTMLElement, flight: Flight): HTMLElement | null {
+  return host.querySelector<HTMLElement>(
+    `[data-slot="${flight.positionId}"] [data-flight="pending"][data-draw-card="${flight.role}"]:not([data-flight-planned])`,
+  );
 }
 
 /**
- * Measures each dealt card where it will land, writes its flight as custom
- * properties and only then lets the CSS keyframes start. Measuring before the
- * animation applies keeps the landing point exact.
+ * Measures each newly chosen card where it will land, writes its flight as
+ * custom properties and only then lets the CSS keyframes start. Measuring
+ * before the animation applies keeps the landing point exact.
  */
-export function useDealFlights({
-  active,
-  root,
-  deck,
-  frameOf,
-  onLanded,
-}: DealFlightOptions) {
-  const latest = useRef({ frameOf, onLanded });
+export function useDealFlights({ flights, root, frameOf }: DealFlightOptions) {
+  const latestFrame = useRef(frameOf);
   useLayoutEffect(() => {
-    latest.current = { frameOf, onLanded };
+    latestFrame.current = frameOf;
   });
 
   useLayoutEffect(() => {
     const host = root.current;
-    if (!active || !host || !deck) return;
-    const cards = [
-      ...host.querySelectorAll<HTMLElement>("[data-flight='pending']"),
-    ];
-    const listeners = cards.map((card) => {
-      const slotId = card.closest<HTMLElement>("[data-slot]")?.dataset.slot;
-      const role = card.dataset.drawCard === "jumper" ? "jumper" : "primary";
-      const frame = slotId
-        ? latest.current.frameOf(slotId)
-        : { rotation: 0, scale: 1 };
+    if (!host) return;
+    for (const flight of flights) {
+      const card = landingCard(host, flight);
+      if (!card) continue;
       const path = planFlight(
-        deck,
+        flight.origin,
         card.getBoundingClientRect(),
         card.offsetWidth,
-        frame,
-        role,
+        latestFrame.current(flight.positionId),
+        flight.role,
       );
       for (const [name, value] of Object.entries(flightStyle(path))) {
         card.style.setProperty(name, value);
       }
       card.dataset.flightPlanned = "true";
-
-      const landed = (event: AnimationEvent) => {
-        // Animations inside the card bubble up here too.
-        if (event.target !== card || event.animationName !== DEAL_FLIGHT) {
-          return;
-        }
-        if (role === "primary" && slotId) latest.current.onLanded(slotId);
-      };
-      card.addEventListener("animationend", landed);
-      return () => card.removeEventListener("animationend", landed);
-    });
-    return () => listeners.forEach((remove) => remove());
-  }, [active, root, deck]);
+    }
+  }, [flights, root]);
 }

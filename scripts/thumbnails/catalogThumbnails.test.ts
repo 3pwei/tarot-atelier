@@ -5,6 +5,7 @@ import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
 import {
   ARTWORK_SOURCES,
   artworkSourceHash,
+  BACK_FILE_NAME,
   MANIFEST_PATH,
   THUMBNAIL_DECK_ID,
   THUMBNAIL_PUBLIC_DIR,
@@ -67,5 +68,14 @@ describe("committed catalog thumbnails", () => {
       });
 
     expect(missing, `Thumbnails are missing. ${REGENERATE}`).toEqual([]);
+  });
+
+  it("include the card back for the fanned deck", () => {
+    expect(manifest.back, `The card back is missing. ${REGENERATE}`).toBe(
+      BACK_FILE_NAME,
+    );
+    expect(
+      existsSync(path.join("public", THUMBNAIL_PUBLIC_DIR, BACK_FILE_NAME)),
+    ).toBe(true);
   });
 });

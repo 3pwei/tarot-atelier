@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, type Dispatch, type RefObject } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type RefObject,
+} from "react";
 import type { Deck } from "@/domain/deck/deck";
 import {
   DrawExperience,
@@ -12,14 +18,25 @@ import { dealingIssues } from "@/domain/spread/spread";
 import { collectDrawnInstances } from "@/domain/spread/spreadSnapshot";
 import type { Spread } from "@/domain/spread/types";
 import {
-  dealDurationMs,
-  SHUFFLE_MS,
+  jumperSlot,
+  openFan,
+  pileIndexOf,
+  takeSlots,
+  type CardFan,
+} from "@/presentation/components/draw/cardFan";
+import {
+  landingDelayMs,
+  shuffleFinishDelayMs,
+  type FlightRole,
   type ScreenBox,
 } from "@/presentation/components/draw/dealMotion";
 import type { MotionMode } from "@/presentation/components/draw/useMotionMode";
 import { usePhaseAnimation } from "@/presentation/components/draw/usePhaseAnimation";
 import type { SpreadAction } from "@/presentation/components/spread/spreadState";
-import { useDealFlights } from "@/presentation/components/spread/useDealFlights";
+import {
+  useDealFlights,
+  type Flight,
+} from "@/presentation/components/spread/useDealFlights";
 
 /**
  * Product rule: every draw uses the fixed `rare` jumper rate. The rate is a
@@ -86,9 +103,15 @@ interface DealerOptions {
   readonly dispatch: Dispatch<SpreadAction>;
 }
 
+/** Selector for a fanned card; the dealer reads where a jumper leaves from. */
+export function fanSlotSelector(slot: number): string {
+  return `[data-fan-slot="${slot}"]`;
+}
+
 /**
- * Mirrors the domain draw machine for a spread: one shuffled pile, dealt in
- * number order into empty positions, one position at a time.
+ * Mirrors the domain draw machine for a spread: hold to shuffle one pile, let
+ * go to fan it out, then choose a card for each empty position in number
+ * order. Nothing is drawn until a card is chosen.
  */
 export function useSpreadDealer({
   deck,
@@ -102,21 +125,32 @@ export function useSpreadDealer({
   tableScale,
   dispatch,
 }: DealerOptions) {
-  const [flightOrigin, setFlightOrigin] = useState<ScreenBox | null>(null);
   const [pile, setPile] = useState<Pile>(() =>
     createPile(deck, spread, randomSource, generation),
   );
   const [phase, setPhase] = useState<DrawState>("idle");
-  /** Positions whose cards are in flight, in dealing order. */
-  const [flyingIds, setFlyingIds] = useState<readonly string[]>([]);
-  /** Flying positions whose primary card has already touched down. */
-  const [landedIds, setLandedIds] = useState<readonly string[]>([]);
+  const [holding, setHolding] = useState(false);
+  /** Set when the person lets go: how long the riffle carries on. */
+  const [finishDelay, setFinishDelay] = useState<number | undefined>();
+  const [fan, setFan] = useState<CardFan | undefined>();
+  /** Positions to fill from this fan, counted when it opened. */
+  const [roundTotal, setRoundTotal] = useState(0);
+  /** Cards on their way from the fan to the table. */
+  const [flights, setFlights] = useState<readonly Flight[]>([]);
+  const landingTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(
+    () => () => landingTimers.current.forEach((timer) => clearTimeout(timer)),
+    [],
+  );
 
   // A restored or cleared spread gets a fresh pile without its table cards.
   if (pile.generation !== generation) {
     setPile(createPile(deck, spread, randomSource, generation));
     setPhase("idle");
-    setFlyingIds([]);
+    setHolding(false);
+    setFinishDelay(undefined);
+    setFan(undefined);
+    setFlights([]);
   }
 
   const experience = pile.experience;
@@ -124,108 +158,152 @@ export function useSpreadDealer({
   const allRevealed = collectDrawnInstances(spread).every((card) =>
     revealedInstanceIds.has(card.instanceId),
   );
-  /** Every empty position, in number order: one deck click deals them all. */
+  /** Every empty position, in number order: each gets the next chosen card. */
   const empty = spread.positions.filter((position) => !position.drawResult);
   const next = empty[0];
   const blocker = spreadBlocker(spread);
   const dealable =
     !loading && !blocker && Boolean(next) && remaining > 0 && allRevealed;
-  const canShuffle = dealable && (phase === "idle" || phase === "revealed");
-  const canDraw = dealable && (phase === "ready" || phase === "revealed");
-
-  usePhaseAnimation(phase === "shuffling", motionMode, SHUFFLE_MS, () => {
-    experience.completeShuffle();
-    setPhase(experience.state);
-  });
+  const canShuffle =
+    dealable &&
+    flights.length === 0 &&
+    (phase === "idle" || phase === "revealed");
+  const picking = phase === "ready" && fan !== undefined;
 
   usePhaseAnimation(
-    phase === "drawing",
+    phase === "shuffling" && finishDelay !== undefined,
     motionMode,
-    dealDurationMs(
-      flyingIds.map((id) => ({
-        hasJumper: Boolean(
-          spread.positions.find((position) => position.id === id)?.drawResult
-            ?.jumper,
-        ),
-      })),
-    ),
+    finishDelay ?? 0,
     () => {
-      experience.reveal();
+      experience.completeShuffle();
       setPhase(experience.state);
-      setFlyingIds([]);
-      setLandedIds([]);
+      setFinishDelay(undefined);
+      setFan(openFan(experience.remainingCount));
+      setRoundTotal(empty.length);
     },
   );
 
   useDealFlights({
-    active: phase === "drawing" && motionMode === "animated",
+    flights,
     root,
-    deck: flightOrigin,
     frameOf: (slotId) => ({
       rotation:
         spread.positions.find((position) => position.id === slotId)?.rotation ??
         0,
       scale: tableScale,
     }),
-    onLanded: (slotId) => setLandedIds((ids) => [...ids, slotId]),
   });
 
-  function shuffle() {
+  /** Pressing the deck starts the riffle; it keeps going while held. */
+  function hold() {
     if (!canShuffle) return;
     experience.beginShuffle();
     setPhase(experience.state);
+    setHolding(true);
+    setFinishDelay(undefined);
   }
 
-  /** Deals every empty position at once; the person then reveals each card. */
-  function deal() {
-    if (!canDraw || empty.length === 0) return;
-    if (experience.state === "revealed") experience.continueDrawing();
-    setFlightOrigin(
-      root.current?.querySelector("[data-deck-top]")?.getBoundingClientRect() ??
-        null,
-    );
-    const results = experience.drawSeries(empty.length);
-    if (results.length === 0) return;
-    const dealt = results.flatMap((result, order) => {
-      const position = empty[order];
-      return position ? [{ positionId: position.id, result }] : [];
-    });
-    dispatch({ type: "deal", dealt });
-    if (dealt.length < empty.length) {
-      dispatch({
-        type: "announce",
-        text: `牌堆只剩 ${dealt.length} 次可發，其餘牌位暫時留空。`,
-      });
+  function release(heldMs: number) {
+    if (experience.state !== "shuffling") return;
+    setHolding(false);
+    setFinishDelay(shuffleFinishDelayMs(heldMs));
+  }
+
+  function land(flight: Flight) {
+    const timer = setTimeout(() => {
+      setFlights((current) => current.filter((item) => item !== flight));
+    }, landingDelayMs(flight.role));
+    landingTimers.current.push(timer);
+  }
+
+  function launch(
+    positionId: string,
+    origins: readonly (readonly [FlightRole, ScreenBox])[],
+  ) {
+    if (motionMode === "reduced") return;
+    const launched = origins.map(([role, origin]) => ({
+      positionId,
+      role,
+      origin,
+    }));
+    setFlights((current) => [...current, ...launched]);
+    launched.forEach(land);
+  }
+
+  /**
+   * The person chose the card in `slot`, which left the fan from `origin`.
+   * It goes to the next empty position, with a jumper now and then.
+   */
+  function pick(slot: number, origin: ScreenBox) {
+    if (!picking || !next || fan.taken.has(slot)) return;
+    const result = experience.drawAt(pileIndexOf(fan, slot));
+    if (!result) return;
+    const jumperFrom = result.jumper ? jumperSlot(fan, slot) : undefined;
+    const jumperOrigin =
+      jumperFrom === undefined
+        ? undefined
+        : root.current
+            ?.querySelector(fanSlotSelector(jumperFrom))
+            ?.getBoundingClientRect();
+    dispatch({ type: "deal", dealt: [{ positionId: next.id, result }] });
+    launch(next.id, [
+      ["primary", origin],
+      ...(jumperOrigin ? [["jumper", jumperOrigin] as const] : []),
+    ]);
+
+    experience.reveal();
+    const stillEmpty = empty.length - 1;
+    if (stillEmpty > 0 && experience.remainingCount > 0) {
+      experience.continueDrawing();
+      setFan(
+        takeSlots(fan, jumperFrom === undefined ? [slot] : [slot, jumperFrom]),
+      );
+    } else {
+      setFan(undefined);
+      if (stillEmpty > 0) {
+        dispatch({
+          type: "announce",
+          text: `牌堆已用盡，還有 ${stillEmpty} 個牌位留空。`,
+        });
+      }
     }
-    setFlyingIds(dealt.map((item) => item.positionId));
     setPhase(experience.state);
   }
 
   return {
     phase,
+    holding,
     remaining,
     total: deck.cards.length,
     allRevealed,
     next,
     emptyCount: empty.length,
     blocker,
-    flyingIds,
-    /** Positions whose card is still on its way; they keep their number. */
-    awaitingIds:
-      phase === "drawing"
-        ? flyingIds.filter((id) => !landedIds.includes(id))
-        : [],
+    fan: picking ? fan : undefined,
+    /** Which card of this fan's round is being chosen, from 1. */
+    pickNumber: roundTotal - empty.length + 1,
+    roundTotal,
+    flights,
+    /** Positions whose chosen card is still on its way; they keep their number. */
+    awaitingIds: flights
+      .filter((flight) => flight.role === "primary")
+      .map((flight) => flight.positionId),
     canShuffle,
-    canDraw,
-    layoutLocked: loading || phase === "shuffling" || phase === "drawing",
-    shuffle,
-    deal,
+    layoutLocked:
+      loading || phase === "shuffling" || picking || flights.length > 0,
+    hold,
+    release,
+    pick,
   };
 }
 
 export function dealerStatus(options: {
   readonly loading: boolean;
   readonly phase: DrawState;
+  readonly holding: boolean;
+  readonly picking: boolean;
+  readonly pickNumber: number;
+  readonly roundTotal: number;
   readonly blocker?: string;
   readonly emptyCount: number;
   readonly flyingCount: number;
@@ -235,6 +313,10 @@ export function dealerStatus(options: {
   const {
     loading,
     phase,
+    holding,
+    picking,
+    pickNumber,
+    roundTotal,
     blocker,
     emptyCount,
     flyingCount,
@@ -242,12 +324,16 @@ export function dealerStatus(options: {
     remaining,
   } = options;
   if (loading) return "正在讀取牌陣";
+  if (holding) return "洗牌中，放開後攤開牌";
   if (phase === "shuffling") return "正在洗牌";
-  if (phase === "drawing") return `正在發牌到 ${flyingCount} 個牌位`;
+  if (picking) {
+    return `請選第 ${pickNumber} 張（共 ${roundTotal} 張）：點一下讓牌浮起，往上拉出`;
+  }
+  if (flyingCount > 0) return "牌正在放到牌位";
   if (!allRevealed) return "點擊卡牌，以火焰逐一揭示牌面";
   if (blocker) return blocker;
   if (emptyCount === 0) return "牌陣已完成";
   if (remaining === 0) return "牌堆已用盡";
   if (phase === "idle") return "準備好了，請洗牌";
-  return `點擊牌堆，一次發完 ${emptyCount} 個牌位`;
+  return `請洗牌，再選 ${emptyCount} 張牌`;
 }

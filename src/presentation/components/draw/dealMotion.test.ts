@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEAL_STAGGER_MS,
   FLIGHT_MS,
   JUMPER_DELAY_MS,
-  dealDurationMs,
+  RIFFLE_MS,
+  SHUFFLE_MS,
+  landingDelayMs,
+  shuffleFinishDelayMs,
   flightStyle,
   planFlight,
   toLocalOffset,
@@ -123,22 +125,26 @@ describe("flightStyle", () => {
   });
 });
 
-describe("dealDurationMs", () => {
-  it("ends when the last main card lands", () => {
-    const plain = { hasJumper: false };
-
-    expect(dealDurationMs([plain, plain, plain])).toBe(
-      2 * DEAL_STAGGER_MS + FLIGHT_MS,
-    );
+describe("shuffleFinishDelayMs", () => {
+  it("still shuffles a full round after a quick tap", () => {
+    expect(shuffleFinishDelayMs(0)).toBe(SHUFFLE_MS);
+    expect(shuffleFinishDelayMs(200)).toBe(SHUFFLE_MS - 200);
   });
 
-  it("waits for a jumper that lands after every main card", () => {
-    expect(dealDurationMs([{ hasJumper: true }, { hasJumper: false }])).toBe(
-      JUMPER_DELAY_MS + FLIGHT_MS,
-    );
+  it("finishes the riffle in progress after a long hold", () => {
+    const held = SHUFFLE_MS * 2 + 100;
+
+    expect(shuffleFinishDelayMs(held)).toBe(RIFFLE_MS - (held % RIFFLE_MS));
   });
 
-  it("is zero when nothing is dealt", () => {
-    expect(dealDurationMs([])).toBe(0);
+  it("stops at once when let go exactly between riffles", () => {
+    expect(shuffleFinishDelayMs(RIFFLE_MS * 4)).toBe(0);
+  });
+});
+
+describe("landingDelayMs", () => {
+  it("lands the jumper after the chosen card", () => {
+    expect(landingDelayMs("primary")).toBe(FLIGHT_MS);
+    expect(landingDelayMs("jumper")).toBe(JUMPER_DELAY_MS + FLIGHT_MS);
   });
 });

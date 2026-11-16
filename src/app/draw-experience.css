@@ -253,16 +253,16 @@
   transition: opacity 300ms ease;
 }
 
-.deck-stack[data-can-draw] .deck-stack__pile::before {
+.deck-stack[data-can-shuffle] .deck-stack__pile::before {
   animation: deck-breathe 2.8s ease-in-out infinite;
 }
 
-.deck-stack[data-can-draw] .deck-stack__pile:hover,
-.deck-stack[data-can-draw] .deck-stack__pile:focus-visible {
+.deck-stack[data-can-shuffle] .deck-stack__pile:hover,
+.deck-stack[data-can-shuffle] .deck-stack__pile:focus-visible {
   transform: rotate(-2deg) translateY(-6px);
 }
 
-.deck-stack[data-can-draw] .deck-stack__pile:hover [data-deck-top] {
+.deck-stack[data-can-shuffle] .deck-stack__pile:hover [data-deck-top] {
   transform: translate(3px, -10px) rotate(2deg);
   transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -288,8 +288,119 @@
   opacity: 0.8;
 }
 
-.deck-stack[data-can-draw] .deck-stack__hint {
+.deck-stack[data-can-shuffle] .deck-stack__hint {
   color: var(--color-gold);
+}
+
+/* Held down: the glow brightens and widens for as long as it is held. */
+.deck-stack[data-holding] .deck-stack__pile::before {
+  animation: none;
+  opacity: 1;
+  transform: scale(1.18);
+  transition:
+    opacity 900ms ease-out,
+    transform 1400ms ease-out;
+}
+
+/* ── Fanned deck ─────────────────────────────────────── */
+/* Each card is placed once from fan geometry (cardFan.ts); afterwards only a
+   lifted or pulled card changes. The scroller moves the fan as one layer. */
+
+/* While fanned, the table stacks: the board on top, the fan below it, so a
+   card is pulled up towards the position it goes to. */
+.draw-table__stage.spread-stage[data-fanned] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.card-fan {
+  --fan-card-width: clamp(3.6rem, 9vw, 5.2rem);
+  --fan-card-height: calc(var(--fan-card-width) * 1.5);
+  order: 2;
+  /* Fill the column and scroll inside it, rather than growing to fit. */
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.card-fan__scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Room above the cards to pull one out, and below for the arc's ends. */
+  padding: 6rem 1.5rem 2.5rem;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(230, 197, 122, 0.35) transparent;
+}
+
+.card-fan__track {
+  position: relative;
+  width: calc(var(--fan-span) + var(--fan-card-width));
+  height: var(--fan-card-height);
+  margin-inline: auto;
+}
+
+.card-fan__card {
+  position: absolute;
+  top: 0;
+  /* Laid out at its place, so focus and scrolling find the card where it is
+     drawn; it never changes while the fan is open. */
+  left: var(--fan-x);
+  width: var(--fan-card-width);
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6% / 4%;
+  background: #141029;
+  box-shadow:
+    0 0 0 1px rgba(251, 234, 184, 0.18),
+    -2px 4px 10px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transform: translateY(var(--fan-y)) rotate(var(--fan-rotate));
+  transform-origin: 50% 120%;
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    translate 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Scrolling the fan sideways stays native; only a lifted card is dragged. */
+  touch-action: pan-x;
+}
+
+.card-fan__card .procedural-svg,
+.card-fan__back {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.card-fan__card[data-lifted] {
+  z-index: 2;
+  transform: translateY(calc(var(--fan-y) - 1.4rem)) rotate(var(--fan-rotate));
+  box-shadow:
+    0 0 0 1px var(--color-gold),
+    0 10px 24px rgba(0, 0, 0, 0.55);
+  touch-action: none;
+  cursor: grab;
+}
+
+.card-fan__card[data-pulling] {
+  z-index: 3;
+  cursor: grabbing;
+  /* Follow the finger exactly, on its own layer. */
+  transition: none;
+  will-change: translate;
+}
+
+.card-fan__card:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--focus-ring),
+    0 10px 24px rgba(0, 0, 0, 0.55);
+}
+
+.draw-experience[data-motion="animated"] .card-fan__card {
+  /* Backwards only: once open, a lift must transition, not be overridden. */
+  animation: fan-open 520ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--fan-order) * 5ms);
 }
 
 /* Drawn cards */
@@ -661,32 +772,31 @@
   }
 }
 
-/* ── Shuffle and deal ─────────────────────────────────── */
+/* ── Shuffle and pick ─────────────────────────────────── */
 /* Transform and opacity only, so the compositor runs them off the main
-   thread. Durations come from dealMotion.ts through custom properties. */
+   thread. Durations come from dealMotion.ts through custom properties. The
+   riffle repeats while the deck is held; the dealer ends the shuffle on a
+   riffle boundary, where every card is back at rest. */
 
 .draw-experience[data-motion="animated"][data-phase="shuffling"]
   .deck-stack__card:nth-child(odd) {
-  animation: riffle-left calc(var(--shuffle-duration) / 2) ease-in-out 2;
+  animation: riffle-left var(--riffle-duration) ease-in-out infinite;
 }
 
 .draw-experience[data-motion="animated"][data-phase="shuffling"]
   .deck-stack__card:nth-child(even) {
-  animation: riffle-right calc(var(--shuffle-duration) / 2) ease-in-out 2;
+  animation: riffle-right var(--riffle-duration) ease-in-out infinite;
 }
 
 .draw-experience[data-motion="animated"]
   .drawn-card[data-flight="pending"][data-flight-planned] {
   animation: deal-flight var(--flight-duration)
     cubic-bezier(0.45, 0.05, 0.25, 1) both;
-  animation-delay: calc(var(--deal-order, 0) * var(--deal-stagger));
 }
 
 .draw-experience[data-motion="animated"]
   .drawn-card--jumper[data-flight="pending"][data-flight-planned] {
-  animation-delay: calc(
-    var(--deal-order, 0) * var(--deal-stagger) + var(--jumper-delay)
-  );
+  animation-delay: var(--jumper-delay);
 }
 
 /* ── Keyframes ───────────────────────────────────────── */
@@ -727,6 +837,15 @@
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+}
+
+/* Every card starts stacked in the middle of the fan and slides to its place. */
+@keyframes fan-open {
+  from {
+    opacity: 0;
+    transform: translate(calc(var(--fan-span) / 2 - var(--fan-x)), 1rem)
+      rotate(0deg);
   }
 }
 
@@ -807,7 +926,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .deck-stack[data-can-draw] .deck-stack__pile,
+  .deck-stack[data-can-shuffle] .deck-stack__pile,
   .drawn-card__body::before,
   .drawn-card__body::after,
   .deck-stack__pile::before,

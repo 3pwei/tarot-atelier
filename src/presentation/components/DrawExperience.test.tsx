@@ -72,15 +72,29 @@ async function ready(mainQuestion = "這段時間的方向？") {
   await screen.findByText("準備好了，請洗牌");
 }
 
-/** Shuffles, then deals every empty position with one click on the deck. */
-async function shuffleAndDeal(count = 3) {
+/** The fanned deck, once a shuffle has finished. */
+function fannedDeck() {
+  return screen.findByRole("group", { name: /^扇形牌堆/u });
+}
+
+/** Chooses the fanned card in `slot` from the keyboard: lift, then draw. */
+function choose(slot: number) {
+  const card = document.querySelector<HTMLElement>(`[data-fan-slot="${slot}"]`);
+  if (!card) throw new Error(`no fanned card in slot ${slot}`);
+  fireEvent.keyDown(card, { key: "Enter" });
+  fireEvent.keyDown(card, { key: "Enter" });
+}
+
+/** Shuffles, then chooses a card for each of `count` empty positions. */
+async function shuffleAndPick(count = 3) {
   fireEvent.click(screen.getByRole("button", { name: "洗牌" }));
-  const pile = await screen.findByRole("button", {
-    name: `從牌堆發牌到 ${count} 個牌位`,
-  });
-  fireEvent.click(pile);
+  await fannedDeck();
+  for (let picked = 0; picked < count; picked += 1) {
+    // A jumper takes a neighbour too, so choose whichever card is first.
+    const first = document.querySelector<HTMLElement>("[data-fan-slot]");
+    choose(Number(first?.dataset.fanSlot));
+  }
   await screen.findByText("點擊卡牌，以火焰逐一揭示牌面");
-  return pile;
 }
 
 function reveal(index: number, role = "主牌") {
@@ -152,31 +166,57 @@ describe("DrawExperience spread table", () => {
     expect(screen.getByText("3 / 12 牌位")).toBeInTheDocument();
   });
 
-  it("deals every position with one deck click and ignores repeats", async () => {
+  it("fans the shuffled pile and places each chosen card in number order", async () => {
     renderTable();
     await ready();
 
     fireEvent.click(screen.getByRole("button", { name: "洗牌" }));
-    const pile = await screen.findByRole("button", {
-      name: "從牌堆發牌到 3 個牌位",
-    });
-    pile.focus();
-    expect(pile).toHaveFocus();
-    fireEvent.click(pile);
-    fireEvent.click(pile);
+    const fan = await fannedDeck();
+    expect(fan.querySelectorAll("[data-fan-slot]")).toHaveLength(78);
+    expect(
+      screen.getByText("請選第 1 張（共 3 張）：點一下讓牌浮起，往上拉出"),
+    ).toBeInTheDocument();
 
+    choose(40);
+    expect(slot(1).querySelectorAll("[data-draw-card]")).toHaveLength(1);
+    expect(slot(2).querySelectorAll("[data-draw-card]")).toHaveLength(0);
+    expect(fan.querySelector('[data-fan-slot="40"]')).toBeNull();
+    expect(screen.getByText(/^請選第 2 張（共 3 張）/u)).toBeInTheDocument();
+    // Shuffling again is not offered until every position has its card.
+    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+
+    choose(3);
+    choose(77);
     await screen.findByText("點擊卡牌，以火焰逐一揭示牌面");
-    expect(document.querySelectorAll("[data-draw-card]")).toHaveLength(3);
     for (const index of [1, 2, 3]) {
       expect(slot(index).querySelectorAll("[data-draw-card]")).toHaveLength(1);
     }
+    expect(screen.queryByRole("group", { name: /^扇形牌堆/u })).toBeNull();
     expect(screen.getByText("剩餘 75 張")).toBeInTheDocument();
+  });
+
+  it("lifts a fanned card first and draws only on the second Enter", async () => {
+    renderTable();
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: "洗牌" }));
+    await fannedDeck();
+    const card = document.querySelector<HTMLElement>('[data-fan-slot="10"]');
+    if (!card) throw new Error("no fanned card in slot 10");
+
+    fireEvent.keyDown(card, { key: "Enter" });
+    expect(card).toHaveAttribute("aria-pressed", "true");
+    expect(slot(1).querySelectorAll("[data-draw-card]")).toHaveLength(0);
+
+    fireEvent.keyDown(card, { key: "ArrowRight" });
+    const next = document.querySelector('[data-fan-slot="11"]');
+    expect(next).toHaveAttribute("aria-pressed", "true");
+    expect(card).toHaveAttribute("aria-pressed", "false");
   });
 
   it("keeps every face hidden until the person reveals it, in any order", async () => {
     renderTable();
     await ready();
-    await shuffleAndDeal();
+    await shuffleAndPick();
 
     const cards = [1, 2, 3].map((index) =>
       slot(index).querySelector("[data-draw-card='primary']"),
@@ -211,7 +251,7 @@ describe("DrawExperience spread table", () => {
     };
     renderTable({ random });
     await ready();
-    await shuffleAndDeal();
+    await shuffleAndPick();
 
     const first = slot(1);
     expect(first.querySelectorAll("[data-draw-card]")).toHaveLength(2);
@@ -234,7 +274,7 @@ describe("DrawExperience spread table", () => {
     expect(
       screen.getByRole("button", { name: "翻開所有牌後即可解讀" }),
     ).toBeDisabled();
-    await shuffleAndDeal();
+    await shuffleAndPick();
     expect(
       screen.getByRole("button", { name: "翻開所有牌後即可解讀" }),
     ).toBeDisabled();
@@ -251,7 +291,7 @@ describe("DrawExperience spread table", () => {
     const { container } = renderTable();
     await ready();
     expect(container.textContent).not.toMatch(/\d+(\.\d+)?\s*%/u);
-    await shuffleAndDeal();
+    await shuffleAndPick();
     expect(container.textContent).not.toMatch(/\d+(\.\d+)?\s*%/u);
   });
 
@@ -382,7 +422,7 @@ describe("DrawExperience spread table", () => {
   it("asks before clearing the draws to edit the layout, and keeps the layout", async () => {
     renderTable();
     await ready("今年的重心？");
-    await shuffleAndDeal();
+    await shuffleAndPick();
     reveal(1);
 
     arrange();
@@ -495,13 +535,13 @@ describe("DrawExperience spread table", () => {
 
     finishArranging();
     expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
-    await shuffleAndDeal();
+    await shuffleAndPick();
   });
 
   it("enlarges a revealed card and returns focus when closed", async () => {
     renderTable();
     await ready();
-    await shuffleAndDeal();
+    await shuffleAndPick();
     reveal(1);
     const card = screen.getByRole("button", { name: /^牌位 1 主牌：/u });
     card.focus();
@@ -530,7 +570,7 @@ describe("DrawExperience spread table", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
       target: { value: "今年的重心？" },
     });
-    await shuffleAndDeal();
+    await shuffleAndPick();
     reveal(1);
     await waitFor(() => expect(storage.value).toContain("今年的重心？"));
     await waitFor(() =>
@@ -575,7 +615,7 @@ describe("DrawExperience spread table", () => {
   it("clears the current spread after confirmation", async () => {
     const { storage } = renderTable();
     await ready();
-    await shuffleAndDeal();
+    await shuffleAndPick();
 
     fireEvent.click(screen.getByRole("button", { name: "清除本次牌陣" }));
     fireEvent.click(screen.getByRole("button", { name: "確定清除" }));

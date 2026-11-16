@@ -23,7 +23,9 @@ import {
 } from "@/infrastructure/persistence/localStorageTextStorage";
 import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
+import { CardFanView } from "@/presentation/components/draw/CardFanView";
 import { DeckStack } from "@/presentation/components/draw/DeckStack";
+import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
 import {
   hasUnsavedLayout,
@@ -144,14 +146,23 @@ export function DrawExperience({
   const status = dealerStatus({
     loading,
     phase: dealer.phase,
+    holding: dealer.holding,
+    picking: dealer.fan !== undefined,
+    pickNumber: dealer.pickNumber,
+    roundTotal: dealer.roundTotal,
     blocker: dealer.blocker,
     emptyCount: dealer.emptyCount,
-    flyingCount: dealer.flyingIds.length,
+    flyingCount: dealer.flights.length,
     allRevealed: dealer.allRevealed,
     remaining: dealer.remaining,
   });
   const [tableMode, setTableMode] = useState<TableMode>("play");
   const abilities = tableAbilities(tableMode, dealer.layoutLocked);
+  const shuffleHold = useHoldToShuffle({
+    enabled: dealer.canShuffle && abilities.canPlay,
+    onHold: dealer.hold,
+    onRelease: dealer.release,
+  });
   const [inspected, setInspected] = useState<string>();
   const reading = useReadingSession({
     spread,
@@ -248,8 +259,6 @@ export function DrawExperience({
   function renderCards(position: SpreadPosition) {
     const result = position.drawResult;
     if (!result) return null;
-    const dealOrder = dealer.flyingIds.indexOf(position.id);
-    const inFlight = dealer.phase === "drawing" && dealOrder >= 0;
     const cards = result.jumper
       ? ([
           ["primary", result.primary],
@@ -259,6 +268,9 @@ export function DrawExperience({
 
     return cards.map(([role, instance]) => {
       const card = deck.getCard(instance.cardId);
+      const inFlight = dealer.flights.some(
+        (flight) => flight.positionId === position.id && flight.role === role,
+      );
       return card ? (
         <DrawnCard
           key={instance.instanceId}
@@ -268,7 +280,6 @@ export function DrawExperience({
           positionIndex={position.index}
           interactive={!inFlight && abilities.canPlay}
           inFlight={inFlight}
-          dealOrder={Math.max(0, dealOrder)}
           initiallyRevealed={revealedInstanceIds.has(instance.instanceId)}
           motionMode={motionMode}
           onRevealed={handleRevealed}
@@ -314,11 +325,17 @@ export function DrawExperience({
             <button
               className="shuffle-action"
               type="button"
-              disabled={!dealer.canShuffle || !abilities.canPlay}
-              onClick={dealer.shuffle}
+              disabled={
+                !dealer.holding && (!dealer.canShuffle || !abilities.canPlay)
+              }
+              aria-describedby="shuffle-hold-hint"
+              {...shuffleHold}
             >
               洗牌
             </button>
+            <span id="shuffle-hold-hint" className="sr-only">
+              按住持續洗牌，放開後攤開牌；按一下洗一輪
+            </span>
           </div>
           {arranging && (
             <TemplateShelf
@@ -359,25 +376,40 @@ export function DrawExperience({
           />
         </div>
 
-        <div className="draw-table__stage spread-stage">
-          <DeckStack
-            remaining={dealer.remaining}
-            total={dealer.total}
-            canDraw={dealer.canDraw && abilities.canPlay}
-            label={
-              dealer.canDraw && abilities.canPlay
-                ? `從牌堆發牌到 ${dealer.emptyCount} 個牌位`
-                : `牌堆：${status}`
-            }
-            hint={
-              arranging
-                ? "編輯牌陣中，完成後才能發牌"
-                : dealer.canDraw
-                  ? `點擊牌堆，一次發完 ${dealer.emptyCount} 個牌位`
-                  : `${dealer.remaining} / ${dealer.total}`
-            }
-            onDraw={dealer.deal}
-          />
+        <div
+          className="draw-table__stage spread-stage"
+          data-fanned={dealer.fan ? true : undefined}
+        >
+          {dealer.fan && dealer.next ? (
+            <CardFanView
+              deckId={deck.id}
+              fan={dealer.fan}
+              positionIndex={dealer.next.index}
+              onPick={dealer.pick}
+            />
+          ) : (
+            <DeckStack
+              remaining={dealer.remaining}
+              total={dealer.total}
+              canShuffle={dealer.canShuffle && abilities.canPlay}
+              holding={dealer.holding}
+              label={
+                dealer.canShuffle && abilities.canPlay
+                  ? "按住牌堆洗牌"
+                  : `牌堆：${status}`
+              }
+              hint={
+                arranging
+                  ? "編輯牌陣中，完成後才能洗牌"
+                  : dealer.holding
+                    ? "放開後攤開牌"
+                    : dealer.canShuffle
+                      ? "按住牌堆洗牌"
+                      : `${dealer.remaining} / ${dealer.total}`
+              }
+              hold={shuffleHold}
+            />
+          )}
 
           <SpreadBoard
             spread={spread}
