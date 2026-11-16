@@ -116,6 +116,14 @@ async function finishArranging(page: Page) {
   await page.getByRole("button", { name: "完成編輯" }).click();
 }
 
+/** Layout changes are kept only once saved to the library. */
+async function saveAndFinishArranging(page: Page, name: string) {
+  await page.getByRole("button", { name: "儲存目前牌陣" }).click();
+  await page.getByLabel("牌陣名稱").fill(name);
+  await page.getByRole("button", { name: "儲存", exact: true }).click();
+  await finishArranging(page);
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await askMainQuestion(page);
@@ -136,7 +144,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   await handle(page, 2).click();
   await page.getByLabel("旋轉（度）").fill("45");
   await page.getByRole("button", { name: "完成", exact: true }).click();
-  await finishArranging(page);
+  await saveAndFinishArranging(page, "挪過的三張");
   await page.getByRole("button", { name: "放大牌桌" }).click();
   await expect(
     page.getByRole("button", { name: /縮放 1.25 倍/u }),
@@ -215,7 +223,7 @@ test("custom spreads need questions and stop at twelve positions", async ({
     await page.keyboard.press("Enter");
     await page.getByLabel(/這個牌位的問題/u).fill(`第 ${index} 個問題`);
   }
-  await finishArranging(page);
+  await saveAndFinishArranging(page, "十二張");
   await expect(
     page.getByRole("button", { name: "洗牌", exact: true }),
   ).toBeEnabled();

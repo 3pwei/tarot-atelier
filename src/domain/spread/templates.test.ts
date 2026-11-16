@@ -3,8 +3,10 @@ import { createSpread } from "@/domain/spread/spread";
 import {
   BUILT_IN_TEMPLATES,
   createBlankSpread,
+  createSpreadFromLayout,
   createSpreadFromTemplate,
   deleteTemplate,
+  matchesLayout,
   missingBuiltIns,
   parseTemplateLibrary,
   restoreBuiltIns,
@@ -239,5 +241,85 @@ describe("template library storage", () => {
     ],
   ])("rejects %s", (_, raw) => {
     expect(parseTemplateLibrary(raw)).toBeUndefined();
+  });
+});
+
+describe("comparing a spread with a layout", () => {
+  const [threeCard] = BUILT_IN_TEMPLATES;
+  if (!threeCard) throw new Error("expected a built-in template");
+  const applied = () =>
+    createSpreadFromTemplate({ template: threeCard, createId: counter() });
+
+  it("matches the template it was just made from", () => {
+    expect(matchesLayout(applied(), threeCard.positions)).toBe(true);
+  });
+
+  it("matches a layout saved from the spread", () => {
+    const spread = spreadWith(3);
+    const { template } = save([], "我的牌陣", spread);
+
+    expect(matchesLayout(spread, template.positions)).toBe(true);
+  });
+
+  it.each([
+    ["moved", { x: 0.11 }],
+    ["turned", { rotation: 45 }],
+    ["asked differently", { question: "換個問題" }],
+  ])("differs once a position is %s", (_, change) => {
+    const spread = applied();
+    const [first, ...rest] = spread.positions;
+    if (!first) throw new Error("expected a position");
+    const edited = { ...spread, positions: [{ ...first, ...change }, ...rest] };
+
+    expect(matchesLayout(edited, threeCard.positions)).toBe(false);
+  });
+
+  it("differs when positions are added, removed or reordered", () => {
+    const spread = spreadWith(3);
+    const layout = spread.positions;
+
+    expect(matchesLayout(spreadWith(2), layout)).toBe(false);
+    expect(matchesLayout(spreadWith(4), layout)).toBe(false);
+    expect(
+      matchesLayout(
+        { ...spread, positions: [...spread.positions].reverse() },
+        layout,
+      ),
+    ).toBe(false);
+  });
+
+  it("ignores the main question", () => {
+    const spread = { ...applied(), mainQuestion: "另一個主問題" };
+
+    expect(matchesLayout(spread, threeCard.positions)).toBe(true);
+  });
+});
+
+describe("creating a spread from a layout", () => {
+  it("lays out fresh positions and keeps the main question", () => {
+    const layout = spreadWith(2).positions;
+    const spread = createSpreadFromLayout({
+      layout,
+      templateId: "three-card",
+      createId: counter("new"),
+      mainQuestion: "主問題",
+    });
+
+    expect(matchesLayout(spread, layout)).toBe(true);
+    expect(spread.templateId).toBe("three-card");
+    expect(spread.mainQuestion).toBe("主問題");
+    expect(spread.positions.map((position) => position.id)).not.toContain("p0");
+    expect(spread.positions.every((p) => p.drawResult === undefined)).toBe(
+      true,
+    );
+  });
+
+  it("has no template when none is given", () => {
+    const spread = createSpreadFromLayout({
+      layout: [],
+      createId: counter(),
+    });
+
+    expect(spread.templateId).toBeUndefined();
   });
 });

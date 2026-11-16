@@ -40,6 +40,7 @@ Templates store a layout: each position's question, coordinates and rotation. Th
 | 圓環     | 8         | Clockwise from twelve o'clock            |
 
 - 「儲存目前牌陣」 saves the table under a 1–30 character name. Saving again under the same name updates that template. The library holds up to 30.
+- Leaving 「編輯牌陣」 with layout changes that are not saved asks first (「牌陣還沒儲存」, 「確定離開」／「取消」, focus on cancel). The changes are compared with the library's version of the template the table came from, or with the table as it was when editing began when there is none (a blank table, or a template deleted meanwhile). Leaving anyway restores that version and keeps the main question. Applying a template, starting blank or saving sets a new version to compare with. The rules live in `presentation/components/spread/editBaseline.ts` and `matchesLayout` in `domain/spread/templates.ts`.
 - Every template can be deleted, built-ins included, after an inline confirmation. Deleting never changes the table.
 - 「還原預設範例」 appears when a built-in is missing and puts the missing ones back first, keeping saved ones.
 - 「空白牌桌」 starts from an empty table. A fresh reading and 「清除本次牌陣」 start from the first template in the library, or a blank table when the library is empty.

@@ -120,15 +120,59 @@ export function createSpreadFromTemplate(options: {
   readonly createId: () => string;
   readonly mainQuestion?: string;
 }): Spread {
+  return createSpreadFromLayout({
+    layout: options.template.positions,
+    templateId: options.template.id,
+    createId: options.createId,
+    mainQuestion: options.mainQuestion,
+  });
+}
+
+/** A fresh, undrawn spread laid out as `layout`, with new position ids. */
+export function createSpreadFromLayout(options: {
+  readonly layout: readonly TemplatePosition[];
+  readonly templateId?: string;
+  readonly createId: () => string;
+  readonly mainQuestion?: string;
+}): Spread {
   return createSpread({
     id: options.createId(),
-    templateId: options.template.id,
+    ...(options.templateId !== undefined
+      ? { templateId: options.templateId }
+      : {}),
     mainQuestion: options.mainQuestion,
-    positions: options.template.positions.map((position) => ({
+    positions: options.layout.map((position) => ({
       id: options.createId(),
-      ...position,
+      question: position.question,
+      x: position.x,
+      y: position.y,
+      rotation: position.rotation,
     })),
   });
+}
+
+/**
+ * Whether the spread is laid out exactly as `layout`: the same positions in
+ * the same order, with the same questions, places and angles. Drawn cards
+ * and the main question are not part of a layout.
+ */
+export function matchesLayout(
+  spread: Spread,
+  layout: readonly TemplatePosition[],
+): boolean {
+  return (
+    spread.positions.length === layout.length &&
+    spread.positions.every((position, order) => {
+      const expected = layout[order];
+      return (
+        expected !== undefined &&
+        position.question === expected.question &&
+        position.x === expected.x &&
+        position.y === expected.y &&
+        position.rotation === expected.rotation
+      );
+    })
+  );
 }
 
 export function createBlankSpread(options: {
