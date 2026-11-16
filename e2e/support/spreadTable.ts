@@ -6,11 +6,31 @@ export function slot(page: Page, index: number): Locator {
   return page.locator(`[data-slot][data-index='${index}']`);
 }
 
-/** One deck click deals every empty position. */
-export async function dealAll(page: Page, count: number) {
-  await page
-    .getByRole("button", { name: `從牌堆發牌到 ${count} 個牌位` })
-    .click();
+export function fannedDeck(page: Page): Locator {
+  return page.getByRole("group", { name: /^扇形牌堆/u });
+}
+
+/** Chooses the first card left in the fan from the keyboard: lift, then draw. */
+export async function chooseFirstCard(page: Page) {
+  const card = fannedDeck(page).locator("[data-fan-slot]").first();
+  await card.focus();
+  await page.keyboard.press("Enter");
+  await expect(card).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Enter");
+}
+
+/**
+ * After a shuffle, chooses a card for each of `count` empty positions and
+ * waits until they are on the table.
+ */
+export async function pickAll(page: Page, count: number) {
+  await expect(fannedDeck(page)).toBeVisible({ timeout: 15_000 });
+  for (let picked = 1; picked <= count; picked += 1) {
+    await expect(
+      page.getByText(`請選第 ${picked} 張（共 ${count} 張）`, { exact: false }),
+    ).toBeVisible();
+    await chooseFirstCard(page);
+  }
   await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
     timeout: 15_000,
   });

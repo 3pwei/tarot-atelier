@@ -306,17 +306,13 @@
 /* Each card is placed once from fan geometry (cardFan.ts); afterwards only a
    lifted or pulled card changes. The scroller moves the fan as one layer. */
 
-/* While fanned, the table stacks: the board on top, the fan below it, so a
-   card is pulled up towards the position it goes to. */
-.draw-table__stage.spread-stage[data-fanned] {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .card-fan {
   --fan-card-width: clamp(3.6rem, 9vw, 5.2rem);
   --fan-card-height: calc(var(--fan-card-width) * 1.5);
-  order: 2;
-  /* Fill the column and scroll inside it, rather than growing to fit. */
+  /* A row of its own under the board, so a card is pulled up towards the
+     position it goes to and the board keeps its size. Fills the row and
+     scrolls inside it, rather than growing to fit. */
+  grid-column: 1 / -1;
   justify-self: stretch;
   width: 100%;
   min-width: 0;
@@ -397,10 +393,11 @@
     0 10px 24px rgba(0, 0, 0, 0.55);
 }
 
-.draw-experience[data-motion="animated"] .card-fan__card {
-  /* Backwards only: once open, a lift must transition, not be overridden. */
-  animation: fan-open 520ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  animation-delay: calc(var(--fan-order) * 5ms);
+/* The fan unfolds from its middle as one layer: one element animates, not
+   78, so opening stays smooth on slow phones. */
+.draw-experience[data-motion="animated"] .card-fan__track {
+  animation: fan-unfold 480ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  transform-origin: 50% 100%;
 }
 
 /* Drawn cards */
@@ -840,12 +837,10 @@
   }
 }
 
-/* Every card starts stacked in the middle of the fan and slides to its place. */
-@keyframes fan-open {
+@keyframes fan-unfold {
   from {
     opacity: 0;
-    transform: translate(calc(var(--fan-span) / 2 - var(--fan-x)), 1rem)
-      rotate(0deg);
+    transform: translateY(1rem) scaleX(0.12);
   }
 }
 

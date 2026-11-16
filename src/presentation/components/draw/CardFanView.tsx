@@ -224,7 +224,6 @@ const FanCard = memo(function FanCard({
     "--fan-x": `${placement.x}px`,
     "--fan-y": `${placement.y}px`,
     "--fan-rotate": `${placement.rotation}deg`,
-    "--fan-order": slot,
   } as CSSProperties;
   return (
     <button

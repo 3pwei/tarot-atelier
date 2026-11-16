@@ -1,5 +1,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { askMainQuestion, dealAll, reveal, slot } from "./support/spreadTable";
+import {
+  askMainQuestion,
+  chooseFirstCard,
+  fannedDeck,
+  pickAll,
+  reveal,
+  slot,
+} from "./support/spreadTable";
 
 // Each test deals and burns several cards; software-rendered CI browsers need headroom.
 test.describe.configure({ timeout: 90_000 });
@@ -155,7 +162,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   ).toBeVisible();
 
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
-  await dealAll(page, 3);
+  await pickAll(page, 3);
   for (const index of [3, 1, 2]) {
     await reveal(page, index);
     const card = await center(
@@ -259,7 +266,7 @@ test("the spread survives a page reload", async ({ page }) => {
   await page.getByRole("button", { name: "五張十字", exact: true }).click();
   await finishArranging(page);
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
-  await dealAll(page, 5);
+  await pickAll(page, 5);
   await reveal(page, 1);
   await page.waitForTimeout(400);
 
@@ -513,7 +520,7 @@ test("position numbers stay out of the way of dealt cards during play", async ({
   expect(empty.y).toBeGreaterThanOrEqual(card.y + card.height - 1);
 
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
-  await dealAll(page, 3);
+  await pickAll(page, 3);
   for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 
   await page.getByRole("button", { name: "編輯牌陣" }).click();
@@ -524,7 +531,7 @@ test("position numbers stay out of the way of dealt cards during play", async ({
 
 test("a revealed card opens large and fits the screen", async ({ page }) => {
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
-  await dealAll(page, 3);
+  await pickAll(page, 3);
   await reveal(page, 1);
 
   // A jumper may cover the middle of the main card, so open it by keyboard.
@@ -569,15 +576,15 @@ test("the table looks the same while shuffling and dealing, except for the cards
 
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
   await expectStill();
-  await expect(
-    page.getByRole("button", { name: /從牌堆發牌到/u }),
-  ).toBeVisible();
+  await expect(fannedDeck(page)).toBeVisible();
   expect(await sizeOf()).toEqual(before);
 
-  await page.getByRole("button", { name: /從牌堆發牌到/u }).click();
+  await chooseFirstCard(page);
+  await chooseFirstCard(page);
+  await chooseFirstCard(page);
   await expectStill();
-  // The last card leaves the deck last. Read in one step: while it is still
-  // flying, its position keeps both its frame and its number.
+  // Read in one step: while the last card is still flying, its position
+  // keeps both its frame and its number.
   const lastPosition = await slot(page, 3).evaluate((element) => {
     const card = element.querySelector("[data-draw-card='primary']");
     const number = element.querySelector(".spread-slot__handle");
@@ -600,7 +607,7 @@ test("the table looks the same while shuffling and dealing, except for the cards
   for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 });
 
-test("dealt cards fly in, land visible and numbers leave as each lands", async ({
+test("chosen cards fly in, land visible and numbers leave as each lands", async ({
   page,
 }) => {
   await expect(page.locator(".draw-experience")).toHaveAttribute(
@@ -610,7 +617,8 @@ test("dealt cards fly in, land visible and numbers leave as each lands", async (
   await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
 
   await page.getByRole("button", { name: "洗牌", exact: true }).click();
-  await page.getByRole("button", { name: /從牌堆發牌到/u }).click();
+  await expect(fannedDeck(page)).toBeVisible();
+  for (let picked = 0; picked < 3; picked += 1) await chooseFirstCard(page);
   // While the last card is still on its way, its position keeps its number.
   const last = await slot(page, 3).evaluate((element) => ({
     waiting: !element.hasAttribute("data-settled"),

@@ -376,40 +376,31 @@ export function DrawExperience({
           />
         </div>
 
-        <div
-          className="draw-table__stage spread-stage"
-          data-fanned={dealer.fan ? true : undefined}
-        >
-          {dealer.fan && dealer.next ? (
-            <CardFanView
-              deckId={deck.id}
-              fan={dealer.fan}
-              positionIndex={dealer.next.index}
-              onPick={dealer.pick}
-            />
-          ) : (
-            <DeckStack
-              remaining={dealer.remaining}
-              total={dealer.total}
-              canShuffle={dealer.canShuffle && abilities.canPlay}
-              holding={dealer.holding}
-              label={
-                dealer.canShuffle && abilities.canPlay
-                  ? "按住牌堆洗牌"
-                  : `牌堆：${status}`
-              }
-              hint={
-                arranging
-                  ? "編輯牌陣中，完成後才能洗牌"
+        <div className="draw-table__stage spread-stage">
+          <DeckStack
+            // While fanned out, the pack is on the table, not in the box.
+            remaining={dealer.fan ? 0 : dealer.remaining}
+            total={dealer.total}
+            canShuffle={dealer.canShuffle && abilities.canPlay}
+            holding={dealer.holding}
+            label={
+              dealer.canShuffle && abilities.canPlay
+                ? "按住牌堆洗牌"
+                : `牌堆：${status}`
+            }
+            hint={
+              arranging
+                ? "編輯牌陣中，完成後才能洗牌"
+                : dealer.fan
+                  ? "牌已攤開，請在下方選牌"
                   : dealer.holding
                     ? "放開後攤開牌"
                     : dealer.canShuffle
                       ? "按住牌堆洗牌"
                       : `${dealer.remaining} / ${dealer.total}`
-              }
-              hold={shuffleHold}
-            />
-          )}
+            }
+            hold={shuffleHold}
+          />
 
           <SpreadBoard
             spread={spread}
@@ -425,6 +416,15 @@ export function DrawExperience({
             onNudge={handleNudge}
             onRotate={handleRotate}
           />
+
+          {dealer.fan && dealer.next && (
+            <CardFanView
+              deckId={deck.id}
+              fan={dealer.fan}
+              positionIndex={dealer.next.index}
+              onPick={dealer.pick}
+            />
+          )}
         </div>
 
         <div className="spread-details">

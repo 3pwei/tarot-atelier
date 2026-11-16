@@ -58,7 +58,7 @@ Run this after creating or changing the preview project. It was last run on 2026
 | --- | -------------------------------------------------------------- | -------------------------------------------------------- |
 | 3   | Open the project URL `/`                                       | It redirects to `/tarot/`                                |
 | 4   | Look at the page                                               | Header, table and card library render; no missing images |
-| 5   | Shuffle → deal → reveal every card                             | The burn reveal works and 「牌陣已完成」 appears         |
+| 5   | Hold to shuffle → choose every card from the fan → reveal each | The burn reveal works and 「牌陣已完成」 appears         |
 | 6   | Open `/tarot/abc`                                              | The app's own 404 page, not a Cloudflare error           |
 | 7   | DevTools → Network → reload → first request → Response Headers | `X-Robots-Tag: noindex` is present                       |
 | 8   | DevTools → Console                                             | No errors; no failed `_next/` requests                   |
