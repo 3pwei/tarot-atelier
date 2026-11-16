@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { CardDefinition, Orientation } from "@/domain/deck/types";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 import { ProceduralFace } from "@/presentation/components/cards/ProceduralFace";
@@ -12,7 +12,11 @@ interface CardArtworkProps {
   readonly compact?: boolean;
 }
 
-export function CardArtwork({
+/**
+ * Card art is a large SVG tree that depends only on these props. Memoised so
+ * dragging or zooming the table does not rebuild every card on each move.
+ */
+export const CardArtwork = memo(function CardArtwork({
   card,
   side,
   orientation,
@@ -63,4 +67,4 @@ export function CardArtwork({
       )}
     </div>
   );
-}
+});

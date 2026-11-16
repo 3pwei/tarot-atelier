@@ -1,0 +1,134 @@
+/**
+ * Renders the library's card faces into small WebP images.
+ *
+ *   pnpm thumbnails
+ *
+ * It clears the manifest so the library draws its SVG art, builds the site,
+ * opens it in Chrome and captures each standard card. Set
+ * THUMBNAIL_BROWSER_CHANNEL=chrome to use an installed Chrome instead of
+ * Playwright's own browser. Commit the images and the manifest afterwards.
+ */
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { chromium, type Page } from "@playwright/test";
+import { startExportServer } from "../site/exportServer.ts";
+import { run } from "../site/process.ts";
+import { site } from "../site/siteConfig.ts";
+import {
+  artworkSourceHash,
+  CAPTURE_CSS_WIDTH,
+  CAPTURE_PIXEL_RATIO,
+  emptyManifest,
+  MANIFEST_PATH,
+  THUMBNAIL_PUBLIC_DIR,
+  thumbnailFileName,
+  WEBP_QUALITY,
+  type ThumbnailManifest,
+} from "./catalogThumbnails.ts";
+
+const CAPTURE_PORT = 4320;
+/** The card's own 1px border stays in CSS, so the capture leaves it out. */
+const BORDER_PX = 1;
+
+function writeManifest(manifest: ThumbnailManifest) {
+  writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
+/** Lays the grid out at the capture width so every face has the same size. */
+async function fixCatalogWidth(page: Page) {
+  await page.addStyleTag({
+    content: `.card-grid { grid-template-columns: repeat(4, calc(${CAPTURE_CSS_WIDTH}px + 0.9rem)) !important; }
+      .catalog-card, .catalog-card[aria-pressed="true"] { transform: none !important; transition: none !important; }`,
+  });
+}
+
+async function toWebp(page: Page, png: Buffer): Promise<Buffer> {
+  const dataUrl = await page.evaluate(
+    async ({ base64, quality }) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${base64}`;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      canvas.getContext("2d")?.drawImage(image, 0, 0);
+      return canvas.toDataURL("image/webp", quality);
+    },
+    { base64: png.toString("base64"), quality: WEBP_QUALITY },
+  );
+  const [, base64 = ""] = dataUrl.split(",");
+  return Buffer.from(base64, "base64");
+}
+
+async function capture(page: Page, outputDir: string) {
+  const cards: Record<string, string> = {};
+  let size = { width: 0, height: 0 };
+  const ids = await page
+    .locator(".catalog-card[data-card-id]")
+    .evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("data-card-id") ?? ""),
+    );
+  for (const id of ids) {
+    const art = page.locator(
+      `.catalog-card[data-card-id="${id}"] .card-artwork`,
+    );
+    await art.scrollIntoViewIfNeeded();
+    const box = await art.boundingBox();
+    if (!box) throw new Error(`Card ${id} is not visible in the library.`);
+    const png = await page.screenshot({
+      clip: {
+        x: box.x + BORDER_PX,
+        y: box.y + BORDER_PX,
+        width: box.width - BORDER_PX * 2,
+        height: box.height - BORDER_PX * 2,
+      },
+    });
+    const file = thumbnailFileName(id);
+    writeFileSync(path.join(outputDir, file), await toWebp(page, png));
+    cards[id] = file;
+    size = {
+      width: Math.round((box.width - BORDER_PX * 2) * CAPTURE_PIXEL_RATIO),
+      height: Math.round((box.height - BORDER_PX * 2) * CAPTURE_PIXEL_RATIO),
+    };
+  }
+  return { cards, size };
+}
+
+async function main() {
+  const outputDir = path.join("public", THUMBNAIL_PUBLIC_DIR);
+  writeManifest(emptyManifest());
+  rmSync(outputDir, { recursive: true, force: true });
+  mkdirSync(outputDir, { recursive: true });
+  run("pnpm", ["build"]);
+
+  const server = await startExportServer(site.exportDir, CAPTURE_PORT);
+  const browser = await chromium.launch({
+    channel: process.env.THUMBNAIL_BROWSER_CHANNEL,
+  });
+  try {
+    const page = await browser.newPage({
+      viewport: { width: 1600, height: 1000 },
+      deviceScaleFactor: CAPTURE_PIXEL_RATIO,
+      reducedMotion: "reduce",
+    });
+    await page.goto(`http://127.0.0.1:${CAPTURE_PORT}/`);
+    await page.evaluate(() => document.fonts.ready);
+    await fixCatalogWidth(page);
+    await page.mouse.move(0, 0);
+    const { cards, size } = await capture(page, outputDir);
+    writeManifest({
+      ...emptyManifest(),
+      sourceHash: artworkSourceHash((file) => readFileSync(file, "utf8")),
+      ...size,
+      cards,
+    });
+    console.log(
+      `Captured ${Object.keys(cards).length} thumbnails into ${outputDir}.`,
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+}
+
+await main();

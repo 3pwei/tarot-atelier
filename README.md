@@ -24,8 +24,7 @@
 - Next.js App Router、React、TypeScript strict
 - Tailwind CSS 與共用 CSS design tokens
 - Zustand（僅前端互動狀態）
-- GSAP（延遲載入時間軸）
-- Three.js / React Three Fiber（隔離、延遲載入的場景特效）
+- CSS keyframes（洗牌、發牌與標題進場動畫）
 - Vitest、React Testing Library、Playwright
 - ESLint、Prettier、GitHub Actions
 

@@ -8,6 +8,7 @@ import {
   type RefObject,
 } from "react";
 import type { TablePoint } from "@/domain/spread/types";
+import { createFrameCoalescer } from "@/presentation/components/spread/frameCoalescer";
 
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 2.5;
@@ -82,6 +83,8 @@ function distanceOf(points: readonly TablePoint[]): number {
 export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
   const [view, setView] = useState<BoardView>(IDENTITY);
   const gesture = useRef<Gesture | null>(null);
+  const panUpdates = useRef(createFrameCoalescer());
+  useEffect(() => () => panUpdates.current.cancel(), []);
   const latestView = useRef(view);
   useEffect(() => {
     latestView.current = view;
@@ -195,22 +198,26 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
           height,
         )
       : startView;
-    setView(
-      clampView(
-        {
-          ...base,
-          x: base.x + center.x - startCenter.x,
-          y: base.y + center.y - startCenter.y,
-        },
-        width,
-        height,
-      ),
+    const next = clampView(
+      {
+        ...base,
+        x: base.x + center.x - startCenter.x,
+        y: base.y + center.y - startCenter.y,
+      },
+      width,
+      height,
     );
+    panUpdates.current.schedule(() => {
+      latestView.current = next;
+      setView(next);
+    });
   };
 
   const onPointerEnd = (event: ReactPointerEvent<HTMLElement>) => {
     const current = gesture.current;
     if (!current) return;
+    // Re-anchoring below reads the view, so apply the last move first.
+    panUpdates.current.flush();
     current.pointers.delete(event.pointerId);
     if (current.pointers.size === 0) {
       gesture.current = null;

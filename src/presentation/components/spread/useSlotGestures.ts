@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -16,6 +17,7 @@ import {
   pointerAngle,
   rotationFromDrag,
 } from "@/presentation/components/spread/rotationGesture";
+import { useSlotPreview } from "@/presentation/components/spread/useSlotPreview";
 
 /** Pointer travel before a press becomes a drag instead of a click. */
 const DRAG_THRESHOLD_PX = 5;
@@ -72,8 +74,11 @@ export function useSlotGestures({
   const [rotating, setRotating] = useState(false);
   const suppressClick = useRef(false);
   const detach = useRef<() => void>(() => undefined);
+  const preview = useSlotPreview(slot, field);
   const latest = useRef({ position, onMove, onRotate, onHandleTap });
-  useEffect(() => {
+  // Before paint, so a gesture that starts right after a commit already
+  // sees the committed position.
+  useLayoutEffect(() => {
     latest.current = { position, onMove, onRotate, onHandleTap };
   });
   useEffect(() => () => detach.current(), []);
@@ -125,10 +130,24 @@ export function useSlotGestures({
       return;
     }
     session.turned = true;
-    latest.current.onRotate(
-      latest.current.position.id,
-      rotationFromDrag(session.startRotation, session.startAngle, angle),
+    const degrees = rotationFromDrag(
+      session.startRotation,
+      session.startAngle,
+      angle,
     );
+    preview.turn(degrees);
+  }
+
+  /** Hands a previewed move or turn to the spread, once. */
+  function commit() {
+    const {
+      position: current,
+      onMove: move,
+      onRotate: rotate,
+    } = latest.current;
+    const result = preview.take(current);
+    if (result.point) move(current.id, result.point);
+    if (result.rotation !== undefined) rotate(current.id, result.rotation);
   }
 
   function start(event: PointerEvent<HTMLElement>, fromHandle: boolean) {
@@ -180,7 +199,7 @@ export function useSlotGestures({
       if (element) element.dataset.dragging = "true";
       const next = relativePoint(move.clientX, move.clientY);
       if (!next) return;
-      latest.current.onMove(latest.current.position.id, {
+      preview.move(latest.current.position, {
         x: next.x - session.offset.x,
         y: next.y - session.offset.y,
       });
@@ -189,6 +208,8 @@ export function useSlotGestures({
     const onPointerEnd = (end: globalThis.PointerEvent) => {
       if (end.pointerId !== session.pointerId) return;
       if (timer) clearTimeout(timer);
+      // The gesture lands on the table before it is reported finished.
+      commit();
       const gestured = session.mode !== "pending";
       if (session.fromHandle && !session.turned && end.type === "pointerup") {
         latest.current.onHandleTap();
@@ -210,6 +231,7 @@ export function useSlotGestures({
     window.addEventListener("pointercancel", onPointerEnd);
     detach.current = () => {
       if (timer) clearTimeout(timer);
+      commit();
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerEnd);
       window.removeEventListener("pointercancel", onPointerEnd);

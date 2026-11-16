@@ -5,6 +5,7 @@ import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary"
 import type { CardDefinition, Orientation } from "@/domain/deck/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
 import { CardArtwork } from "@/presentation/components/CardArtwork";
+import { CatalogCardArt } from "@/presentation/components/library/CatalogCardArt";
 
 type CardFilter = "all" | "major" | "wands" | "cups" | "swords" | "pentacles";
 
@@ -196,15 +197,11 @@ export function DeckLibrary() {
                 data-testid="catalog-card"
                 type="button"
                 key={card.id}
+                data-card-id={card.id}
                 aria-pressed={selectedCard.id === card.id}
                 onClick={() => selectCard(card.id)}
               >
-                <CardArtwork
-                  card={card}
-                  side="face"
-                  orientation="upright"
-                  compact
-                />
+                <CatalogCardArt deckId={deck.id} card={card} />
                 <span className="catalog-card__name">{card.name.zhHant}</span>
                 <span className="catalog-card__english">{card.name.en}</span>
               </button>

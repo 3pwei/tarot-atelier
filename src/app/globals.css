@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./card-artwork.css";
 @import "./draw-experience.css";
 @import "./spread-table.css";
 @import "./reading-panel.css";
@@ -155,6 +156,34 @@ button:focus-visible {
   height: auto;
   margin: 0 auto 1.5rem;
   filter: drop-shadow(0 0 20px rgba(230, 197, 122, 0.3));
+}
+
+/* The hero rises in line by line once, on the compositor. */
+.hero-copy > [data-reveal] {
+  animation: hero-rise 850ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+.hero-copy > [data-reveal]:nth-child(2) {
+  animation-delay: 110ms;
+}
+
+.hero-copy > [data-reveal]:nth-child(3) {
+  animation-delay: 220ms;
+}
+
+.hero-copy > [data-reveal]:nth-child(4) {
+  animation-delay: 330ms;
+}
+
+.hero-copy > [data-reveal]:nth-child(5) {
+  animation-delay: 440ms;
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
 }
 
 .hero h1 {
@@ -399,91 +428,6 @@ button:focus-visible {
   margin-inline: auto;
 }
 
-.card-artwork {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 2 / 3;
-  overflow: hidden;
-  border: 1px solid rgba(248, 232, 181, 0.28);
-  border-radius: 6% / 4%;
-  background: #0b0a1a;
-  box-shadow:
-    0 1rem 2.8rem rgba(0, 0, 0, 0.45),
-    inset 0 0 0 0.25rem rgba(230, 197, 122, 0.08);
-  transition: transform 240ms ease;
-}
-
-.card-artwork--compact {
-  border-radius: 0.55rem;
-  box-shadow: 0 0.5rem 1.4rem rgba(0, 0, 0, 0.34);
-}
-
-.card-artwork--reversed {
-  transform: rotate(180deg);
-}
-
-.procedural-svg {
-  position: absolute;
-  display: block;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-/*
- * Kraft paper for procedural card faces: a warm base, short fibres, longer
- * streaks and speckle. The noise tiles are SVG data URIs, rasterised once by
- * the browser and reused by every card.
- */
-.card-artwork--kraft {
-  --kraft-fibres: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.18 0 0 0 0 0.08 0 0 0 1.4 -0.62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
-  --kraft-streaks: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.035 0.11' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.96 0 0 0 0 0.84 0 0 0 0 0.64 0 0 0 0.5 -0.22'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
-  border-color: rgba(90, 52, 22, 0.55);
-  background:
-    var(--kraft-fibres) 0 0 / 160px 160px,
-    var(--kraft-streaks) 0 0 / 220px 220px,
-    linear-gradient(160deg, #d3b083 0%, #c6a174 48%, #b58f63 100%);
-}
-
-.card-artwork__fallback {
-  position: absolute;
-  display: grid;
-  inset: 0;
-  place-items: center;
-}
-
-.card-artwork__fallback {
-  align-content: center;
-  gap: 0.3rem;
-  padding: 1rem;
-  color: #d9cfdf;
-  background: repeating-linear-gradient(
-    135deg,
-    #181625 0 0.7rem,
-    #12111e 0.7rem 1.4rem
-  );
-  text-align: center;
-}
-
-.card-artwork__fallback span {
-  color: var(--color-gold);
-  font-size: clamp(1.6rem, 5vw, 3rem);
-}
-
-.card-artwork__fallback strong {
-  font-family: var(--font-display);
-}
-
-.card-artwork__fallback small {
-  color: #aaa0ba;
-}
-
-.card-artwork__image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .segmented-control {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -705,23 +649,19 @@ button:focus-visible {
   text-align: center;
 }
 
-.atmosphere-canvas,
-.atmosphere-fallback {
-  position: absolute !important;
+/* A still glow behind the hero; painted once, so it costs nothing per frame. */
+.page-glow {
+  position: absolute;
   z-index: -1;
   inset: 0;
-  width: 100%;
   height: 48rem;
-  opacity: 0.34;
-  pointer-events: none;
-}
-
-.atmosphere-fallback {
   background: radial-gradient(
     circle at 50% 28%,
     rgba(114, 84, 163, 0.22),
     transparent 30rem
   );
+  opacity: 0.34;
+  pointer-events: none;
 }
 
 @media (max-width: 48rem) {
