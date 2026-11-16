@@ -306,6 +306,10 @@ export function useSpreadDealer({
       .filter((flight) => flight.role === "primary")
       .map((flight) => flight.positionId),
     canShuffle,
+    /** The pack stays on the table only while it still has positions to fill. */
+    deckOnTable: Boolean(next) && remaining > 0,
+    /** Starting over works at any moment but mid-wash or mid-flight. */
+    canClear: !loading && phase !== "shuffling" && flights.length === 0,
     layoutLocked:
       loading || phase === "shuffling" || picking || flights.length > 0,
     hold,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  PILE_CENTER,
   seededRandom,
   washPaths,
 } from "@/presentation/components/draw/tableWash";
@@ -25,9 +26,10 @@ describe("washPaths", () => {
     }
   });
 
-  it("gathers every card into a tidy pile in the middle", () => {
+  it("gathers every card into a tidy pile where the pack lies", () => {
     for (const card of washPaths(20, seededRandom(5))) {
-      expect(Math.abs(card.rest.x - 50)).toBeLessThanOrEqual(1.5);
+      expect(Math.abs(card.rest.x - PILE_CENTER.x)).toBeLessThanOrEqual(1.5);
+      expect(Math.abs(card.rest.y - PILE_CENTER.y)).toBeLessThanOrEqual(1.5);
       expect(Math.abs(card.rest.rotation)).toBeLessThanOrEqual(8);
     }
   });

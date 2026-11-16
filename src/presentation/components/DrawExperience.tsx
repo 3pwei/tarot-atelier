@@ -321,22 +321,6 @@ export function DrawExperience({
         </p>
 
         <div className="spread-setup">
-          <div className="draw-table__controls">
-            <button
-              className="shuffle-action"
-              type="button"
-              disabled={
-                !dealer.holding && (!dealer.canShuffle || !abilities.canPlay)
-              }
-              aria-describedby="shuffle-hold-hint"
-              {...shuffleHold}
-            >
-              洗牌
-            </button>
-            <span id="shuffle-hold-hint" className="sr-only">
-              按住在整張牌桌上洗牌，放開後收牌攤開；按一下洗一輪
-            </span>
-          </div>
           {arranging && (
             <TemplateShelf
               library={state.library}
@@ -372,6 +356,7 @@ export function DrawExperience({
             onZoomIn={viewport.zoomIn}
             onZoomOut={viewport.zoomOut}
             onZoomReset={viewport.reset}
+            canClear={dealer.canClear}
             onClear={session.clear}
           />
         </div>
@@ -399,6 +384,7 @@ export function DrawExperience({
                   washSeed={dealer.washSeed}
                   fan={dealer.fan}
                   nextPositionIndex={dealer.next?.index}
+                  onTable={dealer.deckOnTable}
                   remaining={dealer.remaining}
                   total={dealer.total}
                   canShuffle={dealer.canShuffle && abilities.canPlay}

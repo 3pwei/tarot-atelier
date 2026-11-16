@@ -1,6 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import { answerReadings, type EndpointAnswer } from "./support/readingEndpoint";
-import { askMainQuestion, pickAll, reveal } from "./support/spreadTable";
+import {
+  askMainQuestion,
+  deckPile,
+  pickAll,
+  reveal,
+} from "./support/spreadTable";
 
 // Deals and burns three cards before reading; software-rendered CI browsers need headroom.
 test.describe.configure({ timeout: 90_000 });
@@ -26,7 +31,7 @@ async function finishSpread(page: Page, answer: EndpointAnswer) {
     panel.getByRole("button", { name: "翻開所有牌後即可解讀" }),
   ).toBeDisabled();
 
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await pickAll(page, 3);
   for (const index of [1, 2, 3]) await reveal(page, index);
   await expect(page.getByText("牌陣已完成")).toBeVisible();

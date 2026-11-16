@@ -6,6 +6,11 @@ export function slot(page: Page, index: number): Locator {
   return page.locator(`[data-slot][data-index='${index}']`);
 }
 
+/** The pack in the middle of the table, which shuffles while held. */
+export function deckPile(page: Page): Locator {
+  return page.getByRole("button", { name: /^(按住牌堆洗牌|牌堆：)/u });
+}
+
 export function fannedDeck(page: Page): Locator {
   return page.getByRole("group", { name: /^扇形牌堆/u });
 }

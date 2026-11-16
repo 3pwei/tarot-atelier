@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { askMainQuestion, pickAll } from "./support/spreadTable";
+import { askMainQuestion, deckPile, pickAll } from "./support/spreadTable";
 
 test("deck library exposes 78 definitions and has no horizontal overflow", async ({
   page,
@@ -45,9 +45,8 @@ test("draw experience supports keyboard shuffle, choosing, and burn reveal", asy
   const drawnCount = await drawnCards.count();
   expect(drawnCount).toBeGreaterThanOrEqual(3);
   expect(drawnCount).toBeLessThanOrEqual(6);
-  await expect(
-    page.getByRole("button", { name: "洗牌", exact: true }),
-  ).toBeDisabled();
+  // Every position has its card: the rest of the deck leaves the table.
+  await expect(deckPile(page)).toBeHidden();
 
   const sealed = page.getByRole("button", { name: /^以火焰揭示牌位/u });
   for (let left = drawnCount; left > 0; left -= 1) {
@@ -69,7 +68,7 @@ test("pointer reveal burns away the card back from the touched point", async ({
 }) => {
   await page.goto("/");
   await askMainQuestion(page);
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await pickAll(page, 3);
 
   const card = page.getByRole("button", { name: "以火焰揭示牌位 1 主牌" });

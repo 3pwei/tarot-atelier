@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
+  deckPile,
   askMainQuestion,
   chooseFirstCard,
   fannedDeck,
@@ -161,7 +162,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
     page.getByRole("button", { name: /縮放 1.25 倍/u }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await pickAll(page, 3);
   for (const index of [3, 1, 2]) {
     await reveal(page, index);
@@ -235,9 +236,7 @@ test("custom spreads need questions and stop at twelve positions", async ({
     await page.getByLabel(/這個牌位的問題/u).fill(`第 ${index} 個問題`);
   }
   await saveAndFinishArranging(page, "十二張");
-  await expect(
-    page.getByRole("button", { name: "洗牌", exact: true }),
-  ).toBeEnabled();
+  await expect(deckPile(page)).toBeEnabled();
 
   await arrange(page);
   await handle(page, 12).focus();
@@ -265,7 +264,7 @@ test("the spread survives a page reload", async ({ page }) => {
   await arrange(page);
   await page.getByRole("button", { name: "五張十字", exact: true }).click();
   await finishArranging(page);
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await pickAll(page, 5);
   await reveal(page, 1);
   await page.waitForTimeout(400);
@@ -285,7 +284,6 @@ test("the spread survives a page reload", async ({ page }) => {
   await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible();
 
   await page.getByRole("button", { name: "清除本次牌陣" }).click();
-  await page.getByRole("button", { name: "確定清除" }).click();
   await expect(page.locator("[data-slot]")).toHaveCount(3);
   await expect(page.locator("[data-draw-card]")).toHaveCount(0);
 });
@@ -478,11 +476,12 @@ test("during play, dragging or holding a position never moves or rotates it", as
   page,
   isMobile,
 }) => {
-  const target = slot(page, 2);
-  const before = await relativePosition(page, 2);
+  // Position 1: the middle one lies under the deck until the cards are dealt.
+  const target = slot(page, 1);
+  const before = await relativePosition(page, 1);
   await dragBy(page, target, -40, -30, isMobile);
   const box = await target.boundingBox();
-  if (!box) throw new Error("slot 2 is not visible");
+  if (!box) throw new Error("slot 1 is not visible");
   const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   await sweep(
     page,
@@ -491,8 +490,8 @@ test("during play, dragging or holding a position never moves or rotates it", as
     { isMobile, holdMs: 700 },
   );
 
-  expect(await relativePosition(page, 2)).toEqual(before);
-  expect(await rotationOf(page, 2)).toBe(0);
+  expect(await relativePosition(page, 1)).toEqual(before);
+  expect(await rotationOf(page, 1)).toBe(0);
   await expect(page.getByRole("button", { name: /順時針轉 45°/u })).toHaveCount(
     0,
   );
@@ -502,13 +501,10 @@ test("during play, dragging or holding a position never moves or rotates it", as
     "data-arranging",
     "true",
   );
-  await expect(
-    page.getByRole("button", { name: "洗牌", exact: true }),
-  ).toBeDisabled();
+  // Arranging takes the deck off the table.
+  await expect(deckPile(page)).toHaveCount(0);
   await finishArranging(page);
-  await expect(
-    page.getByRole("button", { name: "洗牌", exact: true }),
-  ).toBeEnabled();
+  await expect(deckPile(page)).toBeEnabled();
 });
 
 test("position numbers stay out of the way of dealt cards during play", async ({
@@ -521,7 +517,7 @@ test("position numbers stay out of the way of dealt cards during play", async ({
   // A small numeral below the empty position, not a badge over it.
   expect(empty.y).toBeGreaterThanOrEqual(card.y + card.height - 1);
 
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await pickAll(page, 3);
   for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 
@@ -532,7 +528,7 @@ test("position numbers stay out of the way of dealt cards during play", async ({
 });
 
 test("a revealed card opens large and fits the screen", async ({ page }) => {
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await pickAll(page, 3);
   await reveal(page, 1);
 
@@ -576,7 +572,7 @@ test("the table looks the same while shuffling and dealing, except for the cards
   };
   const before = await sizeOf();
 
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await expectStill();
   await expect(fannedDeck(page)).toBeVisible();
   expect(await sizeOf()).toEqual(before);
@@ -618,7 +614,7 @@ test("chosen cards fly in, land visible and numbers leave as each lands", async 
   );
   await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
 
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await expect(fannedDeck(page)).toBeVisible();
   for (let picked = 0; picked < 3; picked += 1) await chooseFirstCard(page);
   // While the last card is still on its way, its position keeps its number.

@@ -85,9 +85,20 @@ function choose(slot: number) {
   fireEvent.keyDown(card, { key: "Enter" });
 }
 
+/** The pack in the middle of the table, which shuffles while held. */
+const DECK_PILE_NAME = /^(按住牌堆洗牌|牌堆：)/u;
+
+function deckPile() {
+  return screen.getByRole("button", { name: DECK_PILE_NAME });
+}
+
+function queryDeckPile() {
+  return screen.queryByRole("button", { name: DECK_PILE_NAME });
+}
+
 /** Shuffles, then chooses a card for each of `count` empty positions. */
 async function shuffleAndPick(count = 3) {
-  fireEvent.click(screen.getByRole("button", { name: "洗牌" }));
+  fireEvent.click(deckPile());
   await fannedDeck();
   for (let picked = 0; picked < count; picked += 1) {
     // A jumper takes a neighbour too, so choose whichever card is first.
@@ -170,7 +181,7 @@ describe("DrawExperience spread table", () => {
     renderTable();
     await ready();
 
-    fireEvent.click(screen.getByRole("button", { name: "洗牌" }));
+    fireEvent.click(deckPile());
     const fan = await fannedDeck();
     expect(fan.querySelectorAll("[data-fan-slot]")).toHaveLength(78);
     expect(
@@ -182,8 +193,8 @@ describe("DrawExperience spread table", () => {
     expect(slot(2).querySelectorAll("[data-draw-card]")).toHaveLength(0);
     expect(fan.querySelector('[data-fan-slot="40"]')).toBeNull();
     expect(screen.getByText(/^請選第 2 張（共 3 張）/u)).toBeInTheDocument();
-    // Shuffling again is not offered until every position has its card.
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    // The pack stays laid out on the wheel until every position has its card.
+    expect(queryDeckPile()).not.toBeInTheDocument();
 
     choose(3);
     choose(77);
@@ -198,7 +209,7 @@ describe("DrawExperience spread table", () => {
   it("lifts a fanned card first and draws only on the second Enter", async () => {
     renderTable();
     await ready();
-    fireEvent.click(screen.getByRole("button", { name: "洗牌" }));
+    fireEvent.click(deckPile());
     await fannedDeck();
     const card = document.querySelector<HTMLElement>('[data-fan-slot="10"]');
     if (!card) throw new Error("no fanned card in slot 10");
@@ -224,7 +235,7 @@ describe("DrawExperience spread table", () => {
     for (const card of cards) {
       expect(card).toHaveAttribute("data-reveal-state", "sealed");
     }
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    expect(deckPile()).toBeDisabled();
 
     reveal(3);
     reveal(1);
@@ -313,7 +324,7 @@ describe("DrawExperience spread table", () => {
     fireEvent.change(question, { target: { value: "   " } });
     saveAndFinishArranging("一張牌");
     // A blank question still blocks play after arranging.
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    expect(deckPile()).toBeDisabled();
 
     arrange();
     fireEvent.click(handle(1));
@@ -322,7 +333,7 @@ describe("DrawExperience spread table", () => {
     });
     saveAndFinishArranging("一張牌");
     await screen.findByText("準備好了，請洗牌");
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
+    expect(deckPile()).toBeEnabled();
   });
 
   it("allows at most 12 positions and explains the limit", async () => {
@@ -463,16 +474,16 @@ describe("DrawExperience spread table", () => {
     expect(
       await screen.findByText("請先輸入這次想問的主問題"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    expect(deckPile()).toBeDisabled();
     fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
       target: { value: "   " },
     });
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    expect(deckPile()).toBeDisabled();
     fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
       target: { value: "下個月的方向" },
     });
     expect(await screen.findByText("準備好了，請洗牌")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
+    expect(deckPile()).toBeEnabled();
   });
 
   it("never moves or rotates positions during play", async () => {
@@ -528,13 +539,14 @@ describe("DrawExperience spread table", () => {
     renderTable();
     await ready();
     arrange();
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeDisabled();
+    // Arranging takes the deck off the table.
+    expect(queryDeckPile()).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "完成編輯", pressed: true }),
     ).toBeInTheDocument();
 
     finishArranging();
-    expect(screen.getByRole("button", { name: "洗牌" })).toBeEnabled();
+    expect(deckPile()).toBeEnabled();
     await shuffleAndPick();
   });
 
@@ -612,13 +624,52 @@ describe("DrawExperience spread table", () => {
     expect(document.querySelectorAll("[data-slot]")).toHaveLength(3);
   });
 
-  it("clears the current spread after confirmation", async () => {
+  it("can start over while the wheel is laid out, before any card is chosen", async () => {
+    renderTable();
+    await ready();
+    fireEvent.click(deckPile());
+    await fannedDeck();
+
+    const restart = screen.getByRole("button", { name: "清除本次牌陣" });
+    expect(restart).toBeEnabled();
+    fireEvent.click(restart);
+
+    expect(
+      screen.queryByRole("group", { name: /^扇形牌堆/u }),
+    ).not.toBeInTheDocument();
+    // The whole spread starts over, the pack back in the middle.
+    expect(deckPile()).toBeInTheDocument();
+    expect(
+      await screen.findByText("已清除本次牌陣，重新從「經典三張」開始。"),
+    ).toBeInTheDocument();
+  });
+
+  it("takes the rest of the deck off the table once every position has its card", async () => {
+    renderTable();
+    await ready();
+    expect(deckPile().closest(".table-deck__pack")).not.toHaveAttribute(
+      "data-gone",
+    );
+    await shuffleAndPick();
+    expect(document.querySelector(".table-deck__pack")).toHaveAttribute(
+      "data-gone",
+    );
+  });
+
+  it("explains holding the pack to people using assistive technology", async () => {
+    renderTable();
+    await ready();
+    expect(deckPile()).toHaveAccessibleDescription(
+      /按住牌堆.*放開後收回中央攤開/u,
+    );
+  });
+
+  it("clears the current spread at once, without asking", async () => {
     const { storage } = renderTable();
     await ready();
     await shuffleAndPick();
 
     fireEvent.click(screen.getByRole("button", { name: "清除本次牌陣" }));
-    fireEvent.click(screen.getByRole("button", { name: "確定清除" }));
 
     expect(
       await screen.findByText("已清除本次牌陣，重新從「經典三張」開始。"),

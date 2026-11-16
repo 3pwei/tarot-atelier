@@ -1,7 +1,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { askMainQuestion, fannedDeck, slot } from "./support/spreadTable";
+import {
+  askMainQuestion,
+  deckPile,
+  fannedDeck,
+  slot,
+} from "./support/spreadTable";
 
-/** Hold to shuffle, then choose cards from the fanned deck by pulling them. */
+/** Hold the pack in the middle to wash, then choose cards from the wheel by pulling them. */
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -31,6 +36,48 @@ async function pull(page: Page, card: Locator, distance: number) {
   await page.mouse.up();
 }
 
+test("the deck lies in the middle of the table, with no separate shuffle button", async ({
+  page,
+}) => {
+  const board = await page.locator(".spread-board").boundingBox();
+  if (!board) throw new Error("the table is not visible");
+  const deck = await centreOf(deckPile(page));
+  expect(Math.abs(deck.x - (board.x + board.width / 2))).toBeLessThan(
+    board.width * 0.05,
+  );
+  expect(Math.abs(deck.y - (board.y + board.height / 2))).toBeLessThan(
+    board.height * 0.08,
+  );
+  await expect(
+    page.getByRole("button", { name: "洗牌", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("the wash glints while the deck is held", async ({ page }) => {
+  const at = await centreOf(deckPile(page));
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.down();
+  const glint = page.locator(".table-wash__card").first();
+  await expect(glint).toBeVisible();
+  const animation = await glint.evaluate(
+    (card) => getComputedStyle(card, "::after").animationName,
+  );
+  expect(animation).toBe("wash-glint");
+  await page.mouse.up();
+  await expect(fannedDeck(page)).toBeVisible();
+});
+
+test("starting over from the laid-out wheel needs no confirmation", async ({
+  page,
+}) => {
+  await deckPile(page).click();
+  await expect(fannedDeck(page)).toBeVisible();
+  await page.getByRole("button", { name: "清除本次牌陣" }).click();
+  await expect(fannedDeck(page)).toHaveCount(0);
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(deckPile(page)).toBeVisible();
+});
+
 test("holding the deck keeps shuffling until it is let go", async ({
   page,
 }) => {
@@ -51,7 +98,7 @@ test("holding the deck keeps shuffling until it is let go", async ({
 test("a lifted card pulled up and out goes to the next position", async ({
   page,
 }) => {
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   const card = fannedDeck(page).locator('[data-fan-slot="39"]');
   await card.scrollIntoViewIfNeeded();
 
@@ -66,10 +113,8 @@ test("a lifted card pulled up and out goes to the next position", async ({
   await expect(slot(page, 1).locator("[data-draw-card]")).not.toHaveCount(0);
   await expect(slot(page, 2).locator("[data-draw-card]")).toHaveCount(0);
   await expect(page.getByText(/^請選第 2 張（共 3 張）/u)).toBeVisible();
-  // No reshuffle until every position has its card.
-  await expect(
-    page.getByRole("button", { name: "洗牌", exact: true }),
-  ).toBeDisabled();
+  // No reshuffle until every position has its card: the pack is on the wheel.
+  await expect(deckPile(page)).toHaveCount(0);
 });
 
 test("a sideways drag turns the wheel on a narrow table", async ({
@@ -77,7 +122,7 @@ test("a sideways drag turns the wheel on a narrow table", async ({
   isMobile,
 }) => {
   test.skip(!isMobile, "the whole deck fits on a wide table");
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  await deckPile(page).click();
   await expect(fannedDeck(page)).toBeVisible();
   const wheel = page.locator(".card-wheel__wheel");
   const board = await page.locator(".spread-board").boundingBox();

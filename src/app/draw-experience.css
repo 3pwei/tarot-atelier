@@ -113,66 +113,6 @@
   max-width: 34rem;
 }
 
-.draw-table__controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.shuffle-action {
-  position: relative;
-  overflow: hidden;
-  min-width: 6.5rem;
-  min-height: 2.6rem;
-  padding: 0.5rem 1.4rem;
-  border: 1px solid rgba(251, 234, 184, 0.7);
-  border-radius: 999px;
-  color: #1a1206;
-  background: linear-gradient(135deg, #fbeab8, #e6c57a 45%, #b98a42);
-  box-shadow:
-    0 0.6rem 1.6rem rgba(230, 197, 122, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  cursor: pointer;
-  transition:
-    transform 160ms ease,
-    box-shadow 200ms ease,
-    opacity 200ms ease;
-}
-
-.shuffle-action::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.55) 50%,
-    transparent 65%
-  );
-  content: "";
-  transform: translateX(-120%);
-}
-
-.shuffle-action:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 0.8rem 2rem rgba(230, 197, 122, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.shuffle-action:not(:disabled):hover::after {
-  transform: translateX(120%);
-  transition: transform 700ms ease;
-}
-
-.shuffle-action:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-  filter: saturate(0.4);
-}
-
 /* ── Stage ───────────────────────────────────────────── */
 
 .draw-table__stage {
@@ -314,16 +254,30 @@
   pointer-events: none;
 }
 
+/* The pack lies in the middle of the cloth, where the wash gathers it. */
 .table-deck__pack {
   position: absolute;
-  right: 3cqw;
-  bottom: 5cqh;
+  top: calc(var(--table-pile-y) * 1cqh);
+  left: calc(var(--table-pile-x) * 1cqw);
   pointer-events: auto;
-  transition: opacity 240ms ease;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 240ms ease,
+    visibility 0s linear 0s;
 }
 
 .table-deck .deck-stack {
-  --deck-card-width: clamp(2.6rem, 8cqw, 5rem);
+  --deck-card-width: clamp(3.2rem, 10cqw, 6rem);
+}
+
+/* Every position has its card: the rest of the deck leaves the table. */
+.table-deck__pack[data-gone] {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 420ms ease,
+    visibility 0s linear 420ms;
 }
 
 .deck-stack__back {
@@ -350,7 +304,6 @@
   left: 0;
   width: clamp(2.4rem, 7cqw, 4.4rem);
   aspect-ratio: 2 / 3;
-  overflow: hidden;
   border-radius: 6% / 4%;
   box-shadow:
     0 0 0 1px rgba(251, 234, 184, 0.18),
@@ -367,12 +320,65 @@
   display: block;
   width: 100%;
   height: 100%;
+  border-radius: inherit;
 }
 
+/* Every third card catches a glint as it flies: enough to shimmer, few
+   enough to stay smooth on a throttled CPU (pnpm perf). No overflow clip on
+   the card, so the glint needs no mask layer. */
+.table-wash__card:nth-child(3n + 1)::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 30%,
+      rgba(255, 244, 214, 0.75) 50%,
+      transparent 70%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(230, 197, 122, 0.35),
+      transparent 70%
+    );
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* A soft light under the flying cards. */
+.table-wash::before {
+  position: absolute;
+  inset: 8% 12%;
+  background: radial-gradient(
+    closest-side,
+    rgba(230, 197, 122, 0.22),
+    rgba(140, 104, 196, 0.12) 55%,
+    transparent
+  );
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+
+.draw-experience[data-motion="animated"] .table-wash::before {
+  animation: wash-glow 2.4s ease-in-out infinite alternate;
+}
+
+/* Lifted off the cloth while flying; set down again in the pile. */
 .draw-experience[data-motion="animated"] .table-wash__card {
+  scale: 1.12;
   animation:
     wash-spill 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
     wash-wander var(--wash-loop) ease-in-out 420ms infinite alternate;
+}
+
+.draw-experience[data-motion="animated"]
+  .table-wash__card:nth-child(3n + 1)::after {
+  animation: wash-glint var(--wash-glint) ease-in-out
+    calc(var(--wash-order) * var(--wash-glint-step)) infinite;
 }
 
 /* Let go: every card sweeps from where it is into one pile in the middle. */
@@ -382,7 +388,19 @@
       calc(var(--wash-rest-y) * 1cqh - 50%)
     )
     rotate(var(--wash-rest-r));
-  transition: transform var(--gather-duration) cubic-bezier(0.3, 0.7, 0.2, 1);
+  scale: 1;
+  transition:
+    transform var(--gather-duration) cubic-bezier(0.3, 0.7, 0.2, 1),
+    scale var(--gather-duration) ease;
+}
+
+.table-wash[data-gathering] .table-wash__card::after {
+  animation: none;
+}
+
+.table-wash[data-gathering]::before {
+  animation: none;
+  opacity: 0;
 }
 
 .card-wheel {
@@ -884,10 +902,37 @@
   }
 }
 
-/* From the pack's corner out onto the cloth. */
+/* From the pack in the middle out onto the cloth. */
 @keyframes wash-spill {
   from {
-    transform: translate(calc(90cqw - 50%), calc(85cqh - 50%)) rotate(0deg);
+    transform: translate(
+        calc(var(--table-pile-x) * 1cqw - 50%),
+        calc(var(--table-pile-y) * 1cqh - 50%)
+      )
+      rotate(0deg);
+    scale: 1;
+  }
+}
+
+@keyframes wash-glint {
+  0%,
+  60%,
+  100% {
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+}
+
+@keyframes wash-glow {
+  from {
+    opacity: 0.55;
+  }
+
+  to {
+    opacity: 1;
   }
 }
 
@@ -968,7 +1013,6 @@
     gap: 1rem;
   }
 
-  .draw-table__controls,
   .draw-table__question {
     width: 100%;
     max-width: none;
@@ -982,10 +1026,6 @@
 @media (max-width: 28rem) {
   .draw-experience {
     --drawn-card-width: clamp(8rem, 40vw, 10rem);
-  }
-
-  .shuffle-action {
-    width: 100%;
   }
 }
 

@@ -8,6 +8,9 @@
 /** Cards drawn while washing. */
 export const WASH_CARD_COUNT = 24;
 
+/** Where the pack lies and the washed cards gather, in percent of the table. */
+export const PILE_CENTER = Object.freeze({ x: 50, y: 48 });
+
 /** A point on the table in percent of its width and height, with a tilt. */
 export interface WashPoint {
   readonly x: number;
@@ -60,8 +63,8 @@ export function washPaths(
     stops: [pointOnTable(random), pointOnTable(random), pointOnTable(random)],
     loopMs: Math.round(between(random, 1_400, 2_400)),
     rest: {
-      x: 50 + between(random, -1.5, 1.5),
-      y: 48 + between(random, -1.5, 1.5),
+      x: PILE_CENTER.x + between(random, -1.5, 1.5),
+      y: PILE_CENTER.y + between(random, -1.5, 1.5),
       rotation: between(random, -8, 8),
     },
   }));

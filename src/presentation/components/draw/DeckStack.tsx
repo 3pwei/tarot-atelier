@@ -1,4 +1,9 @@
-import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
+import {
+  useId,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 
 const MAX_EDGE_DEPTH_PX = 14;
@@ -36,6 +41,9 @@ function edgeShadow(remaining: number, total: number): string {
   return [...layers, `0 ${depth + 14}px 28px rgba(0, 0, 0, 0.55)`].join(", ");
 }
 
+const HOLD_HINT =
+  "按住牌堆，牌會在整張牌桌上飛舞洗牌，放開後收回中央攤開；按一下洗一輪。";
+
 /** The pack lying on the table: hold it down to wash the cards. */
 export function DeckStack({
   remaining,
@@ -46,6 +54,7 @@ export function DeckStack({
   backUrl,
   hold,
 }: DeckStackProps) {
+  const hintId = useId();
   const style = {
     "--deck-edge": edgeShadow(remaining, total),
   } as CSSProperties;
@@ -61,6 +70,7 @@ export function DeckStack({
         className="deck-stack__pile"
         disabled={!canShuffle && !holding}
         aria-label={label}
+        aria-describedby={hintId}
         style={style}
         {...hold}
       >
@@ -85,6 +95,9 @@ export function DeckStack({
           </span>
         )}
       </button>
+      <span id={hintId} className="sr-only">
+        {HOLD_HINT}
+      </span>
     </div>
   );
 }
