@@ -4,14 +4,16 @@ import {
   STANDARD_SLOT_WIDTH_CQW,
 } from "@/presentation/components/spread/boardGeometry";
 import {
-  cardsOnTier,
   PILE_CENTER,
   seededRandom,
+  VORTEX_LIFT_SPAN_MS,
   VORTEX_SPARK_COUNT,
   VORTEX_TIERS,
   vortexCards,
   vortexSparks,
 } from "@/presentation/components/draw/tableVortex";
+
+const cards = vortexCards(seededRandom(1), STANDARD_SLOT_WIDTH_CQW);
 
 describe("the vortex", () => {
   it("is a funnel: each ring lower, narrower and quicker than the one above", () => {
@@ -20,6 +22,7 @@ describe("the vortex", () => {
       expect(tier.y).toBeGreaterThan(above.y);
       expect(tier.radius).toBeLessThan(above.radius);
       expect(tier.turnMs).toBeLessThan(above.turnMs);
+      expect(tier.cardWidth).toBeLessThan(above.cardWidth);
     });
   });
 
@@ -32,33 +35,47 @@ describe("the vortex", () => {
     }
   });
 
-  it("spaces the cards on each ring evenly around it", () => {
-    const cards = vortexCards(seededRandom(1), STANDARD_SLOT_WIDTH_CQW);
+  it("holds twenty cards once every card is in the air", () => {
+    expect(cards).toHaveLength(20);
     VORTEX_TIERS.forEach((tier, index) => {
-      const ring = cards.filter((card) => card.tier === index);
-      expect(ring).toHaveLength(cardsOnTier(tier, STANDARD_SLOT_WIDTH_CQW));
-      expect(ring.map((card) => card.offsetMs)).toEqual(
-        ring.map((_, place) => Math.round((tier.turnMs * place) / ring.length)),
+      expect(cards.filter((card) => card.tier === index)).toHaveLength(
+        tier.cards,
       );
     });
   });
 
-  it("puts fewer of the larger cards in the air, at least one per ring", () => {
-    const standard = vortexCards(seededRandom(4), STANDARD_SLOT_WIDTH_CQW);
-    const large = vortexCards(seededRandom(4), LARGEST_SLOT_WIDTH_CQW);
-    expect(large.length).toBeLessThan(standard.length);
-    VORTEX_TIERS.forEach((tier, index) => {
-      expect(cardsOnTier(tier, LARGEST_SLOT_WIDTH_CQW)).toBeGreaterThanOrEqual(
-        1,
-      );
-      expect(large.filter((card) => card.tier === index).length).toBe(
-        cardsOnTier(tier, LARGEST_SLOT_WIDTH_CQW),
-      );
+  it("launches cards one after another, more and more, over a second and a half", () => {
+    const launches = cards.map((card) => card.launchMs);
+    expect(launches[0]).toBe(0);
+    expect(launches.at(-1)).toBe(VORTEX_LIFT_SPAN_MS);
+    launches.slice(1).forEach((launch, index) => {
+      expect(launch).toBeGreaterThan(launches[index]!);
     });
+  });
+
+  it("fills the rings together rather than one ring after another", () => {
+    const firstHalf = cards.slice(0, cards.length / 2);
+    VORTEX_TIERS.forEach((tier, index) => {
+      const early = firstHalf.filter((card) => card.tier === index).length;
+      expect(Math.abs(early - tier.cards / 2)).toBeLessThanOrEqual(1);
+    });
+  });
+
+  it("shrinks cards in the air to their ring's size, whatever their size on the table", () => {
+    for (const tableWidth of [
+      STANDARD_SLOT_WIDTH_CQW,
+      LARGEST_SLOT_WIDTH_CQW,
+    ]) {
+      for (const card of vortexCards(seededRandom(2), tableWidth)) {
+        const ring = VORTEX_TIERS[card.tier]!;
+        expect(card.airScale * tableWidth).toBeCloseTo(ring.cardWidth);
+        expect(card.airScale).toBeLessThan(1);
+      }
+    }
   });
 
   it("tilts cards only slightly", () => {
-    for (const card of vortexCards(seededRandom(2), STANDARD_SLOT_WIDTH_CQW)) {
+    for (const card of cards) {
       expect(Math.abs(card.tilt)).toBeLessThanOrEqual(24);
     }
   });

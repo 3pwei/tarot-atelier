@@ -8,7 +8,7 @@ import type { CSSProperties } from "react";
 /** A tap still washes the cards this long; holding the deck keeps going. */
 export const WASH_ROUND_MS = 1600;
 /** The washed cards sweep back into one pile in the middle of the table. */
-export const GATHER_MS = 520;
+export const GATHER_MS = 350;
 /** Time for a chosen card to fly from the wheel to its position. */
 export const FLIGHT_MS = 900;
 /** The jumper follows the chosen card this long after it. */

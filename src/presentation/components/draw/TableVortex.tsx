@@ -3,7 +3,9 @@
 import { useMemo, type CSSProperties } from "react";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 import {
+  PILE_CENTER,
   seededRandom,
+  VORTEX_CLIMB_MS,
   VORTEX_COMETS_PER_TIER,
   VORTEX_TIERS,
   VORTEX_TILT,
@@ -24,23 +26,19 @@ interface TableVortexProps {
 /** Faint outlines per tier, each a little inside the one before. */
 const RINGS_PER_TIER = [1.08, 0.86] as const;
 
-/**
- * Times into a turn for something on a ring: across goes from the left edge,
- * and up and down runs a quarter turn behind, so together they trace the
- * ellipse (sideways and up-and-down are two half-turn swings).
- */
-function orbitDelays(offsetMs: number, turnMs: number) {
+/** A point of light already partway round its ring when the vortex opens. */
+function cometDelay(comet: number, turnMs: number) {
   return {
-    "--orbit-delay": `${-offsetMs}ms`,
-    "--bob-delay": `${-(offsetMs + turnMs / 4)}ms`,
+    "--orbit-delay": `${-(turnMs * (comet + 0.5)) / VORTEX_COMETS_PER_TIER}ms`,
   };
 }
 
 /**
  * Cards circling upward in a funnel of golden light while the deck is held.
- * Each tier is an ellipse; cards and points of light ride it, facing the
- * viewer, the cards shrinking and dimming on the far side. Letting go closes
- * the whole funnel into the pile in the middle.
+ * One after another they leave the pile at full size, shrinking as they
+ * climb, and join their ring at its near side; each ring is an ellipse they
+ * ride facing the viewer, smaller and dimmer on the far side. Cards still
+ * waiting lie in the pile. Letting go closes the funnel into the pile.
  */
 export function TableVortex({
   cardWidth,
@@ -58,6 +56,7 @@ export function TableVortex({
     <div
       className="table-vortex"
       data-gathering={gathering || undefined}
+      style={{ "--climb-duration": `${VORTEX_CLIMB_MS}ms` } as CSSProperties}
       aria-hidden="true"
     >
       {VORTEX_TIERS.map((tier, tierIndex) => (
@@ -84,38 +83,38 @@ export function TableVortex({
             <span
               key={comet}
               className="table-vortex__orbit"
-              style={
-                orbitDelays(
-                  (tier.turnMs * (comet + 0.5)) / VORTEX_COMETS_PER_TIER,
-                  tier.turnMs,
-                ) as CSSProperties
-              }
+              style={cometDelay(comet, tier.turnMs) as CSSProperties}
             >
               <span className="table-vortex__comet" />
             </span>
           ))}
           {cards
             .filter((card) => card.tier === tierIndex)
-            .map((card, place) => (
+            .map((card) => (
               <span
-                key={place}
-                className="table-vortex__orbit"
+                key={card.launchMs}
+                className="table-vortex__lift"
                 style={
                   {
-                    ...orbitDelays(card.offsetMs, tier.turnMs),
+                    "--launch-delay": `${card.launchMs}ms`,
+                    "--orbit-delay": `${card.launchMs + VORTEX_CLIMB_MS}ms`,
+                    "--climb-from": PILE_CENTER.y - tier.y,
+                    "--air-scale": card.airScale,
                     "--card-tilt": `${card.tilt}deg`,
                   } as CSSProperties
                 }
               >
-                <span className="table-vortex__card">
-                  <span className="table-vortex__face">
-                    {backUrl ? (
-                      // A static export serves files as they are; next/image adds nothing.
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={backUrl} alt="" draggable={false} />
-                    ) : (
-                      <ProceduralBack label="" />
-                    )}
+                <span className="table-vortex__orbit">
+                  <span className="table-vortex__card">
+                    <span className="table-vortex__face">
+                      {backUrl ? (
+                        // A static export serves files as they are; next/image adds nothing.
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={backUrl} alt="" draggable={false} />
+                      ) : (
+                        <ProceduralBack label="" />
+                      )}
+                    </span>
                   </span>
                 </span>
               </span>

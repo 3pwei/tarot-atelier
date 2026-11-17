@@ -108,6 +108,35 @@ test("a touch on the pack does not lift or enlarge its top card", async ({
   ).toBe("none");
 });
 
+test("cards lift off the pile a few at a time until twenty are in the air", async ({
+  page,
+}) => {
+  const pile = await centreOf(deckPile(page));
+  await page.mouse.move(pile.x, pile.y);
+  await page.mouse.down();
+  // A card is in the air once its climb from the pile has begun.
+  const airborne = () =>
+    page
+      .locator(".table-vortex__lift")
+      .evaluateAll(
+        (lifts) =>
+          lifts.filter((lift) =>
+            lift
+              .getAnimations()
+              .some(
+                (climb) =>
+                  (climb.effect?.getComputedTiming().progress ?? 0) > 0,
+              ),
+          ).length,
+      );
+  await expect(page.locator(".table-vortex__card")).toHaveCount(20);
+  const early = await airborne();
+  expect(early).toBeLessThan(20);
+  await expect.poll(airborne, { timeout: 8_000 }).toBe(20);
+  await page.mouse.up();
+  await expect(fannedDeck(page)).toBeVisible();
+});
+
 test("starting over from the laid-out wheel needs no confirmation", async ({
   page,
 }) => {

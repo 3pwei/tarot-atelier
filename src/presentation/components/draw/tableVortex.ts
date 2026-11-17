@@ -1,14 +1,13 @@
 /**
- * The vortex shuffle: while the deck is held, cards lift off the pile and
- * circle upward in a funnel of golden light, wide at the top and narrow at
- * the bottom. A handful of cards stand in for the deck, so the motion stays
- * light; the real order is decided by the pile when the shuffle completes.
+ * The vortex shuffle: while the deck is held, cards lift off the pile one
+ * after another, more and more of them, and circle upward in a funnel of
+ * golden light, wide at the top and narrow at the bottom. Twenty cards stand
+ * in for the deck, so the motion stays light; the real order is decided by
+ * the pile when the shuffle completes.
  *
  * Every number here is a plain percentage of the table (x of its width,
  * y of its height) or a time, so the stylesheet can scale it with the table.
  */
-
-import { STANDARD_SLOT_WIDTH_CQW } from "@/presentation/components/spread/boardGeometry";
 
 /** Where the pack lies and the vortex gathers, in percent of the table. */
 export const PILE_CENTER = Object.freeze({ x: 50, y: 48 });
@@ -28,16 +27,27 @@ export interface VortexTier {
   readonly radius: number;
   /** One full turn. */
   readonly turnMs: number;
-  /** Cards circling on this ring. */
+  /** Cards circling on this ring once every card is in the air. */
   readonly cards: number;
+  /**
+   * How wide a card looks on this ring, in percent of the table's width:
+   * larger on the wide rings at the top, smaller towards the tip.
+   */
+  readonly cardWidth: number;
 }
 
 export const VORTEX_TIERS: readonly VortexTier[] = Object.freeze([
-  { y: 33, radius: 34, turnMs: 2_800, cards: 4 },
-  { y: 47, radius: 25, turnMs: 2_200, cards: 3 },
-  { y: 60, radius: 16, turnMs: 1_700, cards: 3 },
-  { y: 71, radius: 8, turnMs: 1_300, cards: 2 },
+  { y: 33, radius: 34, turnMs: 2_800, cards: 7, cardWidth: 9.5 },
+  { y: 47, radius: 25, turnMs: 2_200, cards: 6, cardWidth: 8 },
+  { y: 60, radius: 16, turnMs: 1_700, cards: 4, cardWidth: 6.5 },
+  { y: 71, radius: 8, turnMs: 1_300, cards: 3, cardWidth: 5 },
 ]);
+
+/** From the first card leaving the pile to the last. */
+export const VORTEX_LIFT_SPAN_MS = 1_500;
+
+/** One card's climb from the pile to its ring. */
+export const VORTEX_CLIMB_MS = 650;
 
 /** Points of light racing round each ring, ahead of the cards. */
 export const VORTEX_COMETS_PER_TIER = 3;
@@ -47,11 +57,13 @@ export const VORTEX_SPARK_COUNT = 24;
 
 export interface VortexCard {
   readonly tier: number;
+  /** When the card leaves the pile, after the deck is first held. */
+  readonly launchMs: number;
   /**
-   * Where on its ring the card starts, as a time into the ring's turn, so
-   * cards on one ring stay evenly spaced.
+   * How much the card shrinks in the air: its look on the ring over its size
+   * on the table, where it is as large as the positions.
    */
-  readonly offsetMs: number;
+  readonly airScale: number;
   /** A slight tilt of its own, so the cards do not look stamped. */
   readonly tilt: number;
 }
@@ -83,27 +95,44 @@ function between(random: () => number, low: number, high: number): number {
 }
 
 /**
- * Cards on a ring. The funnel is laid out for standard-size cards; larger
- * cards, which are as large as the positions, are fewer by their area, so the
- * funnel never covers the whole table. Every ring keeps at least one.
+ * Every card in the air, in the order they leave the pile. The rings fill
+ * together: the n-th card goes to the ring that is furthest behind its share,
+ * so each ring gains cards at its own steady pace. Launches are evenly spaced
+ * over `VORTEX_LIFT_SPAN_MS`, so more and more cards are flying until all of
+ * them are.
+ *
+ * @param tableCardWidth the cards' width on the table, in percent of its width.
  */
-export function cardsOnTier(tier: VortexTier, cardWidth: number): number {
-  const share = Math.min(1, (STANDARD_SLOT_WIDTH_CQW / cardWidth) ** 2);
-  return Math.max(1, Math.round(tier.cards * share));
-}
-
 export function vortexCards(
   random: () => number,
-  cardWidth: number,
+  tableCardWidth: number,
 ): readonly VortexCard[] {
-  return VORTEX_TIERS.flatMap((tier, tierIndex) => {
-    const count = cardsOnTier(tier, cardWidth);
-    return Array.from({ length: count }, (_, place) => ({
-      tier: tierIndex,
-      offsetMs: Math.round((tier.turnMs * place) / count),
+  const total = VORTEX_TIERS.reduce((sum, tier) => sum + tier.cards, 0);
+  const placed = VORTEX_TIERS.map(() => 0);
+  return Array.from({ length: total }, (_, order) => {
+    const tier = furthestBehind(placed);
+    placed[tier] = (placed[tier] ?? 0) + 1;
+    const ring = VORTEX_TIERS[tier]!;
+    return {
+      tier,
+      launchMs: Math.round(
+        total > 1 ? (VORTEX_LIFT_SPAN_MS * order) / (total - 1) : 0,
+      ),
+      airScale: ring.cardWidth / tableCardWidth,
       tilt: Math.round(between(random, -24, 24)),
-    }));
+    };
   });
+}
+
+/** The ring with the smallest share of its cards placed so far. */
+function furthestBehind(placed: readonly number[]): number {
+  let behind = 0;
+  VORTEX_TIERS.forEach((tier, index) => {
+    const share = (placed[index] ?? 0) / tier.cards;
+    const lowest = (placed[behind] ?? 0) / VORTEX_TIERS[behind]!.cards;
+    if (share < lowest) behind = index;
+  });
+  return behind;
 }
 
 /** Sparks stay inside the funnel's outline, from its rim to its tip. */

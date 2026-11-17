@@ -331,7 +331,8 @@
    positions, shrinking and dimming on the far side. Every motion is a
    transform or opacity. */
 .table-vortex {
-  --vortex-swing: cubic-bezier(0.37, 0, 0.63, 1);
+  --sine-out: cubic-bezier(0.61, 1, 0.88, 1);
+  --sine-in: cubic-bezier(0.12, 0, 0.39, 0);
 
   position: absolute;
   inset: 0;
@@ -377,21 +378,31 @@
     inset 0 0 10px rgba(255, 210, 130, 0.15);
 }
 
-/* Across the ring; the card inside swings up and down a quarter turn later. */
+/* Up from the pile to the near side of its ring, shrinking from its size on
+   the table to its size in the air. Until it leaves, it lies in the pile. */
+.table-vortex__lift {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Across the ring; the card inside swings up and down, a quarter turn apart.
+   Both start at the near side, where the card joins the ring. */
 .table-vortex__orbit {
   position: absolute;
   top: 0;
   left: 0;
-  transform: translateX(calc(var(--orbit-x) * -1));
 }
 
+/* As large as the positions on the table; scaled to its ring in the air. */
 .table-vortex__card {
   position: absolute;
   top: 0;
   left: 0;
   width: var(--slot-w);
   aspect-ratio: 2 / 3;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, calc(-50% + var(--orbit-y)))
+    scale(var(--air-scale, 1));
 }
 
 /* A point of light racing round the ring ahead of the cards. */
@@ -440,21 +451,29 @@
   opacity: 0;
 }
 
-.draw-experience[data-motion="animated"] .table-vortex {
-  animation: vortex-rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+/* The light comes up as the first cards leave; the cards bring themselves. */
+.draw-experience[data-motion="animated"] .table-vortex::before,
+.draw-experience[data-motion="animated"] .table-vortex__ring {
+  animation: vortex-light-up var(--climb-duration) ease-out both;
 }
 
-/* Two half-turn swings a quarter turn apart trace the ellipse; easing them
-   like a sine keeps the speed round the ring even. */
+.draw-experience[data-motion="animated"] .table-vortex__lift {
+  animation: vortex-climb var(--climb-duration) cubic-bezier(0.2, 0.7, 0.3, 1)
+    var(--launch-delay) both;
+}
+
+/* Two swings a quarter turn apart trace the ellipse; sine easing between the
+   quarter points keeps the speed round the ring even. Until a card's climb
+   ends they hold it at the near side. */
 .draw-experience[data-motion="animated"] .table-vortex__orbit {
-  animation: vortex-across calc(var(--tier-turn) / 2) var(--vortex-swing)
-    var(--orbit-delay) infinite alternate;
+  animation: vortex-across var(--tier-turn) linear var(--orbit-delay) infinite
+    backwards;
 }
 
 .draw-experience[data-motion="animated"] .table-vortex__card,
 .draw-experience[data-motion="animated"] .table-vortex__comet {
-  animation: vortex-bob calc(var(--tier-turn) / 2) var(--vortex-swing)
-    var(--bob-delay) infinite alternate;
+  animation: vortex-bob var(--tier-turn) linear var(--orbit-delay) infinite
+    backwards;
 }
 
 .draw-experience[data-motion="animated"] .table-vortex__spark {
@@ -469,10 +488,6 @@
   transition:
     opacity var(--gather-duration) ease-in,
     transform var(--gather-duration) cubic-bezier(0.5, 0, 0.75, 0.2);
-}
-
-.draw-experience[data-motion="animated"] .table-vortex[data-gathering] {
-  animation: none;
 }
 
 .card-wheel {
@@ -974,30 +989,65 @@
   }
 }
 
-/* The funnel rises out of the pile. */
-@keyframes vortex-rise {
+@keyframes vortex-light-up {
   from {
     opacity: 0;
-    transform: scale(0.08);
   }
 }
 
-@keyframes vortex-across {
-  to {
-    transform: translateX(var(--orbit-x));
-  }
-}
-
-/* Up at the far side, small and dim; down at the near side, full and bright. */
-@keyframes vortex-bob {
+/* From the pile, at full size, up to the near side of the ring. */
+@keyframes vortex-climb {
   from {
-    opacity: 0.6;
-    transform: translate(-50%, calc(-50% - var(--orbit-y))) scale(0.72);
+    transform: translateY(calc(var(--climb-from) * 1cqh - var(--orbit-y)))
+      scale(calc(1 / var(--air-scale)));
+  }
+}
+
+/* x = r·sin θ: from the middle out to one edge, back, to the other edge. */
+@keyframes vortex-across {
+  0%,
+  50% {
+    transform: translateX(0);
+    animation-timing-function: var(--sine-out);
   }
 
-  to {
+  25% {
+    transform: translateX(var(--orbit-x));
+    animation-timing-function: var(--sine-in);
+  }
+
+  75% {
+    transform: translateX(calc(var(--orbit-x) * -1));
+    animation-timing-function: var(--sine-in);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* y = r·cos θ: near side (low, large, bright) to far side (high, small, dim). */
+@keyframes vortex-bob {
+  0%,
+  100% {
     opacity: 1;
-    transform: translate(-50%, calc(-50% + var(--orbit-y))) scale(1);
+    transform: translate(-50%, calc(-50% + var(--orbit-y)))
+      scale(var(--air-scale, 1));
+    animation-timing-function: var(--sine-in);
+  }
+
+  25%,
+  75% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(calc(var(--air-scale, 1) * 0.86));
+    animation-timing-function: var(--sine-out);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: translate(-50%, calc(-50% - var(--orbit-y)))
+      scale(calc(var(--air-scale, 1) * 0.72));
+    animation-timing-function: var(--sine-in);
   }
 }
 
