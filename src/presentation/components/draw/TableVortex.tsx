@@ -12,6 +12,8 @@ import {
   PILE_CENTER,
   seededRandom,
   VORTEX_CLIMB_MS,
+  orbitStartMs,
+  VORTEX_SHOT_PAST,
   VORTEX_FIREFLY_DELAY_MS,
   VORTEX_TIERS,
   VORTEX_TILT,
@@ -70,6 +72,7 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
       style={
         {
           "--climb-duration": `${VORTEX_CLIMB_MS}ms`,
+          "--shot-past": VORTEX_SHOT_PAST,
           "--firefly-delay": `${VORTEX_FIREFLY_DELAY_MS}ms`,
         } as CSSProperties
       }
@@ -99,11 +102,12 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                   style={
                     {
                       "--launch-delay": `${card.launchMs}ms`,
-                      "--orbit-delay": `${card.launchMs + VORTEX_CLIMB_MS}ms`,
+                      "--orbit-delay": `${orbitStartMs(card.launchMs)}ms`,
                       "--climb-from": PILE_CENTER.y - tier.y,
                       "--air-scale": card.airScale,
                       "--radius-scale": card.radiusScale,
                       "--shift-x": card.shiftX,
+                      "--shot-slope": card.shotSlope,
                       "--shift-y": card.shiftY,
                       "--roll": `${card.roll}deg`,
                       "--tip": card.tip,
