@@ -97,9 +97,6 @@ export const HEAP_SCATTER = Object.freeze({
 /** Soft lights circling with the cards in the air, never on the table. */
 export const VORTEX_FIREFLY_COUNT = 8;
 
-/** Points of light drifting around the funnel. */
-export const VORTEX_SPARK_COUNT = 24;
-
 export interface VortexCard {
   readonly tier: number;
   /** When the card leaves the pile, after the deck is first held. */
@@ -150,13 +147,6 @@ export interface VortexFirefly {
   readonly radiusScale: number;
   /** Its size over the standard light's. */
   readonly size: number;
-}
-
-export interface VortexSpark {
-  readonly x: number;
-  readonly y: number;
-  /** Where in its twinkle the spark starts, from 0 to 1. */
-  readonly phase: number;
 }
 
 /**
@@ -269,26 +259,6 @@ export function vortexFireflies(
       offsetMs: Math.round(random() * VORTEX_TIERS[tier]!.turnMs),
       radiusScale: round2(between(random, 0.8, 1.15)),
       size: round2(between(random, 0.7, 1.2)),
-    };
-  });
-}
-
-/** Sparks drift inside the funnel's outline, on the table. */
-export function vortexSparks(random: () => number): readonly VortexSpark[] {
-  const top = VORTEX_TIERS[0];
-  const bottom = VORTEX_TIERS[VORTEX_TIERS.length - 1];
-  if (!top || !bottom) return [];
-  return Array.from({ length: VORTEX_SPARK_COUNT }, () => {
-    const y = between(random, top.y - 6, bottom.y + 6);
-    const along = (y - top.y) / (bottom.y - top.y);
-    const reach = top.radius + (bottom.radius - top.radius) * along + 4;
-    return {
-      x: Math.min(
-        96,
-        Math.max(4, PILE_CENTER.x + between(random, -reach, reach)),
-      ),
-      y,
-      phase: Math.round(random() * 100) / 100,
     };
   });
 }

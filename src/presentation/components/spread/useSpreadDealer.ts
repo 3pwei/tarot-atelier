@@ -373,6 +373,6 @@ export function dealerStatus(options: {
   if (blocker) return blocker;
   if (emptyCount === 0) return "牌陣已完成";
   if (remaining === 0) return "牌堆已用盡";
-  if (phase === "idle") return "準備好了，請洗牌";
-  return `請洗牌，再選 ${emptyCount} 張牌`;
+  if (phase === "idle") return "準備好了，按住牌桌洗牌";
+  return `按住牌桌洗牌，再選 ${emptyCount} 張牌`;
 }

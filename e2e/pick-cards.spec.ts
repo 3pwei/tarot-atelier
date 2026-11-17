@@ -184,6 +184,102 @@ test("holding the deck keeps shuffling until it is let go", async ({
   await expect(fannedDeck(page).locator("[data-fan-slot]")).toHaveCount(78);
 });
 
+type Point = { readonly x: number; readonly y: number };
+
+/** A point on the table, as shares of its width and height. */
+async function onTable(page: Page, share: Point): Promise<Point> {
+  const box = await page.locator(".spread-board").boundingBox();
+  if (!box) throw new Error("the table is not visible");
+  return { x: box.x + box.width * share.x, y: box.y + box.height * share.y };
+}
+
+/** Presses the table with one finger or the mouse, holds, and lets go. */
+async function pressTable(
+  page: Page,
+  at: Point,
+  holdMs: number,
+  isMobile: boolean,
+  whileHeld: () => Promise<void> = async () => undefined,
+) {
+  if (!isMobile) {
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    await page.waitForTimeout(holdMs);
+    await whileHeld();
+    await page.mouse.up();
+    return;
+  }
+  const client = await page.context().newCDPSession(page);
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [at],
+  });
+  await page.waitForTimeout(holdMs);
+  await whileHeld();
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+}
+
+test("holding anywhere on the table shuffles, not only the pack", async ({
+  page,
+  isMobile,
+}) => {
+  const corner = await onTable(page, { x: 0.08, y: 0.12 });
+  await pressTable(page, corner, 1_500, isMobile, async () => {
+    await expect(page.getByText("洗牌中，放開後收牌攤開")).toBeVisible();
+  });
+
+  await expect(fannedDeck(page)).toBeVisible();
+  await expect(fannedDeck(page).locator("[data-fan-slot]")).toHaveCount(78);
+});
+
+test("pressing a position before the shuffle shuffles instead of selecting it", async ({
+  page,
+  isMobile,
+}) => {
+  await pressTable(page, await centreOf(slot(page, 1)), 300, isMobile);
+
+  await expect(fannedDeck(page)).toBeVisible();
+  await expect(slot(page, 1)).not.toHaveAttribute("data-selected");
+});
+
+test("two fingers still pinch the table before the shuffle", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "only touch screens pinch with two fingers");
+  const client = await page.context().newCDPSession(page);
+  // Across the pack, where a pinch is most likely to start.
+  const middle = await onTable(page, { x: 0.5, y: 0.45 });
+  const fingers = (gap: number) => [
+    { x: middle.x - gap, y: middle.y, id: 1 },
+    { x: middle.x + gap, y: middle.y, id: 2 },
+  ];
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: fingers(30),
+  });
+  for (let gap = 40; gap <= 120; gap += 10) {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: fingers(gap),
+    });
+  }
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+
+  await expect(page.locator(".spread-board")).toHaveAttribute(
+    "data-zoomed",
+    "true",
+  );
+  await expect(page.getByText("準備好了，按住牌桌洗牌")).toBeVisible();
+  await expect(fannedDeck(page)).toHaveCount(0);
+});
+
 test("a lifted card pulled up and out goes to the next position", async ({
   page,
 }) => {

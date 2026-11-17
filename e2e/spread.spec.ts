@@ -492,6 +492,11 @@ test("during play, dragging or holding a position never moves or rotates it", as
   await expect(page.getByRole("button", { name: /順時針轉 45°/u })).toHaveCount(
     0,
   );
+  // Before the shuffle, pressing a position shuffles the deck instead.
+  await expect(fannedDeck(page)).toBeVisible();
+  // Starting over clears the question as well.
+  await page.getByRole("button", { name: "清除本次牌陣" }).click();
+  await askMainQuestion(page);
 
   await arrange(page);
   await expect(page.locator(".spread-board")).toHaveAttribute(
@@ -609,7 +614,7 @@ test("chosen cards fly in, land visible and numbers leave as each lands", async 
     "data-motion",
     "animated",
   );
-  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+  await expect(page.getByText("準備好了，按住牌桌洗牌")).toBeVisible();
 
   await deckPile(page).click();
   await expect(fannedDeck(page)).toBeVisible();

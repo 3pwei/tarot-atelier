@@ -9,11 +9,9 @@ import {
   VORTEX_LIFT_SPAN_MS,
   VORTEX_FIREFLY_COUNT,
   VORTEX_SCATTER,
-  VORTEX_SPARK_COUNT,
   VORTEX_TIERS,
   vortexCards,
   vortexFireflies,
-  vortexSparks,
 } from "@/presentation/components/draw/tableVortex";
 
 const cards = vortexCards(seededRandom(1));
@@ -157,21 +155,8 @@ describe("the vortex", () => {
 
   it("looks the same for the same seed", () => {
     expect(vortexCards(seededRandom(7))).toEqual(vortexCards(seededRandom(7)));
-    expect(vortexSparks(seededRandom(7))).toEqual(
-      vortexSparks(seededRandom(7)),
+    expect(vortexFireflies(seededRandom(7))).toEqual(
+      vortexFireflies(seededRandom(7)),
     );
-  });
-
-  it("keeps every spark on the table", () => {
-    const sparks = vortexSparks(seededRandom(3));
-    expect(sparks).toHaveLength(VORTEX_SPARK_COUNT);
-    for (const spark of sparks) {
-      expect(spark.x).toBeGreaterThan(0);
-      expect(spark.x).toBeLessThan(100);
-      expect(spark.y).toBeGreaterThan(0);
-      expect(spark.y).toBeLessThan(100);
-      expect(spark.phase).toBeGreaterThanOrEqual(0);
-      expect(spark.phase).toBeLessThanOrEqual(1);
-    }
   });
 });

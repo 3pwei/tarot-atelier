@@ -1,11 +1,13 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  type KeyboardEvent,
-  type PointerEvent,
-} from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
+
+/** What the deck itself listens to; pointers press the whole table. */
+export interface HoldHandlers {
+  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  readonly onKeyUp: (event: KeyboardEvent<HTMLElement>) => void;
+  readonly onClick: () => void;
+}
 
 interface HoldOptions {
   readonly enabled: boolean;
@@ -21,7 +23,10 @@ const HOLD_KEY = " ";
 /**
  * Press and hold to keep shuffling, by pointer or the space bar; a click or
  * Enter shuffles one round. Release is heard on the window, so letting go
- * outside the button still ends the shuffle.
+ * anywhere still ends the shuffle.
+ *
+ * `handlers` are the deck's keys and activation; `press` and `tap` let the
+ * surface the pointer presses, the whole table, start the same hold.
  */
 export function useHoldToShuffle({
   enabled,
@@ -60,19 +65,27 @@ export function useHoldToShuffle({
     latest.current.onHold();
   }
 
-  return {
-    onPointerDown(event: PointerEvent<HTMLElement>) {
-      if (event.button !== 0) return;
-      hold();
-      if (heldSince.current === undefined) return;
-      const end = () => release();
-      window.addEventListener("pointerup", end);
-      window.addEventListener("pointercancel", end);
-      detach.current = () => {
-        window.removeEventListener("pointerup", end);
-        window.removeEventListener("pointercancel", end);
-      };
-    },
+  /** Starts a hold that ends when any pointer is let go. */
+  function press() {
+    hold();
+    if (heldSince.current === undefined) return;
+    const end = () => release();
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    detach.current = () => {
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+    };
+  }
+
+  /** One round, as a quick tap or Enter gives. */
+  function tap() {
+    if (!enabled || heldSince.current !== undefined) return;
+    latest.current.onHold();
+    latest.current.onRelease(0);
+  }
+
+  const handlers: HoldHandlers = {
     onKeyDown(event: KeyboardEvent<HTMLElement>) {
       if (event.key !== HOLD_KEY || event.repeat) return;
       event.preventDefault();
@@ -89,9 +102,9 @@ export function useHoldToShuffle({
         swallowClick.current = false;
         return;
       }
-      if (!enabled) return;
-      latest.current.onHold();
-      latest.current.onRelease(0);
+      tap();
     },
   };
+
+  return { handlers, press, tap };
 }

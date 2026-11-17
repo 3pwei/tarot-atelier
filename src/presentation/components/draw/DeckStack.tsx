@@ -1,21 +1,9 @@
-import {
-  useId,
-  type CSSProperties,
-  type KeyboardEvent,
-  type PointerEvent,
-} from "react";
+import { useId, type CSSProperties } from "react";
+import type { HoldHandlers } from "@/presentation/components/draw/useHoldToShuffle";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 
 /** The full pack is this many 1px slices thick. */
 const MAX_EDGE_DEPTH_PX = 14;
-
-/** Press-and-hold handlers from useHoldToShuffle. */
-export interface HoldHandlers {
-  readonly onPointerDown: (event: PointerEvent<HTMLElement>) => void;
-  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
-  readonly onKeyUp: (event: KeyboardEvent<HTMLElement>) => void;
-  readonly onClick: () => void;
-}
 
 interface DeckStackProps {
   readonly remaining: number;
@@ -35,7 +23,7 @@ export function edgeSlices(remaining: number, total: number): number {
 }
 
 const HOLD_HINT =
-  "按住牌堆，牌會在整張牌桌上飛舞洗牌，放開後收回中央攤開；按一下洗一輪。";
+  "按住牌桌任何地方或牌堆，牌會在整張牌桌上飛舞洗牌，放開後收回並攤開；按一下洗一輪。";
 
 /** The pack lying on the table: hold it down to wash the cards. */
 export function DeckStack({

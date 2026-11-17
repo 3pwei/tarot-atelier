@@ -1,13 +1,22 @@
 "use client";
 
-import type { CSSProperties, ReactNode, RefObject } from "react";
+import type { CSSProperties, DOMAttributes, ReactNode, RefObject } from "react";
 import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { TableOrnament } from "@/presentation/components/draw/TableOrnament";
 import { FIELD_MARGIN_CQW } from "@/presentation/components/spread/boardGeometry";
 import { PositionSlot } from "@/presentation/components/spread/PositionSlot";
-import type { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
+import type { BoardView } from "@/presentation/components/spread/useBoardViewport";
 
-type Viewport = ReturnType<typeof useBoardViewport>;
+/** Pointer handlers for the table's background and anything pressed on it. */
+export type BoardGestures = Pick<
+  DOMAttributes<HTMLDivElement>,
+  | "onPointerDown"
+  | "onPointerDownCapture"
+  | "onPointerMove"
+  | "onPointerUp"
+  | "onPointerCancel"
+  | "onClickCapture"
+>;
 
 interface SpreadBoardProps {
   readonly spread: Spread;
@@ -20,7 +29,8 @@ interface SpreadBoardProps {
   readonly arrangeable: boolean;
   /** Positions whose dealt card has not landed yet. */
   readonly awaitingIds: readonly string[];
-  readonly viewport: Viewport;
+  readonly view: BoardView;
+  readonly gestures: BoardGestures;
   readonly viewportRef: RefObject<HTMLDivElement | null>;
   readonly fieldRef: RefObject<HTMLDivElement | null>;
   readonly renderCards: (position: SpreadPosition) => ReactNode;
@@ -55,7 +65,8 @@ export function SpreadBoard({
   selectedId,
   arrangeable,
   awaitingIds,
-  viewport,
+  view,
+  gestures,
   viewportRef,
   fieldRef,
   renderCards,
@@ -65,7 +76,6 @@ export function SpreadBoard({
   onRotate,
   overlay,
 }: SpreadBoardProps) {
-  const { view, gestureHandlers } = viewport;
   const canvasStyle = {
     transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
     "--slot-w": `${slotWidth}cqw`,
@@ -78,7 +88,7 @@ export function SpreadBoard({
       className="spread-board"
       data-zoomed={view.scale > 1 || undefined}
       data-arranging={arrangeable || undefined}
-      {...gestureHandlers}
+      {...gestures}
     >
       <div
         className="spread-board__canvas"

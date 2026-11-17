@@ -16,11 +16,10 @@ import {
   VORTEX_TILT,
   vortexCards,
   vortexFireflies,
-  vortexSparks,
 } from "@/presentation/components/draw/tableVortex";
 
 interface TableVortexProps {
-  /** A new value scatters the cards and sparks differently. */
+  /** A new value scatters the cards and lights differently. */
   readonly seed: number;
   /** True once the person has let go: the cards settle, swirl and leave. */
   readonly gathering: boolean;
@@ -55,7 +54,6 @@ function CardBack({ backUrl }: { readonly backUrl?: string }) {
  */
 export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
   const cards = useMemo(() => vortexCards(seededRandom(seed)), [seed]);
-  const sparks = useMemo(() => vortexSparks(seededRandom(seed + 1)), [seed]);
   const fireflies = useMemo(
     () => vortexFireflies(seededRandom(seed + 2)),
     [seed],
@@ -144,19 +142,6 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                 </span>
               ))}
           </div>
-        ))}
-        {sparks.map((spark, index) => (
-          <span
-            key={index}
-            className="table-vortex__spark"
-            style={
-              {
-                "--spark-x": spark.x,
-                "--spark-y": spark.y,
-                "--spark-phase": spark.phase,
-              } as CSSProperties
-            }
-          />
         ))}
       </div>
       {gathering && (

@@ -75,7 +75,7 @@ export async function askMainQuestion(
 ) {
   await expect(page.getByText("請先輸入這次想問的主問題")).toBeVisible();
   await page.getByRole("textbox", { name: /^主問題/u }).fill(question);
-  await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
+  await expect(page.getByText("準備好了，按住牌桌洗牌")).toBeVisible();
 }
 
 /**

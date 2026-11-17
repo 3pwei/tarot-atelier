@@ -79,6 +79,14 @@ function distanceOf(points: readonly TablePoint[]): number {
  * Zoom and pan for the spread table. The view is presentation-only: position
  * coordinates are stored relative to the table and never change with it.
  */
+export interface GestureOptions {
+  /**
+   * False while one finger belongs to something else, such as shuffling the
+   * deck: a single pointer then leaves the view alone, and two still pinch.
+   */
+  readonly canPan: boolean;
+}
+
 export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
   const [view, setView] = useState<BoardView>(IDENTITY);
   const gesture = useRef<Gesture | null>(null);
@@ -165,40 +173,42 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
     gesture.current = current;
   };
 
-  const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
-    const current = gesture.current;
-    if (!current?.pointers.has(event.pointerId)) return;
-    current.pointers.set(event.pointerId, localPoint(event));
-    const points = [...current.pointers.values()];
-    const center = centerOf(points);
-    const { width, height } = size();
-    const { startView, startCenter } = current;
-    const pinching = points.length >= 2 && current.startDistance > 0;
-    if (!pinching && startView.scale <= MIN_ZOOM) return;
+  const pointerMove =
+    ({ canPan }: GestureOptions) =>
+    (event: ReactPointerEvent<HTMLElement>) => {
+      const current = gesture.current;
+      if (!current?.pointers.has(event.pointerId)) return;
+      current.pointers.set(event.pointerId, localPoint(event));
+      const points = [...current.pointers.values()];
+      const center = centerOf(points);
+      const { width, height } = size();
+      const { startView, startCenter } = current;
+      const pinching = points.length >= 2 && current.startDistance > 0;
+      if (!pinching && (!canPan || startView.scale <= MIN_ZOOM)) return;
 
-    const base = pinching
-      ? zoomAround(
-          startView,
-          startView.scale * (distanceOf(points) / current.startDistance),
-          startCenter,
-          width,
-          height,
-        )
-      : startView;
-    const next = clampView(
-      {
-        ...base,
-        x: base.x + center.x - startCenter.x,
-        y: base.y + center.y - startCenter.y,
-      },
-      width,
-      height,
-    );
-    panUpdates.current.schedule(() => {
-      latestView.current = next;
-      setView(next);
-    });
-  };
+      const base = pinching
+        ? zoomAround(
+            startView,
+            startView.scale * (distanceOf(points) / current.startDistance),
+            startCenter,
+            width,
+            height,
+          )
+        : startView;
+      const next = clampView(
+        {
+          ...base,
+          x: base.x + center.x - startCenter.x,
+          y: base.y + center.y - startCenter.y,
+        },
+        width,
+        height,
+      );
+      panUpdates.current.schedule(() => {
+        latestView.current = next;
+        setView(next);
+      });
+    };
 
   const onPointerEnd = (event: ReactPointerEvent<HTMLElement>) => {
     const current = gesture.current;
@@ -219,11 +229,12 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
 
   return {
     view,
-    gestureHandlers: {
+    /** Handlers for the table's background, under the given options. */
+    gestureHandlers: (options: GestureOptions) => ({
       onPointerDown,
-      onPointerMove,
+      onPointerMove: pointerMove(options),
       onPointerUp: onPointerEnd,
       onPointerCancel: onPointerEnd,
-    },
+    }),
   };
 }

@@ -73,7 +73,7 @@ async function ready(mainQuestion = "這段時間的方向？") {
   fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
     target: { value: mainQuestion },
   });
-  await screen.findByText("準備好了，請洗牌");
+  await screen.findByText("準備好了，按住牌桌洗牌");
 }
 
 /** The fanned deck, once a shuffle has finished. */
@@ -336,7 +336,7 @@ describe("DrawExperience spread table", () => {
       target: { value: "我該把力氣放在哪裡？" },
     });
     saveAndFinishArranging("一張牌");
-    await screen.findByText("準備好了，請洗牌");
+    await screen.findByText("準備好了，按住牌桌洗牌");
     expect(deckPile()).toBeEnabled();
   });
 
@@ -486,7 +486,9 @@ describe("DrawExperience spread table", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
       target: { value: "下個月的方向" },
     });
-    expect(await screen.findByText("準備好了，請洗牌")).toBeInTheDocument();
+    expect(
+      await screen.findByText("準備好了，按住牌桌洗牌"),
+    ).toBeInTheDocument();
     expect(deckPile()).toBeEnabled();
   });
 
@@ -671,12 +673,26 @@ describe("DrawExperience spread table", () => {
     expect(pressed.defaultPrevented).toBe(true);
   });
 
-  it("explains holding the pack to people using assistive technology", async () => {
+  it("explains holding the table to people using assistive technology", async () => {
     renderTable();
     await ready();
     expect(deckPile()).toHaveAccessibleDescription(
-      /按住牌堆.*放開後收回中央攤開/u,
+      /按住牌桌任何地方或牌堆.*放開後收回並攤開/u,
     );
+  });
+
+  it("shuffles while a position on the table is held, without selecting it", async () => {
+    renderTable();
+    await ready();
+    const position = document.querySelector<HTMLElement>("[data-slot]");
+    if (!position) throw new Error("the table has no positions");
+
+    fireEvent.pointerDown(position, { button: 0, pointerId: 1 });
+    expect(await screen.findByText("洗牌中，放開後收牌攤開")).toBeVisible();
+    fireEvent.pointerUp(window, { button: 0, pointerId: 1 });
+    fireEvent.click(position);
+
+    expect(position).not.toHaveAttribute("data-selected");
   });
 
   it("lays out any spread in the library straight from play, without editing", async () => {

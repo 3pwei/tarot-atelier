@@ -2,10 +2,8 @@
 
 import type { CardFan } from "@/presentation/components/draw/cardFan";
 import { CardWheelView } from "@/presentation/components/draw/CardWheelView";
-import {
-  DeckStack,
-  type HoldHandlers,
-} from "@/presentation/components/draw/DeckStack";
+import { DeckStack } from "@/presentation/components/draw/DeckStack";
+import type { HoldHandlers } from "@/presentation/components/draw/useHoldToShuffle";
 import { TableVortex } from "@/presentation/components/draw/TableVortex";
 import {
   PILE_CENTER,
@@ -95,10 +93,10 @@ export function TableDeck({
           onPick={onPick}
         />
       ) : (
-        // Stays mounted while washing: the held key or pointer belongs to it.
+        // Stays mounted while washing: the held key belongs to it. Pointers
+        // press through to the table, which holds the same shuffle.
         <div
           className="table-deck__pack"
-          data-own-gesture
           data-gone={onTable ? undefined : true}
         >
           <DeckStack

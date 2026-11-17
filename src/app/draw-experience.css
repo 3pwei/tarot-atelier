@@ -564,18 +564,6 @@
   animation: firefly-heading var(--tier-turn) linear var(--orbit-delay) infinite;
 }
 
-.table-vortex__spark {
-  position: absolute;
-  top: calc(var(--spark-y) * 1cqh);
-  left: calc(var(--spark-x) * 1cqw);
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: #fff1c8;
-  box-shadow: 0 0 6px 1px rgba(255, 214, 140, 0.8);
-  opacity: 0;
-}
-
 /* The light comes up as the first cards leave; the cards bring themselves. */
 .draw-experience[data-motion="animated"] .table-vortex__whirl::before {
   animation: vortex-light-up var(--climb-duration) ease-out both;
@@ -610,11 +598,6 @@
   animation: vortex-front calc(var(--tier-turn) * 2) step-end
     calc(var(--orbit-delay) - var(--flip-phase) * 2 * var(--tier-turn)) infinite
     backwards;
-}
-
-.draw-experience[data-motion="animated"] .table-vortex__spark {
-  animation: vortex-twinkle 1.6s ease-in-out calc(var(--spark-phase) * -1.6s)
-    infinite;
 }
 
 /* Letting go, however long the deck was held: every card comes down flat
@@ -1457,17 +1440,6 @@
 
   100% {
     transform: translateY(-50%) rotate(-360deg);
-  }
-}
-
-@keyframes vortex-twinkle {
-  0%,
-  100% {
-    opacity: 0;
-  }
-
-  50% {
-    opacity: 1;
   }
 }
 
