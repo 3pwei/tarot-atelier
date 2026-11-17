@@ -53,18 +53,35 @@ test("the deck lies in the middle of the table, with no separate shuffle button"
   ).toHaveCount(0);
 });
 
-test("the wash glints while the deck is held", async ({ page }) => {
+test("holding the deck lifts its cards into a vortex of cards as large as the positions", async ({
+  page,
+}) => {
   const at = await centreOf(deckPile(page));
+  const slotWidth = (await slot(page, 1).boundingBox())?.width ?? 0;
   await page.mouse.move(at.x, at.y);
   await page.mouse.down();
-  const glint = page.locator(".table-wash__card").first();
-  await expect(glint).toBeVisible();
-  const animation = await glint.evaluate(
-    (card) => getComputedStyle(card, "::after").animationName,
-  );
-  expect(animation).toBe("wash-glint");
+  const card = page.locator(".table-vortex__card").first();
+  await expect(card).toBeVisible();
+  // Each card swings across its ring and, inside that, up and down.
+  expect(
+    await card.evaluate(
+      (node) =>
+        `${getComputedStyle(node.parentElement!).animationName} ${getComputedStyle(node).animationName}`,
+    ),
+  ).toBe("vortex-across vortex-bob");
+  // Same deck, same card size: in the air as on the table.
+  const cardWidth = await page
+    .locator(".table-vortex__card")
+    .first()
+    .evaluate((node) => (node as HTMLElement).offsetWidth);
+  expect(Math.abs(cardWidth - slotWidth)).toBeLessThanOrEqual(2);
   await page.mouse.up();
   await expect(fannedDeck(page)).toBeVisible();
+  const wheelCardWidth = await fannedDeck(page)
+    .locator("[data-fan-slot]")
+    .first()
+    .evaluate((node) => (node as HTMLElement).offsetWidth);
+  expect(Math.abs(wheelCardWidth - slotWidth)).toBeLessThanOrEqual(2);
 });
 
 test("starting over from the laid-out wheel needs no confirmation", async ({

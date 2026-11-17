@@ -254,7 +254,7 @@
   pointer-events: none;
 }
 
-/* The pack lies in the middle of the cloth, where the wash gathers it. */
+/* The pack lies in the middle of the cloth, where the vortex gathers it. */
 .table-deck__pack {
   position: absolute;
   top: calc(var(--table-pile-y) * 1cqh);
@@ -266,8 +266,9 @@
     visibility 0s linear 0s;
 }
 
+/* The pack is as large as the positions' cards, like every card it holds. */
 .table-deck .deck-stack {
-  --deck-card-width: clamp(3.2rem, 10cqw, 6rem);
+  --deck-card-width: var(--slot-w);
 }
 
 /* Every position has its card: the rest of the deck leaves the table. */
@@ -286,121 +287,173 @@
   height: 100%;
 }
 
-/* Washing: the pack's cards are out on the cloth. It stays mounted, and
+/* Washing: the pack's cards are up in the vortex. It stays mounted, and
    focusable, because the held key or pointer belongs to it. */
 .table-deck[data-washing] .table-deck__pack {
   opacity: 0;
 }
 
-/* Positions step back while the cards are washed over them. */
+/* The vortex closes into it: the pile forms again in the middle. */
+.table-deck[data-gathering] .table-deck__pack {
+  opacity: 1;
+  transition: opacity var(--gather-duration) ease-out;
+}
+
+/* Positions step back while the cards circle over them. */
 .draw-experience[data-phase="shuffling"] .spread-slot {
   opacity: 0.3;
   transition: opacity 300ms ease;
 }
 
-.table-wash__card {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: clamp(2.4rem, 7cqw, 4.4rem);
-  aspect-ratio: 2 / 3;
-  border-radius: 6% / 4%;
-  box-shadow:
-    0 0 0 1px rgba(251, 234, 184, 0.18),
-    0 6px 14px rgba(0, 0, 0, 0.5);
-  transform: translate(
-      calc(var(--wash-a-x) * 1cqw - 50%),
-      calc(var(--wash-a-y) * 1cqh - 50%)
-    )
-    rotate(var(--wash-a-r));
-}
+/* ── Vortex ──
+   Holding the pack lifts its cards into a funnel of golden light: flattened
+   rings, wide at the top and narrow at the bottom, each turning faster than
+   the one above. Cards ride the rings facing the viewer, the same size as the
+   positions, shrinking and dimming on the far side. Every motion is a
+   transform or opacity. */
+.table-vortex {
+  --vortex-swing: cubic-bezier(0.37, 0, 0.63, 1);
 
-.table-wash__card img,
-.table-wash__card .procedural-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-}
-
-/* Every third card catches a glint as it flies: enough to shimmer, few
-   enough to stay smooth on a throttled CPU (pnpm perf). No overflow clip on
-   the card, so the glint needs no mask layer. */
-.table-wash__card:nth-child(3n + 1)::after {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  background:
-    linear-gradient(
-      115deg,
-      transparent 30%,
-      rgba(255, 244, 214, 0.75) 50%,
-      transparent 70%
-    ),
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(230, 197, 122, 0.35),
-      transparent 70%
-    );
-  content: "";
-  opacity: 0;
-  pointer-events: none;
+  transform-origin: calc(var(--table-pile-x) * 1%)
+    calc(var(--table-pile-y) * 1%);
 }
 
-/* A soft light under the flying cards. */
-.table-wash::before {
+/* A soft light under the funnel. */
+.table-vortex::before {
   position: absolute;
-  inset: 8% 12%;
+  inset: 10% 14% 14%;
   background: radial-gradient(
     closest-side,
     rgba(230, 197, 122, 0.22),
-    rgba(140, 104, 196, 0.12) 55%,
+    rgba(140, 104, 196, 0.1) 60%,
     transparent
   );
   content: "";
+}
+
+.table-vortex__tier {
+  --orbit-x: calc(var(--tier-radius) * 1cqw);
+  --orbit-y: calc(var(--tier-radius) * var(--vortex-tilt) * 1cqw);
+
+  position: absolute;
+  top: calc(var(--tier-y) * 1cqh);
+  left: calc(var(--table-pile-x) * 1cqw);
+  width: 0;
+  height: 0;
+}
+
+/* The ring's faint outline: an ellipse, painted once. */
+.table-vortex__ring {
+  position: absolute;
+  top: calc(var(--orbit-y) * -1 * var(--ring-scale));
+  left: calc(var(--orbit-x) * -1 * var(--ring-scale));
+  width: calc(var(--orbit-x) * 2 * var(--ring-scale));
+  height: calc(var(--orbit-y) * 2 * var(--ring-scale));
+  border: 1.5px solid rgba(255, 220, 150, 0.35);
+  border-radius: 50%;
+  box-shadow:
+    0 0 10px rgba(255, 210, 130, 0.25),
+    inset 0 0 10px rgba(255, 210, 130, 0.15);
+}
+
+/* Across the ring; the card inside swings up and down a quarter turn later. */
+.table-vortex__orbit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(calc(var(--orbit-x) * -1));
+}
+
+.table-vortex__card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--slot-w);
+  aspect-ratio: 2 / 3;
+  transform: translate(-50%, -50%);
+}
+
+/* A point of light racing round the ring ahead of the cards. */
+.table-vortex__comet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff8e6;
+  box-shadow:
+    0 0 6px 2px rgba(255, 214, 140, 0.9),
+    0 0 18px 6px rgba(255, 200, 110, 0.35);
+  transform: translate(-50%, -50%);
+}
+
+.table-vortex__face {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  border-radius: 6% / 4%;
+  box-shadow:
+    0 0 0 1px rgba(251, 234, 184, 0.35),
+    0 0 14px rgba(255, 210, 120, 0.45);
+  rotate: var(--card-tilt);
+}
+
+.table-vortex__face img,
+.table-vortex__face .procedural-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.table-vortex__spark {
+  position: absolute;
+  top: calc(var(--spark-y) * 1cqh);
+  left: calc(var(--spark-x) * 1cqw);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff1c8;
+  box-shadow: 0 0 6px 1px rgba(255, 214, 140, 0.8);
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 400ms ease;
 }
 
-.draw-experience[data-motion="animated"] .table-wash::before {
-  animation: wash-glow 2.4s ease-in-out infinite alternate;
+.draw-experience[data-motion="animated"] .table-vortex {
+  animation: vortex-rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-/* Lifted off the cloth while flying; set down again in the pile. */
-.draw-experience[data-motion="animated"] .table-wash__card {
-  scale: 1.12;
-  animation:
-    wash-spill 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
-    wash-wander var(--wash-loop) ease-in-out 420ms infinite alternate;
+/* Two half-turn swings a quarter turn apart trace the ellipse; easing them
+   like a sine keeps the speed round the ring even. */
+.draw-experience[data-motion="animated"] .table-vortex__orbit {
+  animation: vortex-across calc(var(--tier-turn) / 2) var(--vortex-swing)
+    var(--orbit-delay) infinite alternate;
 }
 
-.draw-experience[data-motion="animated"]
-  .table-wash__card:nth-child(3n + 1)::after {
-  animation: wash-glint var(--wash-glint) ease-in-out
-    calc(var(--wash-order) * var(--wash-glint-step)) infinite;
+.draw-experience[data-motion="animated"] .table-vortex__card,
+.draw-experience[data-motion="animated"] .table-vortex__comet {
+  animation: vortex-bob calc(var(--tier-turn) / 2) var(--vortex-swing)
+    var(--bob-delay) infinite alternate;
 }
 
-/* Let go: every card sweeps from where it is into one pile in the middle. */
-.table-wash[data-gathering] .table-wash__card {
-  transform: translate(
-      calc(var(--wash-rest-x) * 1cqw - 50%),
-      calc(var(--wash-rest-y) * 1cqh - 50%)
-    )
-    rotate(var(--wash-rest-r));
-  scale: 1;
+.draw-experience[data-motion="animated"] .table-vortex__spark {
+  animation: vortex-twinkle 1.6s ease-in-out calc(var(--spark-phase) * -1.6s)
+    infinite;
+}
+
+/* Letting go closes the funnel into the pile in the middle. */
+.table-vortex[data-gathering] {
+  opacity: 0;
+  transform: scale(0.08);
   transition:
-    transform var(--gather-duration) cubic-bezier(0.3, 0.7, 0.2, 1),
-    scale var(--gather-duration) ease;
+    opacity var(--gather-duration) ease-in,
+    transform var(--gather-duration) cubic-bezier(0.5, 0, 0.75, 0.2);
 }
 
-.table-wash[data-gathering] .table-wash__card::after {
+.draw-experience[data-motion="animated"] .table-vortex[data-gathering] {
   animation: none;
-}
-
-.table-wash[data-gathering]::before {
-  animation: none;
-  opacity: 0;
 }
 
 .card-wheel {
@@ -902,63 +955,41 @@
   }
 }
 
-/* From the pack in the middle out onto the cloth. */
-@keyframes wash-spill {
+/* The funnel rises out of the pile. */
+@keyframes vortex-rise {
   from {
-    transform: translate(
-        calc(var(--table-pile-x) * 1cqw - 50%),
-        calc(var(--table-pile-y) * 1cqh - 50%)
-      )
-      rotate(0deg);
-    scale: 1;
-  }
-}
-
-@keyframes wash-glint {
-  0%,
-  60%,
-  100% {
     opacity: 0;
-  }
-
-  30% {
-    opacity: 1;
+    transform: scale(0.08);
   }
 }
 
-@keyframes wash-glow {
+@keyframes vortex-across {
+  to {
+    transform: translateX(var(--orbit-x));
+  }
+}
+
+/* Up at the far side, small and dim; down at the near side, full and bright. */
+@keyframes vortex-bob {
   from {
-    opacity: 0.55;
+    opacity: 0.6;
+    transform: translate(-50%, calc(-50% - var(--orbit-y))) scale(0.72);
   }
 
   to {
     opacity: 1;
+    transform: translate(-50%, calc(-50% + var(--orbit-y))) scale(1);
   }
 }
 
-@keyframes wash-wander {
-  0% {
-    transform: translate(
-        calc(var(--wash-a-x) * 1cqw - 50%),
-        calc(var(--wash-a-y) * 1cqh - 50%)
-      )
-      rotate(var(--wash-a-r));
+@keyframes vortex-twinkle {
+  0%,
+  100% {
+    opacity: 0;
   }
 
   50% {
-    transform: translate(
-        calc(var(--wash-b-x) * 1cqw - 50%),
-        calc(var(--wash-b-y) * 1cqh - 50%)
-      )
-      rotate(var(--wash-b-r));
-  }
-
-  100% {
-    transform: translate(
-        calc(var(--wash-c-x) * 1cqw - 50%),
-        calc(var(--wash-c-y) * 1cqh - 50%)
-      )
-      rotate(var(--wash-c-r));
+    opacity: 1;
   }
 }
 

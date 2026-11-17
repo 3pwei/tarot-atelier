@@ -1,17 +1,9 @@
 "use client";
 
-import {
-  useMemo,
-  type CSSProperties,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
 import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { TableOrnament } from "@/presentation/components/draw/TableOrnament";
-import {
-  FIELD_MARGIN_CQW,
-  slotWidthFor,
-} from "@/presentation/components/spread/boardGeometry";
+import { FIELD_MARGIN_CQW } from "@/presentation/components/spread/boardGeometry";
 import { PositionSlot } from "@/presentation/components/spread/PositionSlot";
 import type { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
 
@@ -19,6 +11,8 @@ type Viewport = ReturnType<typeof useBoardViewport>;
 
 interface SpreadBoardProps {
   readonly spread: Spread;
+  /** Card width as a percentage of the table's width. */
+  readonly slotWidth: number;
   readonly selectedId?: string;
   /** Positions may be moved and rotated. */
   readonly arrangeable: boolean;
@@ -54,6 +48,7 @@ export function visibleCenter(
 
 export function SpreadBoard({
   spread,
+  slotWidth,
   selectedId,
   arrangeable,
   awaitingIds,
@@ -68,10 +63,6 @@ export function SpreadBoard({
   overlay,
 }: SpreadBoardProps) {
   const { view, gestureHandlers } = viewport;
-  const slotWidth = useMemo(
-    () => slotWidthFor(spread.positions),
-    [spread.positions],
-  );
   const canvasStyle = {
     transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
     "--slot-w": `${slotWidth}cqw`,

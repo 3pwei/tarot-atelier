@@ -9,10 +9,6 @@ import type { CSSProperties } from "react";
 export const WASH_ROUND_MS = 1600;
 /** The washed cards sweep back into one pile in the middle of the table. */
 export const GATHER_MS = 520;
-/** One glint sweeping over a flying card. */
-export const WASH_GLINT_MS = 1800;
-/** Each card's glint starts this much after the one before, so they twinkle in turn. */
-export const WASH_GLINT_STEP_MS = 137;
 /** Time for a chosen card to fly from the wheel to its position. */
 export const FLIGHT_MS = 900;
 /** The jumper follows the chosen card this long after it. */
@@ -42,8 +38,6 @@ export function landingDelayMs(role: FlightRole): number {
 export function motionTimingStyle(): CSSProperties {
   return {
     "--gather-duration": `${GATHER_MS}ms`,
-    "--wash-glint": `${WASH_GLINT_MS}ms`,
-    "--wash-glint-step": `${WASH_GLINT_STEP_MS}ms`,
     "--flight-duration": `${FLIGHT_MS}ms`,
     "--jumper-delay": `${JUMPER_DELAY_MS}ms`,
   } as CSSProperties;

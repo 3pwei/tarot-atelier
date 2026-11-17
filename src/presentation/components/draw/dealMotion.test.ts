@@ -3,8 +3,6 @@ import {
   FLIGHT_MS,
   JUMPER_DELAY_MS,
   GATHER_MS,
-  WASH_GLINT_MS,
-  WASH_GLINT_STEP_MS,
   WASH_ROUND_MS,
   motionTimingStyle,
   landingDelayMs,
@@ -153,8 +151,6 @@ describe("motionTimingStyle", () => {
   it("hands every wash and flight timing to the stylesheet", () => {
     expect(motionTimingStyle()).toEqual({
       "--gather-duration": `${GATHER_MS}ms`,
-      "--wash-glint": `${WASH_GLINT_MS}ms`,
-      "--wash-glint-step": `${WASH_GLINT_STEP_MS}ms`,
       "--flight-duration": `${FLIGHT_MS}ms`,
       "--jumper-delay": `${JUMPER_DELAY_MS}ms`,
     });

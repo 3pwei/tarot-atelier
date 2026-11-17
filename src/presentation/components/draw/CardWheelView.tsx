@@ -18,7 +18,6 @@ import {
 } from "@/presentation/components/draw/cardFan";
 import {
   cardAngle,
-  NUDGE_PX,
   PULL_OUT_PX,
   turnByDrag,
   turnToShow,
@@ -44,6 +43,8 @@ const TAP_SLOP_PX = 6;
 
 interface CardWheelViewProps {
   readonly fan: CardFan;
+  /** Card width as a percentage of the table's width, as on the positions. */
+  readonly cardWidth: number;
   readonly backUrl?: string;
   /** Number of the position the chosen card goes to. */
   readonly positionIndex: number;
@@ -90,6 +91,7 @@ interface WheelHandlers {
  */
 export function CardWheelView({
   fan,
+  cardWidth,
   backUrl,
   positionIndex,
   onPick,
@@ -99,8 +101,13 @@ export function CardWheelView({
   const wheel = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const layout = useMemo(
-    () => wheelLayout({ ...size, count: fan.size }),
-    [size, fan.size],
+    () =>
+      wheelLayout({
+        ...size,
+        count: fan.size,
+        cardWidth: (size.width * cardWidth) / 100,
+      }),
+    [size, fan.size, cardWidth],
   );
   const open = openSlots(fan);
   const [chosen, setChosen] = useState<number | undefined>();
@@ -265,7 +272,7 @@ export function CardWheelView({
     "--wheel-y": `${layout.centerY}px`,
     "--wheel-radius": `${layout.radius}px`,
     "--wheel-card-width": `${layout.cardWidth}px`,
-    "--nudge": `${NUDGE_PX}px`,
+    "--nudge": `${layout.nudge}px`,
   } as CSSProperties;
 
   return (

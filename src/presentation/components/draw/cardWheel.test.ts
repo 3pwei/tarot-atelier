@@ -1,19 +1,52 @@
 import { describe, expect, it } from "vitest";
 import {
   CARD_SPACING_PX,
+  CARD_SPACING_SHARE,
   cardAngle,
+  NUDGE_SHARE,
+  VISIBLE_SHARE,
   clampTurn,
   turnByDrag,
   turnToShow,
   wheelLayout,
 } from "@/presentation/components/draw/cardWheel";
 
-const desktop = wheelLayout({ width: 1100, height: 733, count: 78 });
-const phone = wheelLayout({ width: 340, height: 227, count: 78 });
+/** Cards as wide as the positions: 14% of the table. */
+const desktop = wheelLayout({
+  width: 1100,
+  height: 733,
+  count: 78,
+  cardWidth: 154,
+});
+const phone = wheelLayout({
+  width: 340,
+  height: 227,
+  count: 78,
+  cardWidth: 48,
+});
+const fewCards = wheelLayout({
+  width: 1100,
+  height: 733,
+  count: 12,
+  cardWidth: 154,
+});
 
 describe("wheelLayout", () => {
-  it("fits the whole deck on a wide table, so the wheel never turns", () => {
-    expect(desktop.maxTurn).toBe(0);
+  it("draws its cards exactly as large as the positions' cards", () => {
+    expect(desktop.cardWidth).toBe(154);
+    expect(desktop.cardHeight).toBe(231);
+  });
+
+  it("fits a short arc whole, so the wheel never turns", () => {
+    expect(fewCards.maxTurn).toBe(0);
+  });
+
+  it("turns on a wide table too once full-size cards no longer fit", () => {
+    expect(desktop.maxTurn).toBeGreaterThan(0);
+  });
+
+  it("slides a chosen card forward by a share of its height", () => {
+    expect(desktop.nudge).toBeCloseTo(desktop.cardHeight * NUDGE_SHARE);
   });
 
   it("lets a narrow table turn the wheel to reach every card", () => {
@@ -29,13 +62,20 @@ describe("wheelLayout", () => {
     expect(rim).toBeCloseTo(CARD_SPACING_PX);
   });
 
-  it("lays the arc's top card along the bottom edge, fully on the table", () => {
-    const topCardCentre = phone.centerY - phone.radius;
+  it("lets larger cards show a little more of themselves", () => {
+    const rim = (desktop.step * Math.PI * desktop.radius) / 180;
 
-    expect(topCardCentre + phone.cardHeight / 2).toBeLessThanOrEqual(227);
-    expect(topCardCentre - phone.cardHeight / 2).toBeGreaterThan(
-      227 - phone.cardHeight * 1.2,
-    );
+    expect(rim).toBeCloseTo(desktop.cardWidth * CARD_SPACING_SHARE);
+  });
+
+  it("shows the upper part of the arc's top card above the bottom edge", () => {
+    for (const [layout, height] of [
+      [phone, 227],
+      [desktop, 733],
+    ] as const) {
+      const topEdge = layout.centerY - layout.radius - layout.cardHeight / 2;
+      expect(height - topEdge).toBeCloseTo(layout.cardHeight * VISIBLE_SHARE);
+    }
   });
 });
 
@@ -53,6 +93,6 @@ describe("turning the wheel", () => {
   });
 
   it("does not turn a wheel that already shows every card", () => {
-    expect(turnByDrag(desktop, 0, 300)).toBe(0);
+    expect(turnByDrag(fewCards, 0, 300)).toBe(0);
   });
 });

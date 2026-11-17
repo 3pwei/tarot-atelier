@@ -7,14 +7,23 @@
 
 /** Horizontal room each card shows of itself, so a fingertip can find it. */
 export const CARD_SPACING_PX = 13;
-/** How far a chosen card slides forward out of the wheel. */
-export const NUDGE_PX = 10;
+/** Larger cards show a little more of themselves, as a share of their width. */
+export const CARD_SPACING_SHARE = 0.12;
+/** How far a chosen card slides forward out of the wheel, of its height. */
+export const NUDGE_SHARE = 0.08;
+/**
+ * The wheel's cards are as large as the positions, so the wheel lies along
+ * the table's bottom edge with only this much of its top card showing.
+ */
+export const VISIBLE_SHARE = 0.55;
 /** How far a chosen card must be pulled forward to leave the wheel. */
 export const PULL_OUT_PX = 48;
 
 export interface WheelLayout {
   readonly cardWidth: number;
   readonly cardHeight: number;
+  /** How far the chosen card slides forward. */
+  readonly nudge: number;
   /** Distance from the wheel's centre to each card's centre. */
   readonly radius: number;
   /** The centre, relative to the table's top left corner. */
@@ -30,12 +39,14 @@ export function wheelLayout(options: {
   readonly width: number;
   readonly height: number;
   readonly count: number;
+  /** Width of every card, the same as the positions' cards, in pixels. */
+  readonly cardWidth: number;
 }): WheelLayout {
-  const { width, height, count } = options;
-  const cardWidth = Math.min(70, Math.max(34, width * 0.07));
+  const { width, height, count, cardWidth } = options;
   const cardHeight = cardWidth * 1.5;
   const radius = Math.max(260, width * 0.85);
-  const step = toDegrees(CARD_SPACING_PX / radius);
+  const spacing = Math.max(CARD_SPACING_PX, cardWidth * CARD_SPACING_SHARE);
+  const step = toDegrees(spacing / radius);
   const span = Math.max(0, count - 1) * step;
   // Angles still on the table, less a card's width at either edge.
   const visibleHalf =
@@ -44,10 +55,11 @@ export function wheelLayout(options: {
   return {
     cardWidth,
     cardHeight,
+    nudge: cardHeight * NUDGE_SHARE,
     radius,
     centerX: width / 2,
-    // The arc's top card sits just inside the table's bottom edge.
-    centerY: height - cardHeight * 0.55 + radius,
+    // The arc's top card shows its upper part above the table's bottom edge.
+    centerY: height - cardHeight * VISIBLE_SHARE + cardHeight / 2 + radius,
     step,
     maxTurn: Math.max(0, span / 2 - Math.max(0, visibleHalf)),
   };

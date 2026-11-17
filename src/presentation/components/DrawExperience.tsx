@@ -24,6 +24,7 @@ import {
 import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { TableDeck } from "@/presentation/components/draw/TableDeck";
+import { slotWidthFor } from "@/presentation/components/spread/boardGeometry";
 import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
 import { cardBackUrl } from "@/presentation/components/library/prerenderedArt";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
@@ -129,6 +130,11 @@ export function DrawExperience({
   const session = useSpreadSession(deck, storage, templateStorage, createId);
   const { state, dispatch, generation } = session;
   const { spread, revealedInstanceIds, selectedId } = state;
+  // One card size for the whole deck: positions, pile, vortex and wheel.
+  const slotWidth = useMemo(
+    () => slotWidthFor(spread.positions),
+    [spread.positions],
+  );
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef);
   const motionMode = useMotionMode();
@@ -371,6 +377,7 @@ export function DrawExperience({
         <div className="draw-table__stage spread-stage">
           <SpreadBoard
             spread={spread}
+            slotWidth={slotWidth}
             selectedId={selectedId}
             arrangeable={abilities.canArrange}
             awaitingIds={dealer.awaitingIds}
@@ -385,6 +392,7 @@ export function DrawExperience({
             overlay={
               arranging ? undefined : (
                 <TableDeck
+                  cardWidth={slotWidth}
                   shuffling={dealer.phase === "shuffling"}
                   holding={dealer.holding}
                   gathering={dealer.gathering}
