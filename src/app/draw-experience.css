@@ -308,8 +308,22 @@
   height: 100%;
 }
 
-/* The pack stays in the middle while its cards fly off the top of it, its
-   glow still: a glow growing under the moving cards is redrawn every frame. */
+/* The pack stays in the middle while its cards fly off the top of it, and is
+   gone once the last of them has left; letting go gathers it again. */
+.draw-experience[data-motion="animated"]
+  .table-deck[data-washing]
+  .table-deck__pack {
+  animation: pile-emptied 1ms linear var(--vortex-lift-span) both;
+}
+
+.draw-experience[data-motion="animated"]
+  .table-deck[data-gathering]
+  .table-deck__pack {
+  animation: pile-gathered var(--gather-duration) ease-out both;
+}
+
+/* Its glow stays still while washing: a glow growing under the moving cards
+   is redrawn every frame. */
 .table-deck[data-washing] .deck-stack__pile::before {
   animation: none;
   opacity: 0;
@@ -1096,6 +1110,18 @@
 
   100% {
     transform: translateY(-50%) rotate(-360deg);
+  }
+}
+
+@keyframes pile-emptied {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pile-gathered {
+  from {
+    opacity: 0;
   }
 }
 

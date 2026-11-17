@@ -7,7 +7,10 @@ import {
   type HoldHandlers,
 } from "@/presentation/components/draw/DeckStack";
 import { TableVortex } from "@/presentation/components/draw/TableVortex";
-import { PILE_CENTER } from "@/presentation/components/draw/tableVortex";
+import {
+  PILE_CENTER,
+  VORTEX_LIFT_SPAN_MS,
+} from "@/presentation/components/draw/tableVortex";
 import type { CSSProperties } from "react";
 
 interface TableDeckProps {
@@ -64,6 +67,7 @@ export function TableDeck({
     "--table-pile-x": PILE_CENTER.x,
     "--table-pile-y": PILE_CENTER.y,
     "--slot-w": `${cardWidth}cqw`,
+    "--vortex-lift-span": `${VORTEX_LIFT_SPAN_MS}ms`,
   } as CSSProperties;
   return (
     <div
