@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
   askMainQuestion,
-  dealAll,
+  chooseFirstCard,
+  fannedDeck,
   reveal,
   slot,
 } from "../e2e/support/spreadTable";
@@ -18,6 +19,11 @@ const IDLE_MS = 4_000;
 const SCROLL_STEPS = 24;
 const SCROLL_STEP_PAUSE_MS = 120;
 const GESTURE_STEPS = 40;
+const HOLD_MS = 2_000;
+/** Long enough for the vortex to close and the wheel to lay out. */
+const WHEEL_SETTLE_MS = 1_600;
+/** Long enough for a chosen card to land. */
+const FLIGHT_SETTLE_MS = 1_200;
 
 async function openHome(page: Page) {
   await preparePage(page);
@@ -35,13 +41,60 @@ test("home page at rest and scrolling", async ({ page }, testInfo) => {
   await scriptKilobytes();
 });
 
-test("shuffle, deal and burn reveal", async ({ page }, testInfo) => {
+test("hold to shuffle in the vortex, lay out the wheel, choose cards and burn reveal", async ({
+  page,
+}, testInfo) => {
   await openHome(page);
   await askMainQuestion(page);
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
-  await measure(page, testInfo, "shuffle-and-deal", async () => {
-    await page.getByRole("button", { name: "洗牌", exact: true }).click();
-    await dealAll(page, 3);
+  const deck = page.getByRole("button", { name: "按住牌堆洗牌" });
+  const box = await deck.boundingBox();
+  if (!box) throw new Error("the deck is not visible");
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await measure(page, testInfo, "hold-vortex", () =>
+    page.waitForTimeout(HOLD_MS),
+  );
+  // Letting go closes the vortex into the pile and lays every remaining card out.
+  await measure(page, testInfo, "wheel-open", async () => {
+    await page.mouse.up();
+    await expect(fannedDeck(page)).toBeVisible();
+    await page.waitForTimeout(WHEEL_SETTLE_MS);
+  });
+
+  const wheel = fannedDeck(page);
+  const wheelBox = await wheel.boundingBox();
+  if (!wheelBox) throw new Error("the wheel is not visible");
+  // A sideways drag along the arc turns the wheel where it is wider than the table.
+  const along = {
+    x: wheelBox.x + wheelBox.width * 0.7,
+    y: wheelBox.y + wheelBox.height * 0.75,
+  };
+  await measure(page, testInfo, "wheel-turn", () =>
+    dragPoint(page, along, -wheelBox.width * 0.4, 0),
+  );
+
+  const card = wheel.locator("[data-fan-slot]").nth(30);
+  await card.focus();
+  await page.keyboard.press("Enter");
+  await expect(card).toHaveAttribute("aria-pressed", "true");
+  const chosen = await card.boundingBox();
+  if (!chosen) throw new Error("the chosen card is not visible");
+  await measure(page, testInfo, "wheel-pull", async () => {
+    const x = chosen.x + chosen.width / 2;
+    const y = chosen.y + chosen.height * 0.3;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y - 90, { steps: GESTURE_STEPS });
+    await page.mouse.up();
+    await page.waitForTimeout(FLIGHT_SETTLE_MS);
+  });
+
+  await chooseFirstCard(page);
+  await chooseFirstCard(page);
+  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
+    timeout: 15_000,
   });
   await measure(page, testInfo, "burn-reveal", () => reveal(page, 1));
 });
@@ -57,6 +110,11 @@ test("drag a position and pan a zoomed table", async ({ page }, testInfo) => {
     dragFrom(page, slot(page, 3), -60, -50),
   );
   await page.getByRole("button", { name: "完成編輯" }).click();
+  // The drag is not saved; leaving restores the layout.
+  await page
+    .getByRole("alertdialog", { name: "牌陣還沒儲存" })
+    .getByRole("button", { name: "確定離開" })
+    .click();
 
   await page.getByRole("button", { name: "放大牌桌" }).click();
   await page.getByRole("button", { name: "放大牌桌" }).click();

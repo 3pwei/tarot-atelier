@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { MAX_SPREAD_POSITIONS } from "@/domain/spread/types";
 
 interface SpreadToolbarProps {
@@ -18,6 +17,8 @@ interface SpreadToolbarProps {
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
   readonly onZoomReset: () => void;
+  /** Starting over is allowed except while cards are washing or flying. */
+  readonly canClear: boolean;
   readonly onClear: () => void;
 }
 
@@ -34,9 +35,9 @@ export function SpreadToolbar({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  canClear,
   onClear,
 }: SpreadToolbarProps) {
-  const [confirmingClear, setConfirmingClear] = useState(false);
   const atLimit = positionCount >= MAX_SPREAD_POSITIONS;
   const zoomLabel = `×${Number(zoom.toFixed(2))}`;
 
@@ -107,45 +108,47 @@ export function SpreadToolbar({
 
         {/* Starting over is part of play, not of editing the layout. */}
         {!arranging && (
-          <>
-            {confirmingClear ? (
-              <div
-                className="spread-toolbar__confirm"
-                role="group"
-                aria-label="確認清除"
-              >
-                <span>會移除所有牌位、問題與抽牌結果。</span>
-                <button
-                  type="button"
-                  className="danger-action"
-                  onClick={() => {
-                    setConfirmingClear(false);
-                    onClear();
-                  }}
-                >
-                  確定清除
-                </button>
-                <button
-                  type="button"
-                  className="ghost-action"
-                  onClick={() => setConfirmingClear(false)}
-                >
-                  取消
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="ghost-action"
-                disabled={layoutLocked}
-                onClick={() => setConfirmingClear(true)}
-              >
-                清除本次牌陣
-              </button>
-            )}
-          </>
+          <button
+            type="button"
+            className="icon-action spread-toolbar__restart"
+            aria-label="清除本次牌陣"
+            title="清除本次牌陣"
+            disabled={!canClear}
+            onClick={onClear}
+          >
+            <RestartIcon />
+          </button>
         )}
       </div>
     </div>
+  );
+}
+
+/** A circular arrow: start this spread over. */
+function RestartIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4 3.5v5h5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

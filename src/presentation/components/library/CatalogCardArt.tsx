@@ -1,18 +1,9 @@
 import type { CardDefinition } from "@/domain/deck/types";
 import { CardArtwork } from "@/presentation/components/CardArtwork";
-import manifest from "./catalogThumbnails.json";
-
-const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-
-/** The pre-rendered face for a card, when `pnpm thumbnails` made one. */
-export function catalogThumbnailUrl(
-  deckId: string,
-  cardId: string,
-): string | undefined {
-  if (deckId !== manifest.deckId) return undefined;
-  const file = (manifest.cards as Readonly<Record<string, string>>)[cardId];
-  return file ? `${publicBasePath}/${manifest.directory}/${file}` : undefined;
-}
+import {
+  catalogThumbnailUrl,
+  prerenderedFaceSize,
+} from "@/presentation/components/library/prerenderedArt";
 
 /**
  * A card face in the library grid. Uses the pre-rendered image when one
@@ -36,8 +27,8 @@ export function CatalogCardArt({
         className="card-artwork__image"
         src={thumbnail}
         alt={`${card.name.zhHant}牌面`}
-        width={manifest.width}
-        height={manifest.height}
+        width={prerenderedFaceSize.width}
+        height={prerenderedFaceSize.height}
         loading="lazy"
         decoding="async"
       />

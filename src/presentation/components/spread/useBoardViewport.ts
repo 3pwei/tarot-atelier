@@ -159,7 +159,8 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
   const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (
       event.target instanceof Element &&
-      event.target.closest("[data-slot]")
+      // Positions and the deck handle their own gestures.
+      event.target.closest("[data-slot], [data-own-gesture]")
     ) {
       return;
     }

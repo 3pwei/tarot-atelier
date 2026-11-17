@@ -1,17 +1,31 @@
-import type { CSSProperties } from "react";
+import {
+  useId,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 
-/** Cards rendered for the riffle; the rest of the deck is drawn as edge depth. */
-export const SHUFFLE_CARD_COUNT = 10;
 const MAX_EDGE_DEPTH_PX = 14;
+
+/** Press-and-hold handlers from useHoldToShuffle. */
+export interface HoldHandlers {
+  readonly onPointerDown: (event: PointerEvent<HTMLElement>) => void;
+  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  readonly onKeyUp: (event: KeyboardEvent<HTMLElement>) => void;
+  readonly onClick: () => void;
+}
 
 interface DeckStackProps {
   readonly remaining: number;
   readonly total: number;
-  readonly canDraw: boolean;
+  readonly canShuffle: boolean;
+  /** True while the person is holding the deck down. */
+  readonly holding: boolean;
   readonly label: string;
-  readonly hint: string;
-  readonly onDraw: () => void;
+  /** The pre-rendered back; the SVG back draws it when there is none. */
+  readonly backUrl?: string;
+  readonly hold: HoldHandlers;
 }
 
 /** Stacked 1px offsets suggest the thickness of the cards still in the pack. */
@@ -27,53 +41,63 @@ function edgeShadow(remaining: number, total: number): string {
   return [...layers, `0 ${depth + 14}px 28px rgba(0, 0, 0, 0.55)`].join(", ");
 }
 
+const HOLD_HINT =
+  "按住牌堆，牌會在整張牌桌上飛舞洗牌，放開後收回中央攤開；按一下洗一輪。";
+
+/** The pack lying on the table: hold it down to wash the cards. */
 export function DeckStack({
   remaining,
   total,
-  canDraw,
+  canShuffle,
+  holding,
   label,
-  hint,
-  onDraw,
+  backUrl,
+  hold,
 }: DeckStackProps) {
-  const visibleCards = Math.min(SHUFFLE_CARD_COUNT, remaining);
+  const hintId = useId();
   const style = {
     "--deck-edge": edgeShadow(remaining, total),
   } as CSSProperties;
 
   return (
-    <div className="deck-stack" data-can-draw={canDraw || undefined}>
+    <div
+      className="deck-stack"
+      data-can-shuffle={canShuffle || undefined}
+      data-holding={holding || undefined}
+    >
       <button
         type="button"
         className="deck-stack__pile"
-        disabled={!canDraw}
-        onClick={onDraw}
+        disabled={!canShuffle && !holding}
         aria-label={label}
+        aria-describedby={hintId}
         style={style}
+        {...hold}
       >
-        {visibleCards === 0 ? (
+        {remaining === 0 ? (
           <span className="deck-stack__empty" aria-hidden="true">
             ✦
           </span>
         ) : (
-          Array.from({ length: visibleCards }, (_, index) => {
-            const isTop = index === visibleCards - 1;
-            return (
-              <span
-                key={index}
-                className="deck-stack__card"
-                data-shuffle-card
-                data-deck-top={isTop || undefined}
-                aria-hidden="true"
-              >
-                <ProceduralBack label="" />
-              </span>
-            );
-          })
+          <span className="deck-stack__card" data-deck-top aria-hidden="true">
+            {backUrl ? (
+              // A static export serves files as they are; next/image adds nothing.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                className="deck-stack__back"
+                src={backUrl}
+                alt=""
+                draggable={false}
+              />
+            ) : (
+              <ProceduralBack label="" />
+            )}
+          </span>
         )}
       </button>
-      <p className="deck-stack__hint" aria-hidden="true">
-        {hint}
-      </p>
+      <span id={hintId} className="sr-only">
+        {HOLD_HINT}
+      </span>
     </div>
   );
 }

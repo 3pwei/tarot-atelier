@@ -11,7 +11,7 @@
 - 牌陣庫：內建經典三張、五張十字、圓環（8 位），可把目前牌陣命名儲存；內建與自存的都能刪除，也能還原預設範例；或從空白牌桌開始。
 - 長按牌位後拖曳即可旋轉（靠近 45° 倍數時自動吸附），點選牌位後也可拖曳右下角的迴轉箭頭；輕點箭頭轉 45°，也可輸入精確角度。
 - 點一次牌堆就把所有空牌位一起發完，再由玩家逐張點開。飛行落點就是牌位座標，牌桌縮放、平移或牌位旋轉都不影響。跳牌與主牌同屬一個牌位，不另占編號。已有抽牌結果的牌位可移動，但不會重抽。
-- 牌陣以版本化 JSON 存在本機 `localStorage`，讀取時完整驗證與遷移，壞資料會被丟棄而不會白屏；提供「清除本次牌陣」。
+- 牌陣以版本化 JSON 存在本機 `localStorage`，讀取時完整驗證與遷移，壞資料會被丟棄而不會白屏；提供「清除本次牌陣」（↺）。
 
 抽牌不放回，每次抽牌有固定的跳牌機率（使用者不可調整、也不對外顯示），逆位機率預設 50%。domain 可注入 `RandomSource`；固定種子只供測試與可重現 demo，不是安全亂數。
 
@@ -24,7 +24,7 @@
 - Next.js App Router、React、TypeScript strict
 - Tailwind CSS 與共用 CSS design tokens
 - Zustand（僅前端互動狀態）
-- CSS keyframes（洗牌、發牌與標題進場動畫）
+- CSS keyframes（金色龍捲風洗牌、牌輪、飛牌與標題進場動畫）
 - Vitest、React Testing Library、Playwright
 - ESLint、Prettier、GitHub Actions
 

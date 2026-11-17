@@ -4,6 +4,7 @@ import {
   DrawExperience,
   InvalidDrawTransitionError,
   isJumperTriggered,
+  jumperNeighbourIndex,
   type RandomSource,
 } from "@/domain/deck/draw";
 
@@ -43,7 +44,7 @@ describe("DrawExperience", () => {
     expect(experience.state).toBe("shuffling");
     experience.completeShuffle();
     expect(experience.state).toBe("ready");
-    experience.draw();
+    experience.drawAt(0);
     expect(experience.state).toBe("drawing");
     experience.reveal();
     expect(experience.state).toBe("revealed");
@@ -52,7 +53,7 @@ describe("DrawExperience", () => {
   it("handles an empty pile without leaving ready state", () => {
     const experience = readyExperience({ cardIds: [] });
 
-    expect(experience.draw()).toBeUndefined();
+    expect(experience.drawAt(0)).toBeUndefined();
     expect(experience.state).toBe("ready");
     expect(experience.remainingCount).toBe(0);
   });
@@ -63,7 +64,7 @@ describe("DrawExperience", () => {
       random: () => 0,
     });
 
-    const result = experience.draw();
+    const result = experience.drawAt(0);
 
     expect(result?.primary.cardId).toBe("only-card");
     expect(result?.jumper).toBeUndefined();
@@ -78,7 +79,7 @@ describe("DrawExperience", () => {
       random: sequenceRandom(0.99, 0.029, 0.8, 0.2),
     });
 
-    const result = experience.draw();
+    const result = experience.drawAt(0);
 
     expect(result?.jumper).toBeDefined();
     expect(result?.primary.cardId).not.toBe(result?.jumper?.cardId);
@@ -93,7 +94,7 @@ describe("DrawExperience", () => {
       random: sequenceRandom(0.99, 0.03, 0.8),
     });
 
-    expect(experience.draw()?.jumper).toBeUndefined();
+    expect(experience.drawAt(0)?.jumper).toBeUndefined();
     expect(experience.remainingCount).toBe(1);
   });
 
@@ -103,7 +104,7 @@ describe("DrawExperience", () => {
       random: sequenceRandom(0, 0, 0, 0, 0),
     });
 
-    const result = experience.draw();
+    const result = experience.drawAt(0);
 
     expect(Object.keys(result ?? {})).toEqual(["primary", "jumper", "drawnAt"]);
     expect(experience.remainingCount).toBe(1);
@@ -116,7 +117,7 @@ describe("DrawExperience", () => {
       supportsReversals: false,
     });
 
-    const result = experience.draw();
+    const result = experience.drawAt(0);
 
     expect(result?.primary.orientation).toBe("upright");
     expect(result?.jumper?.orientation).toBe("upright");
@@ -128,9 +129,9 @@ describe("DrawExperience", () => {
       random: sequenceRandom(0.99, 0.9, 0.9),
     });
 
-    experience.draw();
+    experience.drawAt(0);
 
-    expect(() => experience.draw()).toThrow(InvalidDrawTransitionError);
+    expect(() => experience.drawAt(0)).toThrow(InvalidDrawTransitionError);
     experience.reveal();
     expect(experience.state).toBe("revealed");
   });
@@ -140,11 +141,11 @@ describe("DrawExperience", () => {
       cardIds: ["card-a", "card-b", "card-c"],
       random: () => 0.9,
     });
-    const first = experience.draw();
+    const first = experience.drawAt(0);
     experience.reveal();
     experience.beginShuffle();
     experience.completeShuffle();
-    const second = experience.draw();
+    const second = experience.drawAt(0);
 
     expect(first?.primary.cardId).not.toBe(second?.primary.cardId);
   });
@@ -199,11 +200,11 @@ describe("jumper statistics", () => {
       random: () => 0.9,
     });
 
-    const first = experience.draw();
+    const first = experience.drawAt(0);
     experience.reveal();
     experience.continueDrawing();
     expect(experience.state).toBe("ready");
-    const second = experience.draw();
+    const second = experience.drawAt(0);
 
     expect(second?.primary.cardId).not.toBe(first?.primary.cardId);
     expect(second?.primary.instanceId).toBe("test-deck:draw-2:primary");
@@ -218,7 +219,7 @@ describe("jumper statistics", () => {
     expect(() => experience.continueDrawing()).toThrow(
       InvalidDrawTransitionError,
     );
-    experience.draw();
+    experience.drawAt(0);
     expect(() => experience.continueDrawing()).toThrow(
       InvalidDrawTransitionError,
     );
@@ -237,7 +238,7 @@ describe("jumper statistics", () => {
 
     experience.beginShuffle();
     experience.completeShuffle();
-    const result = experience.draw();
+    const result = experience.drawAt(0);
 
     expect(["a", "c"]).toContain(result?.primary.cardId);
     expect(result?.primary.instanceId).toBe("test-deck:draw-3:primary");
@@ -255,46 +256,81 @@ describe("jumper statistics", () => {
     ).toThrow(RangeError);
   });
 
-  it("deals a whole series from one shuffle with unique cards", () => {
+  it("draws the card the person chose", () => {
+    // A random source this close to 1 leaves Fisher–Yates order untouched.
     const experience = readyExperience({
       cardIds: ["a", "b", "c", "d", "e"],
-      random: () => 0.9,
+      random: () => 0.999,
     });
 
-    const results = experience.drawSeries(3);
+    const result = experience.drawAt(2);
 
-    expect(results).toHaveLength(3);
-    expect(new Set(results.map((r) => r.primary.cardId)).size).toBe(3);
-    expect(results.map((r) => r.primary.instanceId)).toEqual([
-      "test-deck:draw-1:primary",
-      "test-deck:draw-2:primary",
-      "test-deck:draw-3:primary",
-    ]);
-    expect(experience.state).toBe("drawing");
+    expect(result?.primary.cardId).toBe("c");
+    expect(result?.jumper).toBeUndefined();
+    expect(experience.remainingCount).toBe(4);
+    experience.reveal();
+    experience.continueDrawing();
+    expect(experience.drawAt(2)?.primary.cardId).toBe("d");
+  });
+
+  it("lets the neighbour after the chosen card jump out with it", () => {
+    const experience = readyExperience({
+      cardIds: ["a", "b", "c", "d"],
+      // shuffle ×3 (no swaps), jumper gate, two orientations
+      random: sequenceRandom(0.999, 0.999, 0.999, 0.01, 0.9, 0.9),
+    });
+
+    const result = experience.drawAt(1);
+
+    expect(result?.primary.cardId).toBe("b");
+    expect(result?.jumper?.cardId).toBe("c");
     expect(experience.remainingCount).toBe(2);
   });
 
-  it("gives every draw in a series its own jumper chance", () => {
+  it("takes the previous card as the jumper when the last card is chosen", () => {
     const experience = readyExperience({
-      cardIds: ["a", "b", "c", "d"],
-      // shuffle ×3, then per draw: jumper gate, orientations
-      random: sequenceRandom(0.9, 0.9, 0.9, 0.9, 0.9, 0.01, 0.9, 0.9),
+      cardIds: ["a", "b", "c"],
+      random: sequenceRandom(0.999, 0.999, 0.01, 0.9, 0.9),
     });
 
-    const [first, second] = experience.drawSeries(2);
-
-    expect(first?.jumper).toBeUndefined();
-    expect(second?.jumper).toBeDefined();
-    expect(experience.remainingCount).toBe(1);
+    expect(experience.drawAt(2)?.jumper?.cardId).toBe("b");
   });
 
-  it("stops a series early when the pile runs out", () => {
+  it("rejects a choice outside the pile", () => {
     const experience = readyExperience({
       cardIds: ["a", "b"],
-      random: () => 0.9,
+      random: () => 0.999,
     });
-    expect(experience.drawSeries(5)).toHaveLength(2);
-    expect(experience.remainingCount).toBe(0);
-    expect(() => experience.drawSeries(1)).toThrow(InvalidDrawTransitionError);
+
+    expect(() => experience.drawAt(2)).toThrow(RangeError);
+    expect(() => experience.drawAt(-1)).toThrow(RangeError);
+    expect(() => experience.drawAt(0.5)).toThrow(RangeError);
+    expect(experience.state).toBe("ready");
+  });
+
+  it("decides the order when the shuffle completes, not when it begins", () => {
+    let calls = 0;
+    const experience = new DrawExperience({
+      deckId: "test-deck",
+      cardIds: ["a", "b", "c"],
+      supportsReversals: false,
+      random: () => {
+        calls += 1;
+        return 0.5;
+      },
+    });
+
+    experience.beginShuffle();
+    expect(calls).toBe(0);
+    experience.completeShuffle();
+    expect(calls).toBe(2);
+  });
+});
+
+describe("jumperNeighbourIndex", () => {
+  it("is the next card, or the previous one for the last card", () => {
+    expect(jumperNeighbourIndex(0, 5)).toBe(1);
+    expect(jumperNeighbourIndex(3, 5)).toBe(4);
+    expect(jumperNeighbourIndex(4, 5)).toBe(3);
   });
 });

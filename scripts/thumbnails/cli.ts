@@ -1,5 +1,5 @@
 /**
- * Renders the library's card faces into small WebP images.
+ * Renders the library's card faces and the card back into small WebP images.
  *
  *   pnpm thumbnails
  *
@@ -16,6 +16,7 @@ import { run } from "../site/process.ts";
 import { site } from "../site/siteConfig.ts";
 import {
   artworkSourceHash,
+  BACK_FILE_NAME,
   CAPTURE_CSS_WIDTH,
   CAPTURE_PIXEL_RATIO,
   emptyManifest,
@@ -40,6 +41,23 @@ async function fixCatalogWidth(page: Page) {
     content: `.card-grid { grid-template-columns: repeat(4, calc(${CAPTURE_CSS_WIDTH}px + 0.9rem)) !important; }
       .catalog-card, .catalog-card[aria-pressed="true"] { transform: none !important; transition: none !important; }`,
   });
+}
+
+/** The top card of the deck, drawn at the capture width. */
+async function captureBack(page: Page, outputDir: string): Promise<string> {
+  // Captured at rest: no hover tilt, riffle or edge depth of the pack.
+  await page.addStyleTag({
+    content: `.deck-stack { --deck-card-width: ${CAPTURE_CSS_WIDTH}px !important; }
+      .deck-stack__pile, .deck-stack__card { transform: none !important; transition: none !important; animation: none !important; }
+      .deck-stack__pile { box-shadow: none !important; }`,
+  });
+  const back = page.locator("[data-deck-top]");
+  await back.scrollIntoViewIfNeeded();
+  const box = await back.boundingBox();
+  if (!box) throw new Error("The deck's top card is not visible.");
+  const png = await page.screenshot({ clip: box });
+  writeFileSync(path.join(outputDir, BACK_FILE_NAME), await toWebp(page, png));
+  return BACK_FILE_NAME;
 }
 
 async function toWebp(page: Page, png: Buffer): Promise<Buffer> {
@@ -116,11 +134,13 @@ async function main() {
     await fixCatalogWidth(page);
     await page.mouse.move(0, 0);
     const { cards, size } = await capture(page, outputDir);
+    const back = await captureBack(page, outputDir);
     writeManifest({
       ...emptyManifest(),
       sourceHash: artworkSourceHash((file) => readFileSync(file, "utf8")),
       ...size,
       cards,
+      back,
     });
     console.log(
       `Captured ${Object.keys(cards).length} thumbnails into ${outputDir}.`,

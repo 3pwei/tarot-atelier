@@ -350,8 +350,10 @@
   --deck-card-width: clamp(5.5rem, 10vw, 8.5rem);
 }
 
+/* One table for everything: the deck, its wash and the wheel live on it. */
 .draw-table__stage.spread-stage {
-  grid-template-columns: auto minmax(0, 1fr);
+  --table-screen-margin: 6rem;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   min-height: 0;
   padding-top: clamp(1.25rem, 3vw, 2rem);
@@ -361,7 +363,13 @@
 .spread-board {
   position: relative;
   overflow: hidden;
+  /* Clip without becoming scrollable: focusing a wheel card half below the
+     edge must not slide the whole table up. */
+  overflow: clip;
   width: 100%;
+  /* The whole table, wheel included, stays on one screen on wide displays. */
+  max-width: calc((100svh - var(--table-screen-margin)) * 3 / 2);
+  margin-inline: auto;
   aspect-ratio: 3 / 2;
   border: 1px solid rgba(230, 197, 122, 0.18);
   border-radius: calc(var(--table-radius) - 0.4rem);

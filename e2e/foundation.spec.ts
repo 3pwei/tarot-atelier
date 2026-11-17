@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { askMainQuestion } from "./support/spreadTable";
+import { askMainQuestion, deckPile, pickAll } from "./support/spreadTable";
 
 test("deck library exposes 78 definitions and has no horizontal overflow", async ({
   page,
@@ -26,31 +26,27 @@ test("deck library exposes 78 definitions and has no horizontal overflow", async
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 });
 
-test("draw experience supports keyboard shuffle, dealing, and burn reveal", async ({
+test("draw experience supports keyboard shuffle, choosing, and burn reveal", async ({
   page,
 }) => {
   // Burns three or more cards in turn.
   test.slow();
   await page.goto("/");
   await askMainQuestion(page);
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
+  // Holding the space bar on the deck shuffles until it is let go.
+  const deck = page.getByRole("button", { name: "按住牌堆洗牌" });
+  await deck.focus();
+  await page.keyboard.down(" ");
+  await expect(page.getByText("洗牌中，放開後收牌攤開")).toBeVisible();
+  await page.keyboard.up(" ");
 
-  const pile = page.getByRole("button", { name: "從牌堆發牌到 3 個牌位" });
-  await expect(pile).toBeEnabled();
-  await pile.focus();
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("Enter");
-
-  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
-    timeout: 10_000,
-  });
+  await pickAll(page, 3);
   const drawnCards = page.locator("[data-draw-card]");
   const drawnCount = await drawnCards.count();
   expect(drawnCount).toBeGreaterThanOrEqual(3);
   expect(drawnCount).toBeLessThanOrEqual(6);
-  await expect(
-    page.getByRole("button", { name: "洗牌", exact: true }),
-  ).toBeDisabled();
+  // Every position has its card: the rest of the deck leaves the table.
+  await expect(deckPile(page)).toBeHidden();
 
   const sealed = page.getByRole("button", { name: /^以火焰揭示牌位/u });
   for (let left = drawnCount; left > 0; left -= 1) {
@@ -72,8 +68,8 @@ test("pointer reveal burns away the card back from the touched point", async ({
 }) => {
   await page.goto("/");
   await askMainQuestion(page);
-  await page.getByRole("button", { name: "洗牌", exact: true }).click();
-  await page.getByRole("button", { name: "從牌堆發牌到 3 個牌位" }).click();
+  await deckPile(page).click();
+  await pickAll(page, 3);
 
   const card = page.getByRole("button", { name: "以火焰揭示牌位 1 主牌" });
   await expect(card).toHaveAttribute("aria-disabled", "false");

@@ -113,66 +113,6 @@
   max-width: 34rem;
 }
 
-.draw-table__controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.shuffle-action {
-  position: relative;
-  overflow: hidden;
-  min-width: 6.5rem;
-  min-height: 2.6rem;
-  padding: 0.5rem 1.4rem;
-  border: 1px solid rgba(251, 234, 184, 0.7);
-  border-radius: 999px;
-  color: #1a1206;
-  background: linear-gradient(135deg, #fbeab8, #e6c57a 45%, #b98a42);
-  box-shadow:
-    0 0.6rem 1.6rem rgba(230, 197, 122, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  cursor: pointer;
-  transition:
-    transform 160ms ease,
-    box-shadow 200ms ease,
-    opacity 200ms ease;
-}
-
-.shuffle-action::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.55) 50%,
-    transparent 65%
-  );
-  content: "";
-  transform: translateX(-120%);
-}
-
-.shuffle-action:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 0.8rem 2rem rgba(230, 197, 122, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.shuffle-action:not(:disabled):hover::after {
-  transform: translateX(120%);
-  transition: transform 700ms ease;
-}
-
-.shuffle-action:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-  filter: saturate(0.4);
-}
-
 /* ── Stage ───────────────────────────────────────────── */
 
 .draw-table__stage {
@@ -253,18 +193,24 @@
   transition: opacity 300ms ease;
 }
 
-.deck-stack[data-can-draw] .deck-stack__pile::before {
+.deck-stack[data-can-shuffle] .deck-stack__pile::before {
   animation: deck-breathe 2.8s ease-in-out infinite;
 }
 
-.deck-stack[data-can-draw] .deck-stack__pile:hover,
-.deck-stack[data-can-draw] .deck-stack__pile:focus-visible {
+.deck-stack[data-can-shuffle] .deck-stack__pile:focus-visible {
   transform: rotate(-2deg) translateY(-6px);
 }
 
-.deck-stack[data-can-draw] .deck-stack__pile:hover [data-deck-top] {
-  transform: translate(3px, -10px) rotate(2deg);
-  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+/* Only a real pointer hovers: a touch would leave the top card lifted. */
+@media (hover: hover) {
+  .deck-stack[data-can-shuffle] .deck-stack__pile:hover {
+    transform: rotate(-2deg) translateY(-6px);
+  }
+
+  .deck-stack[data-can-shuffle] .deck-stack__pile:hover [data-deck-top] {
+    transform: translate(3px, -10px) rotate(2deg);
+    transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
 }
 
 .deck-stack__pile:focus-visible {
@@ -288,8 +234,319 @@
   opacity: 0.8;
 }
 
-.deck-stack[data-can-draw] .deck-stack__hint {
+.deck-stack[data-can-shuffle] .deck-stack__hint {
   color: var(--color-gold);
+}
+
+/* Held down: the glow brightens and widens for as long as it is held. */
+.deck-stack[data-holding] .deck-stack__pile::before {
+  animation: none;
+  opacity: 1;
+  transform: scale(1.18);
+  transition:
+    opacity 900ms ease-out,
+    transform 1400ms ease-out;
+}
+
+/* ── Deck on the table ─────────────────────────────────── */
+/* Drawn above the positions but outside the zoomed canvas (SpreadBoard's
+   overlay). Sizes follow the table through container units. */
+
+.table-deck {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  container-type: size;
+  pointer-events: none;
+}
+
+/* The pack lies in the middle of the cloth, where the vortex gathers it. */
+.table-deck__pack {
+  position: absolute;
+  top: calc(var(--table-pile-y) * 1cqh);
+  left: calc(var(--table-pile-x) * 1cqw);
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 240ms ease,
+    visibility 0s linear 0s;
+}
+
+/* The pack is as large as the positions' cards, like every card it holds. */
+/* Holding a card must shuffle, not open the phone's enlarged image preview
+   (iOS) or select it. */
+.table-deck {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.table-deck img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.table-deck .deck-stack {
+  --deck-card-width: var(--slot-w);
+}
+
+/* Every position has its card: the rest of the deck leaves the table. */
+.table-deck__pack[data-gone] {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 420ms ease,
+    visibility 0s linear 420ms;
+}
+
+.deck-stack__back {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Washing: the pack's cards are up in the vortex. It stays mounted, and
+   focusable, because the held key or pointer belongs to it. */
+.table-deck[data-washing] .table-deck__pack {
+  opacity: 0;
+}
+
+/* The vortex closes into it: the pile forms again in the middle. */
+.table-deck[data-gathering] .table-deck__pack {
+  opacity: 1;
+  transition: opacity var(--gather-duration) ease-out;
+}
+
+/* Positions step back while the cards circle over them. */
+.draw-experience[data-phase="shuffling"] .spread-slot {
+  opacity: 0.3;
+  transition: opacity 300ms ease;
+}
+
+/* ── Vortex ──
+   Holding the pack lifts its cards into a funnel of golden light: flattened
+   rings, wide at the top and narrow at the bottom, each turning faster than
+   the one above. Cards ride the rings facing the viewer, the same size as the
+   positions, shrinking and dimming on the far side. Every motion is a
+   transform or opacity. */
+.table-vortex {
+  --vortex-swing: cubic-bezier(0.37, 0, 0.63, 1);
+
+  position: absolute;
+  inset: 0;
+  transform-origin: calc(var(--table-pile-x) * 1%)
+    calc(var(--table-pile-y) * 1%);
+}
+
+/* A soft light under the funnel. */
+.table-vortex::before {
+  position: absolute;
+  inset: 10% 14% 14%;
+  background: radial-gradient(
+    closest-side,
+    rgba(230, 197, 122, 0.22),
+    rgba(140, 104, 196, 0.1) 60%,
+    transparent
+  );
+  content: "";
+}
+
+.table-vortex__tier {
+  --orbit-x: calc(var(--tier-radius) * 1cqw);
+  --orbit-y: calc(var(--tier-radius) * var(--vortex-tilt) * 1cqw);
+
+  position: absolute;
+  top: calc(var(--tier-y) * 1cqh);
+  left: calc(var(--table-pile-x) * 1cqw);
+  width: 0;
+  height: 0;
+}
+
+/* The ring's faint outline: an ellipse, painted once. */
+.table-vortex__ring {
+  position: absolute;
+  top: calc(var(--orbit-y) * -1 * var(--ring-scale));
+  left: calc(var(--orbit-x) * -1 * var(--ring-scale));
+  width: calc(var(--orbit-x) * 2 * var(--ring-scale));
+  height: calc(var(--orbit-y) * 2 * var(--ring-scale));
+  border: 1.5px solid rgba(255, 220, 150, 0.35);
+  border-radius: 50%;
+  box-shadow:
+    0 0 10px rgba(255, 210, 130, 0.25),
+    inset 0 0 10px rgba(255, 210, 130, 0.15);
+}
+
+/* Across the ring; the card inside swings up and down a quarter turn later. */
+.table-vortex__orbit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(calc(var(--orbit-x) * -1));
+}
+
+.table-vortex__card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--slot-w);
+  aspect-ratio: 2 / 3;
+  transform: translate(-50%, -50%);
+}
+
+/* A point of light racing round the ring ahead of the cards. */
+.table-vortex__comet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff8e6;
+  box-shadow:
+    0 0 6px 2px rgba(255, 214, 140, 0.9),
+    0 0 18px 6px rgba(255, 200, 110, 0.35);
+  transform: translate(-50%, -50%);
+}
+
+.table-vortex__face {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  border-radius: 6% / 4%;
+  box-shadow:
+    0 0 0 1px rgba(251, 234, 184, 0.35),
+    0 0 14px rgba(255, 210, 120, 0.45);
+  rotate: var(--card-tilt);
+}
+
+.table-vortex__face img,
+.table-vortex__face .procedural-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.table-vortex__spark {
+  position: absolute;
+  top: calc(var(--spark-y) * 1cqh);
+  left: calc(var(--spark-x) * 1cqw);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff1c8;
+  box-shadow: 0 0 6px 1px rgba(255, 214, 140, 0.8);
+  opacity: 0;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex {
+  animation: vortex-rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Two half-turn swings a quarter turn apart trace the ellipse; easing them
+   like a sine keeps the speed round the ring even. */
+.draw-experience[data-motion="animated"] .table-vortex__orbit {
+  animation: vortex-across calc(var(--tier-turn) / 2) var(--vortex-swing)
+    var(--orbit-delay) infinite alternate;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__card,
+.draw-experience[data-motion="animated"] .table-vortex__comet {
+  animation: vortex-bob calc(var(--tier-turn) / 2) var(--vortex-swing)
+    var(--bob-delay) infinite alternate;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__spark {
+  animation: vortex-twinkle 1.6s ease-in-out calc(var(--spark-phase) * -1.6s)
+    infinite;
+}
+
+/* Letting go closes the funnel into the pile in the middle. */
+.table-vortex[data-gathering] {
+  opacity: 0;
+  transform: scale(0.08);
+  transition:
+    opacity var(--gather-duration) ease-in,
+    transform var(--gather-duration) cubic-bezier(0.5, 0, 0.75, 0.2);
+}
+
+.draw-experience[data-motion="animated"] .table-vortex[data-gathering] {
+  animation: none;
+}
+
+.card-wheel {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.draw-experience[data-motion="animated"] .card-wheel__wheel {
+  animation: wheel-lay 460ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* The wheel's centre sits below the table; turning it moves one layer. */
+.card-wheel__wheel {
+  position: absolute;
+  top: var(--wheel-y);
+  left: var(--wheel-x);
+  width: 0;
+  height: 0;
+  transform: rotate(var(--wheel-turn, 0deg));
+  pointer-events: none;
+}
+
+.card-wheel__card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--wheel-card-width);
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6% / 4%;
+  background: #141029;
+  box-shadow:
+    0 0 0 1px rgba(251, 234, 184, 0.2),
+    -2px 3px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  pointer-events: auto;
+  /* Turning and pulling are handled here, so the page does not scroll. */
+  touch-action: none;
+  transform: translate(-50%, -50%) rotate(var(--card-angle))
+    translateY(calc(-1 * var(--wheel-radius)));
+  transition: transform 160ms ease-out;
+}
+
+.card-wheel__back,
+.card-wheel__card .procedural-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Chosen: it slides a little forward, out of line, without covering its
+   neighbours; a gold edge marks it. */
+.card-wheel__card[data-chosen] {
+  box-shadow:
+    0 0 0 1.5px var(--color-gold),
+    0 4px 12px rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, -50%) rotate(var(--card-angle))
+    translateY(calc(-1 * var(--wheel-radius) - var(--nudge) - var(--pull, 0px)));
+}
+
+.card-wheel__card[data-pulling] {
+  z-index: 2;
+  transition: none;
+}
+
+.card-wheel__card:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--focus-ring),
+    0 4px 12px rgba(0, 0, 0, 0.55);
 }
 
 /* Drawn cards */
@@ -661,32 +918,19 @@
   }
 }
 
-/* ── Shuffle and deal ─────────────────────────────────── */
+/* ── Shuffle and pick ─────────────────────────────────── */
 /* Transform and opacity only, so the compositor runs them off the main
    thread. Durations come from dealMotion.ts through custom properties. */
-
-.draw-experience[data-motion="animated"][data-phase="shuffling"]
-  .deck-stack__card:nth-child(odd) {
-  animation: riffle-left calc(var(--shuffle-duration) / 2) ease-in-out 2;
-}
-
-.draw-experience[data-motion="animated"][data-phase="shuffling"]
-  .deck-stack__card:nth-child(even) {
-  animation: riffle-right calc(var(--shuffle-duration) / 2) ease-in-out 2;
-}
 
 .draw-experience[data-motion="animated"]
   .drawn-card[data-flight="pending"][data-flight-planned] {
   animation: deal-flight var(--flight-duration)
     cubic-bezier(0.45, 0.05, 0.25, 1) both;
-  animation-delay: calc(var(--deal-order, 0) * var(--deal-stagger));
 }
 
 .draw-experience[data-motion="animated"]
   .drawn-card--jumper[data-flight="pending"][data-flight-planned] {
-  animation-delay: calc(
-    var(--deal-order, 0) * var(--deal-stagger) + var(--jumper-delay)
-  );
+  animation-delay: var(--jumper-delay);
 }
 
 /* ── Keyframes ───────────────────────────────────────── */
@@ -730,15 +974,49 @@
   }
 }
 
-@keyframes riffle-left {
-  50% {
-    transform: translateX(-55%) rotate(-9deg);
+/* The funnel rises out of the pile. */
+@keyframes vortex-rise {
+  from {
+    opacity: 0;
+    transform: scale(0.08);
   }
 }
 
-@keyframes riffle-right {
+@keyframes vortex-across {
+  to {
+    transform: translateX(var(--orbit-x));
+  }
+}
+
+/* Up at the far side, small and dim; down at the near side, full and bright. */
+@keyframes vortex-bob {
+  from {
+    opacity: 0.6;
+    transform: translate(-50%, calc(-50% - var(--orbit-y))) scale(0.72);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% + var(--orbit-y))) scale(1);
+  }
+}
+
+@keyframes vortex-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
   50% {
-    transform: translateX(55%) rotate(9deg);
+    opacity: 1;
+  }
+}
+
+/* The gathered pile settles onto the wheel along the bottom edge. */
+@keyframes wheel-lay {
+  from {
+    opacity: 0;
+    transform: translateY(-28cqh) rotate(var(--wheel-turn, 0deg));
   }
 }
 
@@ -785,7 +1063,6 @@
     gap: 1rem;
   }
 
-  .draw-table__controls,
   .draw-table__question {
     width: 100%;
     max-width: none;
@@ -800,14 +1077,10 @@
   .draw-experience {
     --drawn-card-width: clamp(8rem, 40vw, 10rem);
   }
-
-  .shuffle-action {
-    width: 100%;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .deck-stack[data-can-draw] .deck-stack__pile,
+  .deck-stack[data-can-shuffle] .deck-stack__pile,
   .drawn-card__body::before,
   .drawn-card__body::after,
   .deck-stack__pile::before,

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEAL_STAGGER_MS,
   FLIGHT_MS,
   JUMPER_DELAY_MS,
-  dealDurationMs,
+  GATHER_MS,
+  WASH_ROUND_MS,
+  motionTimingStyle,
+  landingDelayMs,
+  washAfterRelease,
   flightStyle,
   planFlight,
   toLocalOffset,
@@ -123,22 +126,33 @@ describe("flightStyle", () => {
   });
 });
 
-describe("dealDurationMs", () => {
-  it("ends when the last main card lands", () => {
-    const plain = { hasJumper: false };
-
-    expect(dealDurationMs([plain, plain, plain])).toBe(
-      2 * DEAL_STAGGER_MS + FLIGHT_MS,
-    );
+describe("washAfterRelease", () => {
+  it("still washes a full round after a quick tap", () => {
+    expect(washAfterRelease(0)).toEqual({
+      washMs: WASH_ROUND_MS,
+      gatherMs: GATHER_MS,
+    });
+    expect(washAfterRelease(400).washMs).toBe(WASH_ROUND_MS - 400);
   });
 
-  it("waits for a jumper that lands after every main card", () => {
-    expect(dealDurationMs([{ hasJumper: true }, { hasJumper: false }])).toBe(
-      JUMPER_DELAY_MS + FLIGHT_MS,
-    );
+  it("gathers straight away after a long hold", () => {
+    expect(washAfterRelease(WASH_ROUND_MS * 3).washMs).toBe(0);
   });
+});
 
-  it("is zero when nothing is dealt", () => {
-    expect(dealDurationMs([])).toBe(0);
+describe("landingDelayMs", () => {
+  it("lands the jumper after the chosen card", () => {
+    expect(landingDelayMs("primary")).toBe(FLIGHT_MS);
+    expect(landingDelayMs("jumper")).toBe(JUMPER_DELAY_MS + FLIGHT_MS);
+  });
+});
+
+describe("motionTimingStyle", () => {
+  it("hands every wash and flight timing to the stylesheet", () => {
+    expect(motionTimingStyle()).toEqual({
+      "--gather-duration": `${GATHER_MS}ms`,
+      "--flight-duration": `${FLIGHT_MS}ms`,
+      "--jumper-delay": `${JUMPER_DELAY_MS}ms`,
+    });
   });
 });

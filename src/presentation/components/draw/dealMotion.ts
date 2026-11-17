@@ -1,43 +1,44 @@
 import type { CSSProperties } from "react";
 
 /**
- * One source of truth for shuffle and deal timing. CSS keyframes run the
+ * One source of truth for shuffle and pick timing. CSS keyframes run the
  * motion on the compositor, so it stays smooth on slow phones; these values
  * reach the stylesheet as custom properties and the dealer waits on them.
  */
-export const SHUFFLE_MS = 1300;
-/** Time for one card to fly from the deck to its position. */
+/** A tap still washes the cards this long; holding the deck keeps going. */
+export const WASH_ROUND_MS = 1600;
+/** The washed cards sweep back into one pile in the middle of the table. */
+export const GATHER_MS = 520;
+/** Time for a chosen card to fly from the wheel to its position. */
 export const FLIGHT_MS = 900;
-/** Gap between consecutive positions when a whole spread is dealt. */
-export const DEAL_STAGGER_MS = 180;
-/** The jumper leaves the deck this long after its position's main card. */
+/** The jumper follows the chosen card this long after it. */
 export const JUMPER_DELAY_MS = 420;
 
-/** A position being dealt, in dealing order. */
-export interface DealtPosition {
-  readonly hasJumper: boolean;
+/** What happens after the person lets go of the deck. */
+export interface WashFinish {
+  /** The cards keep washing this long: a quick tap still gets a full round. */
+  readonly washMs: number;
+  /** Then they gather into one pile. */
+  readonly gatherMs: number;
 }
 
-/** How long dealing takes: until the last card, jumpers included, lands. */
-export function dealDurationMs(dealt: readonly DealtPosition[]): number {
-  return dealt.reduce(
-    (longest, position, order) =>
-      Math.max(
-        longest,
-        order * DEAL_STAGGER_MS +
-          (position.hasJumper ? JUMPER_DELAY_MS : 0) +
-          FLIGHT_MS,
-      ),
-    0,
-  );
+export function washAfterRelease(heldMs: number): WashFinish {
+  return {
+    washMs: Math.max(0, WASH_ROUND_MS - Math.max(0, heldMs)),
+    gatherMs: GATHER_MS,
+  };
+}
+
+/** When a chosen card, or the jumper that slipped out with it, has landed. */
+export function landingDelayMs(role: FlightRole): number {
+  return role === "jumper" ? JUMPER_DELAY_MS + FLIGHT_MS : FLIGHT_MS;
 }
 
 /** Timing custom properties for the element that hosts the table. */
 export function motionTimingStyle(): CSSProperties {
   return {
-    "--shuffle-duration": `${SHUFFLE_MS}ms`,
+    "--gather-duration": `${GATHER_MS}ms`,
     "--flight-duration": `${FLIGHT_MS}ms`,
-    "--deal-stagger": `${DEAL_STAGGER_MS}ms`,
     "--jumper-delay": `${JUMPER_DELAY_MS}ms`,
   } as CSSProperties;
 }
@@ -87,13 +88,13 @@ export function toLocalOffset(
 }
 
 /**
- * Plans a card's flight from the deck to where it lands. The arc is planned
+ * Plans a card's flight from where it left the wheel to where it lands. The arc is planned
  * on screen and converted into the slot's frame, so the card lands exactly on
  * a rotated position of a zoomed table. The jumper arcs higher and spins, as
- * if the deck pushed it out on its own.
+ * if it slipped out of the wheel with the chosen one.
  */
 export function planFlight(
-  deck: ScreenBox,
+  origin: ScreenBox,
   landing: ScreenBox,
   landedWidth: number,
   frame: FlightFrame,
@@ -101,17 +102,17 @@ export function planFlight(
 ): FlightPath {
   const isJumper = role === "jumper";
   const startX =
-    centre(deck.left, deck.width) - centre(landing.left, landing.width);
+    centre(origin.left, origin.width) - centre(landing.left, landing.width);
   const startY =
-    centre(deck.top, deck.height) - centre(landing.top, landing.height);
+    centre(origin.top, origin.height) - centre(landing.top, landing.height);
   // Halfway along a curve that bulges above both ends.
   const peakX = startX * 0.35;
   const peakY = startY * 0.35 - landing.height * (isJumper ? 0.55 : 0.35);
   return {
     start: toLocalOffset(startX, startY, frame),
     peak: toLocalOffset(peakX, peakY, frame),
-    startScale: deck.width / Math.max(1, landedWidth * frame.scale),
-    // Leave the deck upright on screen, whatever the slot's rotation.
+    startScale: origin.width / Math.max(1, landedWidth * frame.scale),
+    // Leave the wheel upright on screen, whatever the slot's rotation.
     startRotation: (isJumper ? -220 : -6) - frame.rotation,
   };
 }
