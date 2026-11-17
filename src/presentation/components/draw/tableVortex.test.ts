@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { BOARD_HEIGHT_CQW } from "@/presentation/components/spread/boardGeometry";
 import {
   HEAP_CENTER,
   HEAP_SCATTER,
   PILE_CENTER,
   seededRandom,
+  SETTLE,
   VORTEX_LIFT_SPAN_MS,
   VORTEX_SCATTER,
   VORTEX_SPARK_COUNT,
@@ -98,15 +100,38 @@ describe("the vortex", () => {
     );
   });
 
-  it("drops every card in a loose heap low on the table, askew", () => {
+  it("lays every card flat round the table's middle, then swirls it clockwise", () => {
     for (const card of cards) {
-      expect(Math.abs(card.heapX - HEAP_CENTER.x)).toBeLessThanOrEqual(
-        HEAP_SCATTER.x,
+      const reach = Math.hypot(card.spotX, card.spotY);
+      expect(reach).toBeGreaterThanOrEqual(SETTLE.nearest - 1e-9);
+      expect(reach).toBeLessThanOrEqual(SETTLE.furthest + 1e-9);
+      expect(Math.abs(card.swirl - SETTLE.swirlDeg)).toBeLessThanOrEqual(
+        SETTLE.swirlSpreadDeg,
       );
-      expect(Math.abs(card.heapY - HEAP_CENTER.y)).toBeLessThanOrEqual(
-        HEAP_SCATTER.y,
+    }
+  });
+
+  it("drops every card in a loose heap low on the table, askew, after its swirl", () => {
+    const heightShare = BOARD_HEIGHT_CQW / 100;
+    for (const card of cards) {
+      const turned = (card.swirl * Math.PI) / 180;
+      const x =
+        card.heapShiftX +
+        card.spotX * Math.cos(turned) -
+        card.spotY * Math.sin(turned);
+      const y =
+        card.heapShiftY +
+        card.spotX * Math.sin(turned) +
+        card.spotY * Math.cos(turned);
+      expect(Math.abs(50 + x - HEAP_CENTER.x)).toBeLessThanOrEqual(
+        HEAP_SCATTER.x + 1e-9,
       );
-      expect(Math.abs(card.heapRoll)).toBeLessThanOrEqual(HEAP_SCATTER.rollDeg);
+      expect(
+        Math.abs(50 + y / heightShare - HEAP_CENTER.y),
+      ).toBeLessThanOrEqual(HEAP_SCATTER.y + 1e-9);
+      expect(
+        Math.abs(card.spotRoll + card.swirl + card.heapTurn),
+      ).toBeLessThanOrEqual(HEAP_SCATTER.rollDeg);
     }
     expect(HEAP_CENTER.y).toBeGreaterThan(PILE_CENTER.y);
   });

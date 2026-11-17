@@ -21,7 +21,7 @@ import {
 interface TableVortexProps {
   /** A new value scatters the cards and sparks differently. */
   readonly seed: number;
-  /** True once the person has let go: the cards drop in a heap and leave. */
+  /** True once the person has let go: the cards settle, swirl and leave. */
   readonly gathering: boolean;
   /** A small pre-rendered back for cards in the air. */
   readonly backUrl?: string;
@@ -48,14 +48,15 @@ function CardBack({ backUrl }: { readonly backUrl?: string }) {
  * another they leave the top of the pack and climb to the near side of their
  * ring, then circle on a path of their own, flipping over now and then to
  * show a plain gold front, with a short glowing streak behind every other
- * card. Letting go drops them in a loose heap low on the table, which slides
- * away; see ADR 0005 for why the flips are flat.
+ * card. Letting go brings every card down flat onto the table, where they
+ * swirl round its middle, then drop in a loose heap low on the table, which
+ * slides away; see ADR 0005 for why the flips are flat.
  */
 export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
   const cards = useMemo(() => vortexCards(seededRandom(seed)), [seed]);
   const sparks = useMemo(() => vortexSparks(seededRandom(seed + 1)), [seed]);
   const root = useRef<HTMLDivElement>(null);
-  useHeapStarts(root, gathering);
+  useSettleStarts(root, gathering);
 
   return (
     <div
@@ -133,21 +134,46 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
         ))}
       </div>
       {gathering && (
-        <div className="table-vortex__heap">
+        <div className="table-vortex__settle">
           {cards.map((card) => (
             <span
               key={card.launchMs}
-              className="table-vortex__heap-card"
-              data-heap-to={card.launchMs}
+              className="table-vortex__heap-move"
               style={
                 {
-                  "--heap-x": card.heapX,
-                  "--heap-y": card.heapY,
-                  "--heap-roll": `${card.heapRoll}deg`,
+                  "--heap-shift-x": card.heapShiftX,
+                  "--heap-shift-y": card.heapShiftY,
                 } as CSSProperties
               }
             >
-              <CardBack backUrl={backUrl} />
+              <span
+                className="table-vortex__swirl"
+                style={{ "--swirl": `${card.swirl}deg` } as CSSProperties}
+              >
+                <span
+                  className="table-vortex__spot"
+                  data-settle-to={card.launchMs}
+                  style={
+                    {
+                      "--spot-x": card.spotX,
+                      "--spot-y": card.spotY,
+                    } as CSSProperties
+                  }
+                >
+                  <span
+                    className="table-vortex__laid"
+                    style={
+                      {
+                        "--spot-roll": `${card.spotRoll}deg`,
+                        "--heap-turn": `${card.heapTurn}deg`,
+                      } as CSSProperties
+                    }
+                  >
+                    <span className="table-vortex__trail" />
+                    <CardBack backUrl={backUrl} />
+                  </span>
+                </span>
+              </span>
             </span>
           ))}
         </div>
@@ -157,11 +183,11 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
 }
 
 /**
- * Each heap card starts where its card is in the air when the deck is let go:
- * one measurement per card, written before the first paint of the heap, so
- * the keyframes run from there to the heap without a jump.
+ * Each card comes down from where it is when the deck is let go: one
+ * measurement per card, written before the first paint, so the keyframes
+ * run from there without a jump. Cards still in the pack start from it.
  */
-function useHeapStarts(
+function useSettleStarts(
   root: RefObject<HTMLDivElement | null>,
   gathering: boolean,
 ) {
@@ -170,27 +196,32 @@ function useHeapStarts(
     if (!gathering || !host) return;
     const table = host.getBoundingClientRect();
     if (table.width === 0) return;
-    for (const heapCard of host.querySelectorAll<HTMLElement>(
-      "[data-heap-to]",
-    )) {
+    // In percent of the table's width, from its middle: the spot's own units.
+    const unit = table.width / 100;
+    for (const spot of host.querySelectorAll<HTMLElement>("[data-settle-to]")) {
       const from = host.querySelector<HTMLElement>(
-        `[data-heap-from="${heapCard.dataset.heapTo}"]`,
+        `[data-heap-from="${spot.dataset.settleTo}"]`,
       );
       if (!from) continue;
       const box = from.getBoundingClientRect();
       // The narrower side of an upright, turned or flipping card.
       const width = Math.min(box.width, box.height / 1.5);
-      heapCard.style.setProperty(
+      const laid = spot.firstElementChild as HTMLElement | null;
+      spot.style.setProperty(
         "--from-x",
-        String(((box.left + box.width / 2 - table.left) / table.width) * 100),
+        String(
+          (box.left + box.width / 2 - table.left - table.width / 2) / unit,
+        ),
       );
-      heapCard.style.setProperty(
+      spot.style.setProperty(
         "--from-y",
-        String(((box.top + box.height / 2 - table.top) / table.height) * 100),
+        String(
+          (box.top + box.height / 2 - table.top - table.height / 2) / unit,
+        ),
       );
-      heapCard.style.setProperty(
+      spot.style.setProperty(
         "--from-scale",
-        String(width / Math.max(1, heapCard.offsetWidth)),
+        String(width / Math.max(1, laid?.offsetWidth ?? 1)),
       );
     }
   }, [root, gathering]);

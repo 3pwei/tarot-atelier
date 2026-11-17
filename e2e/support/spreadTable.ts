@@ -11,6 +11,16 @@ export function deckPile(page: Page): Locator {
   return page.getByRole("button", { name: /^(按住牌堆洗牌|牌堆：)/u });
 }
 
+/** Waits until the wheel has risen from the bottom edge and stands still. */
+export async function wheelRisen(page: Page) {
+  await expect(fannedDeck(page)).toBeVisible();
+  await expect
+    .poll(() =>
+      fannedDeck(page).evaluate((wheel) => wheel.getAnimations().length),
+    )
+    .toBe(0);
+}
+
 export function fannedDeck(page: Page): Locator {
   return page.getByRole("group", { name: /^扇形牌堆/u });
 }

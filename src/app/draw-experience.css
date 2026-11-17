@@ -577,44 +577,108 @@
     infinite;
 }
 
-/* Letting go: the whirl is gone and its cards drop in a loose heap below,
-   which slides off the bottom of the table. */
+/* Letting go, however long the deck was held: every card comes down flat
+   onto the table, swirls round its middle, drops in a loose heap below and
+   slides off the bottom. Each card is four layers, each one motion:
+   heap-move (to the heap) > swirl (round the middle) > spot (down from the
+   air, to where it lies) > laid (its turn on the table, then in the heap). */
 .table-vortex[data-gathering] .table-vortex__whirl {
   visibility: hidden;
 }
 
-.table-vortex__heap {
+.table-vortex__settle {
   position: absolute;
   inset: 0;
 }
 
-.table-vortex__heap-card {
+.table-vortex__heap-move {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translate(
+    calc(var(--heap-shift-x) * 1cqw),
+    calc(var(--heap-shift-y) * 1cqw)
+  );
+}
+
+.table-vortex__swirl {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: rotate(var(--swirl));
+}
+
+.table-vortex__spot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(calc(var(--spot-x) * 1cqw), calc(var(--spot-y) * 1cqw));
+}
+
+.table-vortex__laid {
   position: absolute;
   top: 0;
   left: 0;
   width: var(--slot-w);
   aspect-ratio: 2 / 3;
-  transform: translate(
-      calc(var(--heap-x) * 1cqw - 50%),
-      calc(var(--heap-y) * 1cqh - 50%)
-    )
-    rotate(var(--heap-roll));
+  transform: translate(-50%, -50%)
+    rotate(calc(var(--spot-roll) + var(--heap-turn)));
 }
 
-.table-vortex__heap-card .table-vortex__back,
-.table-vortex__heap-card .procedural-svg {
+.table-vortex__laid .table-vortex__back,
+.table-vortex__laid .procedural-svg {
   position: absolute;
   inset: 0;
 }
 
-.draw-experience[data-motion="animated"] .table-vortex__heap {
-  animation: heap-slide-away var(--heap-slide-duration) ease-in
-    var(--heap-drop-duration) both;
+/* The streak trails along the swirl, behind every other card, only while
+   the cards turn. */
+.table-vortex__laid .table-vortex__trail {
+  opacity: 0;
+  transform: translateY(-50%);
 }
 
-.draw-experience[data-motion="animated"] .table-vortex__heap-card {
-  animation: heap-drop var(--heap-drop-duration) cubic-bezier(0.3, 0, 0.3, 1)
+.table-vortex__heap-move:nth-child(even) .table-vortex__trail {
+  display: none;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__settle {
+  animation: heap-slide-away var(--heap-slide-duration) ease-in
+    calc(
+      var(--settle-land-duration) + var(--settle-swirl-duration) +
+        var(--heap-drop-duration)
+    )
     both;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__heap-move {
+  animation: settle-to-heap var(--heap-drop-duration)
+    cubic-bezier(0.3, 0, 0.3, 1)
+    calc(var(--settle-land-duration) + var(--settle-swirl-duration)) both;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__swirl {
+  animation: settle-swirl var(--settle-swirl-duration)
+    cubic-bezier(0.45, 0, 0.55, 1) var(--settle-land-duration) both;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__spot {
+  animation: settle-land var(--settle-land-duration)
+    cubic-bezier(0.3, 0.6, 0.3, 1) both;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__laid {
+  animation: settle-askew var(--heap-drop-duration) ease-out
+    calc(var(--settle-land-duration) + var(--settle-swirl-duration)) both;
+}
+
+.draw-experience[data-motion="animated"]
+  .table-vortex__laid
+  .table-vortex__trail {
+  animation: settle-trail var(--settle-swirl-duration) ease-in-out
+    var(--settle-land-duration) both;
 }
 
 .card-wheel {
@@ -1178,7 +1242,7 @@
   }
 
   25% {
-    transform: translateY(-50%) rotate(-90deg);
+    transform: translateY(-50%);
   }
 
   31.25% {
@@ -1270,13 +1334,42 @@
   }
 }
 
-@keyframes heap-drop {
+/* Down from where the card was in the air (or the pack) to where it lies. */
+@keyframes settle-land {
   from {
-    transform: translate(
-        calc(var(--from-x, var(--heap-x)) * 1cqw - 50%),
-        calc(var(--from-y, var(--heap-y)) * 1cqh - 50%)
-      )
-      rotate(0deg) scale(var(--from-scale, 1));
+    transform: translate(calc(var(--from-x) * 1cqw), calc(var(--from-y) * 1cqw))
+      scale(var(--from-scale, 1));
+  }
+}
+
+@keyframes settle-swirl {
+  from {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes settle-to-heap {
+  from {
+    transform: translate(0, 0);
+  }
+}
+
+/* Lying at its spot's turn until it drops, then askew in the heap. */
+@keyframes settle-askew {
+  from {
+    transform: translate(-50%, -50%) rotate(var(--spot-roll));
+  }
+}
+
+@keyframes settle-trail {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  20%,
+  75% {
+    opacity: 1;
   }
 }
 

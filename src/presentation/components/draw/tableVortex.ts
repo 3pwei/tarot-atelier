@@ -4,12 +4,15 @@
  * golden light, wide at the top and narrow at the bottom; the widest rings
  * reach past the table's edges, where cards vanish and come back round.
  * Twenty cards stand in for the deck, so the motion stays light; the real
- * order is decided by the pile when the shuffle completes. Letting go drops
- * them in a loose heap below, which slides away before the wheel rises.
+ * order is decided by the pile when the shuffle completes. Letting go brings
+ * every card down flat onto the table, where they swirl round its middle,
+ * then drop in a loose heap below, which slides away before the wheel rises.
  *
  * Every number here is a plain percentage of the table (x of its width,
  * y of its height) or a time, so the stylesheet can scale it with the table.
  */
+
+import { BOARD_HEIGHT_CQW } from "@/presentation/components/spread/boardGeometry";
 
 /** Where the pack lies, in percent of the table. */
 export const PILE_CENTER = Object.freeze({ x: 50, y: 48 });
@@ -72,6 +75,18 @@ export const VORTEX_SCATTER = Object.freeze({
   shortest: 0.55,
 });
 
+/** Where the cards lie and swirl on the table, round its middle. */
+export const SETTLE = Object.freeze({
+  /** Nearest and furthest from the middle, in percent of the table's width. */
+  nearest: 6,
+  furthest: 30,
+  /** How far each card swirls round the middle, in degrees, clockwise. */
+  swirlDeg: 140,
+  swirlSpreadDeg: 30,
+  /** Spaced by the golden angle, so no two cards line up. */
+  stepRad: 2.399963,
+});
+
 /** Cards in the loose heap stray from its centre and lie askew by up to these. */
 export const HEAP_SCATTER = Object.freeze({
   x: 14,
@@ -105,10 +120,23 @@ export interface VortexCard {
    * flips over once a lap, so the gold front shows now and then.
    */
   readonly flipPhase: number;
-  /** Where it lands in the heap, in percent of the table, and how askew. */
-  readonly heapX: number;
-  readonly heapY: number;
-  readonly heapRoll: number;
+  /**
+   * Where it lies on the table after coming down, from the middle, in
+   * percent of the table's width on both axes, and turned how far.
+   */
+  readonly spotX: number;
+  readonly spotY: number;
+  readonly spotRoll: number;
+  /** How far it swirls round the middle, clockwise. */
+  readonly swirl: number;
+  /**
+   * The shift, from the middle, that takes it from where the swirl leaves it
+   * to its place in the heap (percent of the table's width), and the turn
+   * that leaves it askew there.
+   */
+  readonly heapShiftX: number;
+  readonly heapShiftY: number;
+  readonly heapTurn: number;
 }
 
 export interface VortexSpark {
@@ -170,11 +198,40 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
       roll: Math.round(spread(VORTEX_SCATTER.rollDeg)),
       tip: round2(between(random, VORTEX_SCATTER.shortest, 1)),
       flipPhase: round2(random()),
-      heapX: HEAP_CENTER.x + spread(HEAP_SCATTER.x),
-      heapY: HEAP_CENTER.y + spread(HEAP_SCATTER.y),
-      heapRoll: Math.round(spread(HEAP_SCATTER.rollDeg)),
+      ...settle(order, random),
     };
   });
+}
+
+/** Percent of the table's height, as percent of its width. */
+const HEIGHT_SHARE = BOARD_HEIGHT_CQW / 100;
+
+/**
+ * Where the `order`-th card lies and swirls on the table and how it reaches
+ * the heap. The swirl turns the card's spot round the middle, so the heap
+ * shift is worked out from where the swirl leaves it.
+ */
+function settle(order: number, random: () => number) {
+  const spread = (amount: number) => between(random, -amount, amount);
+  const angle = order * SETTLE.stepRad;
+  const reach = between(random, SETTLE.nearest, SETTLE.furthest);
+  const spotX = reach * Math.cos(angle);
+  const spotY = reach * Math.sin(angle);
+  const spotRoll = Math.round((angle * 180) / Math.PI + 90 + spread(20));
+  const swirl = Math.round(SETTLE.swirlDeg + spread(SETTLE.swirlSpreadDeg));
+  const turned = (swirl * Math.PI) / 180;
+  const heapX = HEAP_CENTER.x - 50 + spread(HEAP_SCATTER.x);
+  const heapY = (HEAP_CENTER.y - 50 + spread(HEAP_SCATTER.y)) * HEIGHT_SHARE;
+  const heapRoll = Math.round(spread(HEAP_SCATTER.rollDeg));
+  return {
+    spotX,
+    spotY,
+    spotRoll,
+    swirl,
+    heapShiftX: heapX - (spotX * Math.cos(turned) - spotY * Math.sin(turned)),
+    heapShiftY: heapY - (spotX * Math.sin(turned) + spotY * Math.cos(turned)),
+    heapTurn: heapRoll - swirl - spotRoll,
+  };
 }
 
 /** The ring with the smallest share of its cards placed so far. */

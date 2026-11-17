@@ -4,6 +4,7 @@ import {
   deckPile,
   fannedDeck,
   slot,
+  wheelRisen,
 } from "./support/spreadTable";
 
 /** Hold the pack in the middle to wash, then choose cards from the wheel by pulling them. */
@@ -137,6 +138,21 @@ test("cards lift off the pile a few at a time until twenty are in the air", asyn
   await expect(fannedDeck(page)).toBeVisible();
 });
 
+test("a quick tap still brings every card down to swirl on the table", async ({
+  page,
+}) => {
+  await deckPile(page).click();
+  const settled = page.locator(".table-vortex__settle .table-vortex__laid");
+  await expect(settled).toHaveCount(20);
+  expect(
+    await page
+      .locator(".table-vortex__swirl")
+      .first()
+      .evaluate((node) => getComputedStyle(node).animationName),
+  ).toBe("settle-swirl");
+  await expect(fannedDeck(page)).toBeVisible();
+});
+
 test("starting over from the laid-out wheel needs no confirmation", async ({
   page,
 }) => {
@@ -193,7 +209,8 @@ test("a sideways drag turns the wheel on a narrow table", async ({
 }) => {
   test.skip(!isMobile, "the whole deck fits on a wide table");
   await deckPile(page).click();
-  await expect(fannedDeck(page)).toBeVisible();
+  // A drag is aimed at where the wheel ends up, so it has to have risen.
+  await wheelRisen(page);
   const wheel = page.locator(".card-wheel__wheel");
   const board = await page.locator(".spread-board").boundingBox();
   if (!board) throw new Error("the table is not visible");

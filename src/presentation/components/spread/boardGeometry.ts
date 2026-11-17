@@ -18,7 +18,8 @@ export const LAYOUT_SLOT_WIDTH_CQW = 11;
 const SLOT_WIDTH_STEP_CQW = 0.5;
 
 /** Board height as a percentage of its width (aspect ratio 3:2). */
-const BOARD_HEIGHT_CQW = (100 * 2) / 3;
+/** The table is 3:2: its height in percent of its width. */
+export const BOARD_HEIGHT_CQW = (100 * 2) / 3;
 const CARD_HEIGHT_RATIO = 1.5;
 /** Gap kept between an edge card and the board's edge. */
 export const FIELD_MARGIN_CQW = 1.4;

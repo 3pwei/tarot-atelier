@@ -27,8 +27,8 @@ import {
 } from "@/presentation/components/draw/cardFan";
 import {
   landingDelayMs,
+  GATHER_MS,
   tableZoom,
-  washAfterRelease,
   type FlightRole,
   type ScreenBox,
 } from "@/presentation/components/draw/dealMotion";
@@ -231,14 +231,12 @@ export function useSpreadDealer({
     setWashSeed((seed) => seed + 1);
   }
 
-  function release(heldMs: number) {
+  /** Letting go lands, swirls and gathers the cards, however long it was held. */
+  function release() {
     if (experience.state !== "shuffling") return;
-    const finish = washAfterRelease(heldMs);
     setHolding(false);
-    setFinishDelay(finish.washMs + finish.gatherMs);
-    if (motionMode === "animated") {
-      after(finish.washMs, () => setGathering(true));
-    }
+    setFinishDelay(GATHER_MS);
+    if (motionMode === "animated") setGathering(true);
   }
 
   function land(flight: Flight) {

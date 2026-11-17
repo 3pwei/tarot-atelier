@@ -21,8 +21,8 @@ const SCROLL_STEPS = 24;
 const SCROLL_STEP_PAUSE_MS = 120;
 const GESTURE_STEPS = 40;
 const HOLD_MS = 2_000;
-/** Long enough for the vortex to close and the wheel to lay out. */
-const WHEEL_SETTLE_MS = 1_600;
+/** Once the cards have settled and swirled, long enough for the wheel to rise. */
+const WHEEL_SETTLE_MS = 1_000;
 /** Long enough for a chosen card to land. */
 const FLIGHT_SETTLE_MS = 1_200;
 
@@ -58,7 +58,7 @@ test("hold to shuffle in the vortex, lay out the wheel, choose cards and burn re
     page.waitForTimeout(HOLD_MS),
   );
   // Letting go closes the vortex into the pile and lays every remaining card out.
-  await measure(page, testInfo, "wheel-open", async () => {
+  await measure(page, testInfo, "settle-and-wheel", async () => {
     await page.mouse.up();
     await expect(fannedDeck(page)).toBeVisible();
     await page.waitForTimeout(WHEEL_SETTLE_MS);

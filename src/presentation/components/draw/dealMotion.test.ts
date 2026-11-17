@@ -8,11 +8,11 @@ import {
   HEAP_SLIDE_MS,
   TABLE_ZOOM_MS,
   tableZoom,
-  WASH_ROUND_MS,
+  TABLE_LAND_MS,
+  TABLE_SWIRL_MS,
   WHEEL_RISE_MS,
   motionTimingStyle,
   landingDelayMs,
-  washAfterRelease,
   flightStyle,
   planFlight,
   toLocalOffset,
@@ -132,17 +132,12 @@ describe("flightStyle", () => {
   });
 });
 
-describe("washAfterRelease", () => {
-  it("still washes a full round after a quick tap", () => {
-    expect(washAfterRelease(0)).toEqual({
-      washMs: WASH_ROUND_MS,
-      gatherMs: GATHER_MS,
-    });
-    expect(washAfterRelease(400).washMs).toBe(WASH_ROUND_MS - 400);
-  });
-
-  it("gathers straight away after a long hold", () => {
-    expect(washAfterRelease(WASH_ROUND_MS * 3).washMs).toBe(0);
+describe("GATHER_MS", () => {
+  it("lands, swirls, drops and slides away in that order, whatever the hold", () => {
+    expect(GATHER_MS).toBe(
+      TABLE_LAND_MS + TABLE_SWIRL_MS + HEAP_DROP_MS + HEAP_SLIDE_MS,
+    );
+    expect(TABLE_SWIRL_MS).toBe(800);
   });
 });
 
@@ -157,6 +152,8 @@ describe("motionTimingStyle", () => {
   it("hands every wash and flight timing to the stylesheet", () => {
     expect(motionTimingStyle()).toEqual({
       "--gather-duration": `${GATHER_MS}ms`,
+      "--settle-land-duration": `${TABLE_LAND_MS}ms`,
+      "--settle-swirl-duration": `${TABLE_SWIRL_MS}ms`,
       "--heap-drop-duration": `${HEAP_DROP_MS}ms`,
       "--heap-slide-duration": `${HEAP_SLIDE_MS}ms`,
       "--wheel-rise-duration": `${WHEEL_RISE_MS}ms`,

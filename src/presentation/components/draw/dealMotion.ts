@@ -5,12 +5,17 @@ import type { CSSProperties } from "react";
  * motion on the compositor, so it stays smooth on slow phones; these values
  * reach the stylesheet as custom properties and the dealer waits on them.
  */
-/** A tap still washes the cards this long; holding the deck keeps going. */
-export const WASH_ROUND_MS = 1600;
-/** Letting go: the cards drop in a loose heap below, which then slides away. */
+/**
+ * Letting go, however long the deck was held: the cards come down onto the
+ * table, swirl round its middle lying flat, drop in a loose heap below and
+ * slide away. A quick tap gets the same, so it never ends abruptly.
+ */
+export const TABLE_LAND_MS = 250;
+export const TABLE_SWIRL_MS = 800;
 export const HEAP_DROP_MS = 320;
 export const HEAP_SLIDE_MS = 240;
-export const GATHER_MS = HEAP_DROP_MS + HEAP_SLIDE_MS;
+export const GATHER_MS =
+  TABLE_LAND_MS + TABLE_SWIRL_MS + HEAP_DROP_MS + HEAP_SLIDE_MS;
 /** The wheel rising from the bottom edge once the heap has gone. */
 export const WHEEL_RISE_MS = 460;
 /** Time for a chosen card to fly from the wheel to its position. */
@@ -18,7 +23,6 @@ export const FLIGHT_MS = 900;
 /** The jumper follows the chosen card this long after it. */
 export const JUMPER_DELAY_MS = 420;
 
-/** What happens after the person lets go of the deck. */
 /** How far the table steps back while cards are being drawn. */
 export const DRAWING_TABLE_ZOOM = 0.7;
 /** Stepping back, and coming close again once every position has its card. */
@@ -36,20 +40,6 @@ export function tableZoom(state: {
   return state.arranging || !state.dealing ? 1 : DRAWING_TABLE_ZOOM;
 }
 
-export interface WashFinish {
-  /** The cards keep washing this long: a quick tap still gets a full round. */
-  readonly washMs: number;
-  /** Then they gather into one pile. */
-  readonly gatherMs: number;
-}
-
-export function washAfterRelease(heldMs: number): WashFinish {
-  return {
-    washMs: Math.max(0, WASH_ROUND_MS - Math.max(0, heldMs)),
-    gatherMs: GATHER_MS,
-  };
-}
-
 /** When a chosen card, or the jumper that slipped out with it, has landed. */
 export function landingDelayMs(role: FlightRole): number {
   return role === "jumper" ? JUMPER_DELAY_MS + FLIGHT_MS : FLIGHT_MS;
@@ -59,6 +49,8 @@ export function landingDelayMs(role: FlightRole): number {
 export function motionTimingStyle(): CSSProperties {
   return {
     "--gather-duration": `${GATHER_MS}ms`,
+    "--settle-land-duration": `${TABLE_LAND_MS}ms`,
+    "--settle-swirl-duration": `${TABLE_SWIRL_MS}ms`,
     "--heap-drop-duration": `${HEAP_DROP_MS}ms`,
     "--heap-slide-duration": `${HEAP_SLIDE_MS}ms`,
     "--wheel-rise-duration": `${WHEEL_RISE_MS}ms`,
