@@ -71,6 +71,8 @@ export function TableDeck({
       style={style}
       data-washing={shuffling || undefined}
       data-gathering={(shuffling && gathering) || undefined}
+      // A long press shuffles; it must not open the image or text menu.
+      onContextMenu={(event) => event.preventDefault()}
       data-choosing={choosing || undefined}
     >
       {shuffling && (

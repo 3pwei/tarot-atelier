@@ -84,6 +84,30 @@ test("holding the deck lifts its cards into a vortex of cards as large as the po
   expect(Math.abs(wheelCardWidth - slotWidth)).toBeLessThanOrEqual(2);
 });
 
+test("a touch on the pack does not lift or enlarge its top card", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "touch only");
+  const pile = deckPile(page);
+  const top = pile.locator("[data-deck-top]");
+  const before = await top.evaluate((node) => getComputedStyle(node).transform);
+  await pile.tap();
+  await expect(fannedDeck(page)).toBeVisible();
+  // The pack is back once the spread is cleared; a finger leaves no hover.
+  await page.getByRole("button", { name: "清除本次牌陣" }).click();
+  expect(
+    await page
+      .locator("[data-deck-top]")
+      .evaluate((node) => getComputedStyle(node).transform),
+  ).toBe(before);
+  expect(
+    await page
+      .locator(".table-deck")
+      .evaluate((node) => getComputedStyle(node).userSelect),
+  ).toBe("none");
+});
+
 test("starting over from the laid-out wheel needs no confirmation", async ({
   page,
 }) => {
