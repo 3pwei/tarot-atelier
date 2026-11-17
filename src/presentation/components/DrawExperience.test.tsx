@@ -5,6 +5,10 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import {
+  LARGEST_SLOT_WIDTH_CQW,
+  STANDARD_SLOT_WIDTH_CQW,
+} from "@/presentation/components/spread/boardGeometry";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpreadSessionStorage } from "@/application/ports/textStorage";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
@@ -506,7 +510,7 @@ describe("DrawExperience spread table", () => {
   it("shows layout editing controls only while arranging", async () => {
     renderTable();
     await ready();
-    const editing = ["＋ 新增牌位", "儲存目前牌陣", "經典三張"] as const;
+    const editing = ["＋ 新增牌位", "儲存目前牌陣", "空白牌桌"] as const;
     for (const name of editing) {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
@@ -673,6 +677,67 @@ describe("DrawExperience spread table", () => {
     expect(deckPile()).toHaveAccessibleDescription(
       /按住牌堆.*放開後收回中央攤開/u,
     );
+  });
+
+  it("lays out any spread in the library straight from play, without editing", async () => {
+    renderTable();
+    await ready();
+    const picker = screen.getByRole("region", { name: "選擇牌陣" });
+    for (const name of ["經典三張", "五張十字", "圓環"]) {
+      expect(within(picker).getByRole("button", { name })).toBeEnabled();
+    }
+    // Deleting spreads belongs to editing.
+    expect(
+      within(picker).queryByRole("button", { name: /^刪除牌陣/u }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(within(picker).getByRole("button", { name: "圓環" }));
+    expect(document.querySelectorAll("[data-slot]")).toHaveLength(8);
+    expect(
+      within(picker).getByRole("button", { name: "圓環", pressed: true }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers every saved spread as a choice, and locks choosing once cards are dealt", async () => {
+    renderTable();
+    await ready();
+    arrange();
+    fireEvent.click(screen.getByRole("button", { name: "儲存目前牌陣" }));
+    fireEvent.change(screen.getByLabelText("牌陣名稱"), {
+      target: { value: "我的三張" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "儲存" }));
+    finishArranging();
+
+    const picker = screen.getByRole("region", { name: "選擇牌陣" });
+    expect(
+      within(picker).getByRole("button", { name: "我的三張" }),
+    ).toBeInTheDocument();
+
+    await shuffleAndPick();
+    expect(within(picker).getByRole("button", { name: "圓環" })).toBeDisabled();
+  });
+
+  it("draws cards 1.5 times larger when the spread has room, smaller when it has not", async () => {
+    renderTable();
+    await ready();
+    const canvas = () =>
+      document.querySelector<HTMLElement>(".spread-board__canvas");
+    expect(canvas()?.style.getPropertyValue("--slot-w")).toBe(
+      `${LARGEST_SLOT_WIDTH_CQW}cqw`,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "五張十字" }));
+    expect(canvas()?.style.getPropertyValue("--slot-w")).toBe(
+      `${STANDARD_SLOT_WIDTH_CQW}cqw`,
+    );
+  });
+
+  it("has no zoom buttons: the table zooms with a pinch only", async () => {
+    renderTable();
+    await ready();
+    for (const name of ["放大牌桌", "縮小牌桌"]) {
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    }
   });
 
   it("clears the current spread at once, without asking", async () => {

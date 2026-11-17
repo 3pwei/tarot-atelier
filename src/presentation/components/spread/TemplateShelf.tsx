@@ -8,6 +8,7 @@ import {
   type TemplateLibrary,
 } from "@/domain/spread/templates";
 import { MAX_TEMPLATE_NAME_LENGTH } from "@/domain/spread/types";
+import { SpreadPicker } from "@/presentation/components/spread/SpreadPicker";
 
 interface TemplateShelfProps {
   readonly library: TemplateLibrary;
@@ -58,35 +59,23 @@ export function TemplateShelf({
 
   return (
     <section className="template-shelf" aria-label="牌陣庫">
-      <div className="template-shelf__list">
-        {library.map((template) => (
-          <div
-            key={template.id}
-            className="template-chip"
-            data-active={template.id === activeTemplateId || undefined}
+      <SpreadPicker
+        library={library}
+        activeTemplateId={activeTemplateId}
+        disabled={applyLocked || busy}
+        onApply={onApply}
+        renderChipAction={(template) => (
+          <button
+            type="button"
+            className="template-chip__delete"
+            aria-label={`刪除牌陣「${template.name}」`}
+            disabled={busy}
+            onClick={() => setDeleting(template)}
           >
-            <button
-              type="button"
-              className="template-chip__apply"
-              aria-pressed={template.id === activeTemplateId}
-              disabled={applyLocked || busy}
-              title={`${template.positions.length} 個牌位`}
-              onClick={() => onApply(template.id)}
-            >
-              {template.name}
-              <small aria-hidden="true">{template.positions.length}</small>
-            </button>
-            <button
-              type="button"
-              className="template-chip__delete"
-              aria-label={`刪除牌陣「${template.name}」`}
-              disabled={busy}
-              onClick={() => setDeleting(template)}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+            ×
+          </button>
+        )}
+      >
         <button
           type="button"
           className="preset-chip"
@@ -95,7 +84,7 @@ export function TemplateShelf({
         >
           空白牌桌
         </button>
-      </div>
+      </SpreadPicker>
 
       {deleting && (
         <div

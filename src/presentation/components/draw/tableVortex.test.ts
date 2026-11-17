@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  LARGEST_SLOT_WIDTH_CQW,
+  STANDARD_SLOT_WIDTH_CQW,
+} from "@/presentation/components/spread/boardGeometry";
+import {
+  cardsOnTier,
   PILE_CENTER,
   seededRandom,
   VORTEX_SPARK_COUNT,
@@ -28,24 +33,40 @@ describe("the vortex", () => {
   });
 
   it("spaces the cards on each ring evenly around it", () => {
-    const cards = vortexCards(seededRandom(1));
+    const cards = vortexCards(seededRandom(1), STANDARD_SLOT_WIDTH_CQW);
     VORTEX_TIERS.forEach((tier, index) => {
       const ring = cards.filter((card) => card.tier === index);
-      expect(ring).toHaveLength(tier.cards);
+      expect(ring).toHaveLength(cardsOnTier(tier, STANDARD_SLOT_WIDTH_CQW));
       expect(ring.map((card) => card.offsetMs)).toEqual(
-        ring.map((_, place) => Math.round((tier.turnMs * place) / tier.cards)),
+        ring.map((_, place) => Math.round((tier.turnMs * place) / ring.length)),
+      );
+    });
+  });
+
+  it("puts fewer of the larger cards in the air, at least one per ring", () => {
+    const standard = vortexCards(seededRandom(4), STANDARD_SLOT_WIDTH_CQW);
+    const large = vortexCards(seededRandom(4), LARGEST_SLOT_WIDTH_CQW);
+    expect(large.length).toBeLessThan(standard.length);
+    VORTEX_TIERS.forEach((tier, index) => {
+      expect(cardsOnTier(tier, LARGEST_SLOT_WIDTH_CQW)).toBeGreaterThanOrEqual(
+        1,
+      );
+      expect(large.filter((card) => card.tier === index).length).toBe(
+        cardsOnTier(tier, LARGEST_SLOT_WIDTH_CQW),
       );
     });
   });
 
   it("tilts cards only slightly", () => {
-    for (const card of vortexCards(seededRandom(2))) {
+    for (const card of vortexCards(seededRandom(2), STANDARD_SLOT_WIDTH_CQW)) {
       expect(Math.abs(card.tilt)).toBeLessThanOrEqual(24);
     }
   });
 
   it("looks the same for the same seed", () => {
-    expect(vortexCards(seededRandom(7))).toEqual(vortexCards(seededRandom(7)));
+    expect(vortexCards(seededRandom(7), 14)).toEqual(
+      vortexCards(seededRandom(7), 14),
+    );
     expect(vortexSparks(seededRandom(7))).toEqual(
       vortexSparks(seededRandom(7)),
     );

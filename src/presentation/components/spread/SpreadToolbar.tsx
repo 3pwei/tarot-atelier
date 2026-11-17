@@ -9,14 +9,7 @@ interface SpreadToolbarProps {
   readonly arranging: boolean;
   readonly canToggleArrange: boolean;
   readonly onToggleArrange: () => void;
-  /** Table zoom factor; shown as ×1.25 rather than a percentage. */
-  readonly zoom: number;
-  readonly canZoomIn: boolean;
-  readonly canZoomOut: boolean;
   readonly onAdd: () => void;
-  readonly onZoomIn: () => void;
-  readonly onZoomOut: () => void;
-  readonly onZoomReset: () => void;
   /** Starting over is allowed except while cards are washing or flying. */
   readonly canClear: boolean;
   readonly onClear: () => void;
@@ -28,18 +21,11 @@ export function SpreadToolbar({
   arranging,
   canToggleArrange,
   onToggleArrange,
-  zoom,
-  canZoomIn,
-  canZoomOut,
   onAdd,
-  onZoomIn,
-  onZoomOut,
-  onZoomReset,
   canClear,
   onClear,
 }: SpreadToolbarProps) {
   const atLimit = positionCount >= MAX_SPREAD_POSITIONS;
-  const zoomLabel = `×${Number(zoom.toFixed(2))}`;
 
   return (
     <div className="spread-toolbar">
@@ -53,39 +39,6 @@ export function SpreadToolbar({
         >
           {arranging ? "完成編輯" : "編輯牌陣"}
         </button>
-        <div
-          className="spread-toolbar__zoom"
-          role="group"
-          aria-label="牌桌縮放"
-        >
-          <button
-            type="button"
-            className="icon-action"
-            aria-label="縮小牌桌"
-            disabled={!canZoomOut}
-            onClick={onZoomOut}
-          >
-            −
-          </button>
-          <button
-            type="button"
-            className="icon-action icon-action--wide"
-            aria-label={`縮放 ${Number(zoom.toFixed(2))} 倍，按下重設`}
-            onClick={onZoomReset}
-          >
-            {zoomLabel}
-          </button>
-          <button
-            type="button"
-            className="icon-action"
-            aria-label="放大牌桌"
-            disabled={!canZoomIn}
-            onClick={onZoomIn}
-          >
-            ＋
-          </button>
-        </div>
-
         {arranging && (
           <>
             <button

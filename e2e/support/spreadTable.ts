@@ -67,3 +67,27 @@ export async function askMainQuestion(
   await page.getByRole("textbox", { name: /^主問題/u }).fill(question);
   await expect(page.getByText("準備好了，請洗牌")).toBeVisible();
 }
+
+/**
+ * Zooms the table in as a trackpad pinch does (ctrl + wheel), around its
+ * centre. There are no zoom buttons; phones pinch with two fingers.
+ */
+export async function zoomTableIn(page: Page, pinches = 1) {
+  const board = page.locator(".spread-board");
+  for (let pinch = 0; pinch < pinches; pinch += 1) {
+    await board.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      element.dispatchEvent(
+        new WheelEvent("wheel", {
+          ctrlKey: true,
+          deltaY: -100,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + rect.height / 2,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+  }
+  await expect(board).toHaveAttribute("data-zoomed", "true");
+}

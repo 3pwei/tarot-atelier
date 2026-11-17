@@ -76,7 +76,12 @@ export function TableDeck({
       data-choosing={choosing || undefined}
     >
       {shuffling && (
-        <TableVortex seed={washSeed} gathering={gathering} backUrl={backUrl} />
+        <TableVortex
+          cardWidth={cardWidth}
+          seed={washSeed}
+          gathering={gathering}
+          backUrl={backUrl}
+        />
       )}
       {choosing ? (
         <CardWheelView

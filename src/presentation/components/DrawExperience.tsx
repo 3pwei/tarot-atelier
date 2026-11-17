@@ -24,7 +24,7 @@ import {
 import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { TableDeck } from "@/presentation/components/draw/TableDeck";
-import { SLOT_WIDTH_CQW } from "@/presentation/components/spread/boardGeometry";
+import { slotWidthFor } from "@/presentation/components/spread/boardGeometry";
 import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
 import { cardBackUrl } from "@/presentation/components/library/prerenderedArt";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
@@ -54,6 +54,7 @@ import {
   tableAbilities,
   type TableMode,
 } from "@/presentation/components/spread/tableMode";
+import { SpreadPicker } from "@/presentation/components/spread/SpreadPicker";
 import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
 import { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
 import {
@@ -129,6 +130,11 @@ export function DrawExperience({
   const session = useSpreadSession(deck, storage, templateStorage, createId);
   const { state, dispatch, generation } = session;
   const { spread, revealedInstanceIds, selectedId } = state;
+  // One card size for the whole deck: positions, pile, vortex and wheel.
+  const slotWidth = useMemo(
+    () => slotWidthFor(spread.positions),
+    [spread.positions],
+  );
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef);
   const motionMode = useMotionMode();
@@ -322,6 +328,18 @@ export function DrawExperience({
         </p>
 
         <div className="spread-setup">
+          {!arranging && (
+            <section className="template-shelf" aria-label="選擇牌陣">
+              <SpreadPicker
+                library={state.library}
+                activeTemplateId={spread.templateId}
+                disabled={filled > 0 || dealer.layoutLocked}
+                onApply={(templateId) =>
+                  dispatch({ type: "apply-template", templateId })
+                }
+              />
+            </section>
+          )}
           {arranging && (
             <TemplateShelf
               library={state.library}
@@ -345,18 +363,12 @@ export function DrawExperience({
             arranging={arranging}
             canToggleArrange={abilities.canToggleArrange}
             onToggleArrange={toggleArrange}
-            zoom={viewport.view.scale}
-            canZoomIn={viewport.canZoomIn}
-            canZoomOut={viewport.canZoomOut}
             onAdd={() =>
               dispatch({
                 type: "add",
                 near: visibleCenter(viewportRef.current, fieldRef.current),
               })
             }
-            onZoomIn={viewport.zoomIn}
-            onZoomOut={viewport.zoomOut}
-            onZoomReset={viewport.reset}
             canClear={dealer.canClear}
             onClear={session.clear}
           />
@@ -365,7 +377,7 @@ export function DrawExperience({
         <div className="draw-table__stage spread-stage">
           <SpreadBoard
             spread={spread}
-            slotWidth={SLOT_WIDTH_CQW}
+            slotWidth={slotWidth}
             selectedId={selectedId}
             arrangeable={abilities.canArrange}
             awaitingIds={dealer.awaitingIds}
@@ -380,7 +392,7 @@ export function DrawExperience({
             overlay={
               arranging ? undefined : (
                 <TableDeck
-                  cardWidth={SLOT_WIDTH_CQW}
+                  cardWidth={slotWidth}
                   shuffling={dealer.phase === "shuffling"}
                   holding={dealer.holding}
                   gathering={dealer.gathering}

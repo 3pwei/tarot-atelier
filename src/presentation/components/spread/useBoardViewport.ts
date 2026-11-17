@@ -12,7 +12,6 @@ import { createFrameCoalescer } from "@/presentation/components/spread/frameCoal
 
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 2.5;
-export const ZOOM_STEP = 1.25;
 const WHEEL_ZOOM_SENSITIVITY = 0.0025;
 
 export interface BoardView {
@@ -94,19 +93,6 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
     width: viewport.current?.clientWidth ?? 0,
     height: viewport.current?.clientHeight ?? 0,
   });
-
-  const zoomTo = (scale: number) => {
-    const { width, height } = size();
-    setView((current) =>
-      zoomAround(
-        current,
-        scale,
-        { x: width / 2, y: height / 2 },
-        width,
-        height,
-      ),
-    );
-  };
 
   // Trackpad pinches arrive as ctrl+wheel; plain wheel keeps scrolling the page.
   useEffect(() => {
@@ -233,11 +219,6 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
 
   return {
     view,
-    zoomIn: () => zoomTo(view.scale * ZOOM_STEP),
-    zoomOut: () => zoomTo(view.scale / ZOOM_STEP),
-    reset: () => setView(IDENTITY),
-    canZoomIn: view.scale < MAX_ZOOM - 1e-3,
-    canZoomOut: view.scale > MIN_ZOOM + 1e-3,
     gestureHandlers: {
       onPointerDown,
       onPointerMove,
