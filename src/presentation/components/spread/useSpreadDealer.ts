@@ -231,7 +231,7 @@ export function useSpreadDealer({
     setWashSeed((seed) => seed + 1);
   }
 
-  /** Letting go lands, swirls and gathers the cards, however long it was held. */
+  /** Letting go floats the cards down and gathers them, however long it was held. */
   function release() {
     if (experience.state !== "shuffling") return;
     setHolding(false);

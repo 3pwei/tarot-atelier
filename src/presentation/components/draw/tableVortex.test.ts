@@ -8,8 +8,10 @@ import {
   SETTLE,
   VORTEX_LIFT_SPAN_MS,
   VORTEX_FIREFLY_COUNT,
+  VORTEX_FIREFLY_DELAY_MS,
   VORTEX_SCATTER,
   VORTEX_TIERS,
+  launchAt,
   vortexCards,
   vortexFireflies,
 } from "@/presentation/components/draw/tableVortex";
@@ -49,13 +51,25 @@ describe("the vortex", () => {
     });
   });
 
-  it("launches cards one after another, more and more, over a second and a half", () => {
+  it("launches cards one by one at first, then faster and faster, over a second and a half", () => {
     const launches = cards.map((card) => card.launchMs);
     expect(launches[0]).toBe(0);
     expect(launches.at(-1)).toBe(VORTEX_LIFT_SPAN_MS);
-    launches.slice(1).forEach((launch, index) => {
-      expect(launch).toBeGreaterThan(launches[index]!);
+    const gaps = launches
+      .slice(1)
+      .map((launch, index) => launch - launches[index]!);
+    for (const gap of gaps) expect(gap).toBeGreaterThan(0);
+    gaps.slice(1).forEach((gap, index) => {
+      expect(gap).toBeLessThanOrEqual(gaps[index]! + 1);
     });
+    expect(gaps[0]!).toBeGreaterThan(4 * gaps.at(-1)!);
+  });
+
+  it("spaces launches the same way for any number of cards", () => {
+    expect(launchAt(0, 1)).toBe(0);
+    expect(launchAt(0, 5)).toBe(0);
+    expect(launchAt(4, 5)).toBe(VORTEX_LIFT_SPAN_MS);
+    expect(launchAt(2, 5)).toBeGreaterThan(VORTEX_LIFT_SPAN_MS / 2);
   });
 
   it("fills the rings together rather than one ring after another", () => {
@@ -100,40 +114,36 @@ describe("the vortex", () => {
     );
   });
 
-  it("lays every card flat round the table's middle, then swirls it clockwise", () => {
+  it("lays every card flat near the table's middle, without swirling it", () => {
     for (const card of cards) {
       const reach = Math.hypot(card.spotX, card.spotY);
       expect(reach).toBeGreaterThanOrEqual(SETTLE.nearest - 1e-9);
       expect(reach).toBeLessThanOrEqual(SETTLE.furthest + 1e-9);
-      expect(Math.abs(card.swirl - SETTLE.swirlDeg)).toBeLessThanOrEqual(
-        SETTLE.swirlSpreadDeg,
-      );
+      expect(card).not.toHaveProperty("swirl");
     }
   });
 
-  it("drops every card in a loose heap low on the table, askew, after its swirl", () => {
+  it("gathers every card in a loose heap where the wheel opens, askew", () => {
     const heightShare = BOARD_HEIGHT_CQW / 100;
     for (const card of cards) {
-      const turned = (card.swirl * Math.PI) / 180;
-      const x =
-        card.heapShiftX +
-        card.spotX * Math.cos(turned) -
-        card.spotY * Math.sin(turned);
-      const y =
-        card.heapShiftY +
-        card.spotX * Math.sin(turned) +
-        card.spotY * Math.cos(turned);
+      const x = card.heapShiftX + card.spotX;
+      const y = card.heapShiftY + card.spotY;
       expect(Math.abs(50 + x - HEAP_CENTER.x)).toBeLessThanOrEqual(
         HEAP_SCATTER.x + 1e-9,
       );
       expect(
         Math.abs(50 + y / heightShare - HEAP_CENTER.y),
       ).toBeLessThanOrEqual(HEAP_SCATTER.y + 1e-9);
-      expect(
-        Math.abs(card.spotRoll + card.swirl + card.heapTurn),
-      ).toBeLessThanOrEqual(HEAP_SCATTER.rollDeg);
+      expect(Math.abs(card.spotRoll + card.heapTurn)).toBeLessThanOrEqual(
+        HEAP_SCATTER.rollDeg,
+      );
     }
     expect(HEAP_CENTER.y).toBeGreaterThan(PILE_CENTER.y);
+  });
+
+  it("brings the lights up only once every card has left the pile", () => {
+    expect(VORTEX_FIREFLY_DELAY_MS).toBe(1_600);
+    expect(VORTEX_FIREFLY_DELAY_MS).toBeGreaterThan(VORTEX_LIFT_SPAN_MS);
   });
 
   it("sends a handful of soft lights round the rings with the cards", () => {

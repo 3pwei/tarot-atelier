@@ -21,7 +21,7 @@ const SCROLL_STEPS = 24;
 const SCROLL_STEP_PAUSE_MS = 120;
 const GESTURE_STEPS = 40;
 const HOLD_MS = 2_000;
-/** Once the cards have settled and swirled, long enough for the wheel to rise. */
+/** Once the cards have come down and gathered, long enough for the wheel to open. */
 const WHEEL_SETTLE_MS = 1_000;
 /** Long enough for a chosen card to land. */
 const FLIGHT_SETTLE_MS = 1_200;

@@ -6,17 +6,14 @@ import type { CSSProperties } from "react";
  * reach the stylesheet as custom properties and the dealer waits on them.
  */
 /**
- * Letting go, however long the deck was held: the cards come down onto the
- * table, swirl round its middle lying flat, drop in a loose heap below and
- * slide away. A quick tap gets the same, so it never ends abruptly.
+ * Letting go, however long the deck was held: the cards stop circling and
+ * float slowly down onto the middle of the table, then gather in a loose heap
+ * where the wheel opens. A quick tap gets the same, so it never ends abruptly.
  */
-export const TABLE_LAND_MS = 250;
-export const TABLE_SWIRL_MS = 800;
-export const HEAP_DROP_MS = 320;
-export const HEAP_SLIDE_MS = 240;
-export const GATHER_MS =
-  TABLE_LAND_MS + TABLE_SWIRL_MS + HEAP_DROP_MS + HEAP_SLIDE_MS;
-/** The wheel rising from the bottom edge once the heap has gone. */
+export const TABLE_LAND_MS = 750;
+export const HEAP_DROP_MS = 420;
+export const GATHER_MS = TABLE_LAND_MS + HEAP_DROP_MS;
+/** The wheel opening out of the heap once the cards are gathered. */
 export const WHEEL_RISE_MS = 460;
 /** Time for a chosen card to fly from the wheel to its position. */
 export const FLIGHT_MS = 900;
@@ -50,9 +47,7 @@ export function motionTimingStyle(): CSSProperties {
   return {
     "--gather-duration": `${GATHER_MS}ms`,
     "--settle-land-duration": `${TABLE_LAND_MS}ms`,
-    "--settle-swirl-duration": `${TABLE_SWIRL_MS}ms`,
     "--heap-drop-duration": `${HEAP_DROP_MS}ms`,
-    "--heap-slide-duration": `${HEAP_SLIDE_MS}ms`,
     "--wheel-rise-duration": `${WHEEL_RISE_MS}ms`,
     "--table-zoom-duration": `${TABLE_ZOOM_MS}ms`,
     "--flight-duration": `${FLIGHT_MS}ms`,

@@ -5,11 +5,9 @@ import {
   GATHER_MS,
   DRAWING_TABLE_ZOOM,
   HEAP_DROP_MS,
-  HEAP_SLIDE_MS,
   TABLE_ZOOM_MS,
   tableZoom,
   TABLE_LAND_MS,
-  TABLE_SWIRL_MS,
   WHEEL_RISE_MS,
   motionTimingStyle,
   landingDelayMs,
@@ -133,11 +131,10 @@ describe("flightStyle", () => {
 });
 
 describe("GATHER_MS", () => {
-  it("lands, swirls, drops and slides away in that order, whatever the hold", () => {
-    expect(GATHER_MS).toBe(
-      TABLE_LAND_MS + TABLE_SWIRL_MS + HEAP_DROP_MS + HEAP_SLIDE_MS,
-    );
-    expect(TABLE_SWIRL_MS).toBe(800);
+  it("floats the cards down, then gathers them, whatever the hold", () => {
+    expect(GATHER_MS).toBe(TABLE_LAND_MS + HEAP_DROP_MS);
+    // Slowly enough to watch the cards come down.
+    expect(TABLE_LAND_MS).toBeGreaterThanOrEqual(600);
   });
 });
 
@@ -153,9 +150,7 @@ describe("motionTimingStyle", () => {
     expect(motionTimingStyle()).toEqual({
       "--gather-duration": `${GATHER_MS}ms`,
       "--settle-land-duration": `${TABLE_LAND_MS}ms`,
-      "--settle-swirl-duration": `${TABLE_SWIRL_MS}ms`,
       "--heap-drop-duration": `${HEAP_DROP_MS}ms`,
-      "--heap-slide-duration": `${HEAP_SLIDE_MS}ms`,
       "--wheel-rise-duration": `${WHEEL_RISE_MS}ms`,
       "--table-zoom-duration": `${TABLE_ZOOM_MS}ms`,
       "--flight-duration": `${FLIGHT_MS}ms`,

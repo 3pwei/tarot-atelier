@@ -4,9 +4,9 @@
  * golden light, wide at the top and narrow at the bottom; the widest rings
  * reach past the table's edges, where cards vanish and come back round.
  * Twenty cards stand in for the deck, so the motion stays light; the real
- * order is decided by the pile when the shuffle completes. Letting go brings
- * every card down flat onto the table, where they swirl round its middle,
- * then drop in a loose heap below, which slides away before the wheel rises.
+ * order is decided by the pile when the shuffle completes. Letting go stops
+ * the whirl: every card floats down flat onto the middle of the table, then
+ * they gather in a loose heap where the wheel opens.
  *
  * Every number here is a plain percentage of the table (x of its width,
  * y of its height) or a time, so the stylesheet can scale it with the table.
@@ -17,8 +17,8 @@ import { BOARD_HEIGHT_CQW } from "@/presentation/components/spread/boardGeometry
 /** Where the pack lies, in percent of the table. */
 export const PILE_CENTER = Object.freeze({ x: 50, y: 48 });
 
-/** Where the loose heap lands when the deck is let go, over the wheel. */
-export const HEAP_CENTER = Object.freeze({ x: 50, y: 86 });
+/** Where the cards gather when the deck is let go: where the wheel opens. */
+export const HEAP_CENTER = Object.freeze({ x: 50, y: 88 });
 
 /**
  * How flat each ring of the funnel looks: its height over its width. Rings
@@ -54,8 +54,14 @@ export const VORTEX_TIERS: readonly VortexTier[] = Object.freeze([
 /** From the first card leaving the pile to the last. */
 export const VORTEX_LIFT_SPAN_MS = 1_500;
 
-/** One card's climb from the pile to its ring. */
-export const VORTEX_CLIMB_MS = 550;
+/**
+ * How sharply launches crowd together: the first cards leave one by one,
+ * the gaps shrinking until the last ones go almost together.
+ */
+export const VORTEX_LAUNCH_EASE = 2;
+
+/** One card's climb from the pile to its ring, slow at first. */
+export const VORTEX_CLIMB_MS = 800;
 
 /**
  * How unruly the cards are: each strays from its ring's path and size, and
@@ -75,14 +81,11 @@ export const VORTEX_SCATTER = Object.freeze({
   shortest: 0.55,
 });
 
-/** Where the cards lie and swirl on the table, round its middle. */
+/** Where the cards come down, round the middle of the table. */
 export const SETTLE = Object.freeze({
   /** Nearest and furthest from the middle, in percent of the table's width. */
-  nearest: 6,
-  furthest: 30,
-  /** How far each card swirls round the middle, in degrees, clockwise. */
-  swirlDeg: 140,
-  swirlSpreadDeg: 30,
+  nearest: 2,
+  furthest: 14,
   /** Spaced by the golden angle, so no two cards line up. */
   stepRad: 2.399963,
 });
@@ -96,6 +99,12 @@ export const HEAP_SCATTER = Object.freeze({
 
 /** Soft lights circling with the cards in the air, never on the table. */
 export const VORTEX_FIREFLY_COUNT = 8;
+
+/**
+ * The lights come up only once the whirl is full: after the last card has
+ * left the pile, not with the first ones.
+ */
+export const VORTEX_FIREFLY_DELAY_MS = 1_600;
 
 export interface VortexCard {
   readonly tier: number;
@@ -116,8 +125,9 @@ export interface VortexCard {
   /** Tipped away from the viewer: how tall it looks, as a share. */
   readonly tip: number;
   /**
-   * Where in its flip the card is when it joins the ring, from 0 to 1. It
-   * flips over once a lap, so the gold front shows now and then.
+   * When, from 0 to 1, the card first starts to flip: never before it has
+   * flown half a lap, and by a lap and a third at the latest. It then flips
+   * every two laps, so the gold front shows now and then.
    */
   readonly flipPhase: number;
   /**
@@ -127,12 +137,10 @@ export interface VortexCard {
   readonly spotX: number;
   readonly spotY: number;
   readonly spotRoll: number;
-  /** How far it swirls round the middle, clockwise. */
-  readonly swirl: number;
   /**
-   * The shift, from the middle, that takes it from where the swirl leaves it
-   * to its place in the heap (percent of the table's width), and the turn
-   * that leaves it askew there.
+   * The shift, from the middle, that takes it from where it lies to its place
+   * in the heap (percent of the table's width), and the turn that leaves it
+   * askew there.
    */
   readonly heapShiftX: number;
   readonly heapShiftY: number;
@@ -175,9 +183,9 @@ function between(random: () => number, low: number, high: number): number {
 /**
  * Every card in the air, in the order they leave the pile. The rings fill
  * together: the n-th card goes to the ring that is furthest behind its share,
- * so each ring gains cards at its own steady pace. Launches are evenly spaced
- * over `VORTEX_LIFT_SPAN_MS`, so more and more cards are flying until all of
- * them are. Sizes are shares of the pack's card, so the vortex fits every
+ * so each ring gains cards at its own steady pace. Launches spread over
+ * `VORTEX_LIFT_SPAN_MS`, far apart at first and closer and closer, so the
+ * whirl builds up slowly and then fast. Sizes are shares of the pack's card, so the vortex fits every
  * spread's card size.
  */
 export function vortexCards(random: () => number): readonly VortexCard[] {
@@ -191,9 +199,7 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
     const size = 1 + spread(VORTEX_SCATTER.size);
     return {
       tier,
-      launchMs: Math.round(
-        total > 1 ? (VORTEX_LIFT_SPAN_MS * order) / (total - 1) : 0,
-      ),
+      launchMs: launchAt(order, total),
       airScale: ring.cardShare * size,
       radiusScale: 1 + spread(VORTEX_SCATTER.radius),
       shiftX: spread(VORTEX_SCATTER.shiftX),
@@ -206,14 +212,19 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
   });
 }
 
+/** Ease-out over the span: wide gaps first, then ever narrower. */
+export function launchAt(order: number, total: number): number {
+  if (total <= 1) return 0;
+  const along = order / (total - 1);
+  return Math.round(
+    VORTEX_LIFT_SPAN_MS * (1 - (1 - along) ** VORTEX_LAUNCH_EASE),
+  );
+}
+
 /** Percent of the table's height, as percent of its width. */
 const HEIGHT_SHARE = BOARD_HEIGHT_CQW / 100;
 
-/**
- * Where the `order`-th card lies and swirls on the table and how it reaches
- * the heap. The swirl turns the card's spot round the middle, so the heap
- * shift is worked out from where the swirl leaves it.
- */
+/** Where the `order`-th card lies on the table and how it reaches the heap. */
 function settle(order: number, random: () => number) {
   const spread = (amount: number) => between(random, -amount, amount);
   const angle = order * SETTLE.stepRad;
@@ -221,8 +232,6 @@ function settle(order: number, random: () => number) {
   const spotX = reach * Math.cos(angle);
   const spotY = reach * Math.sin(angle);
   const spotRoll = Math.round((angle * 180) / Math.PI + 90 + spread(20));
-  const swirl = Math.round(SETTLE.swirlDeg + spread(SETTLE.swirlSpreadDeg));
-  const turned = (swirl * Math.PI) / 180;
   const heapX = HEAP_CENTER.x - 50 + spread(HEAP_SCATTER.x);
   const heapY = (HEAP_CENTER.y - 50 + spread(HEAP_SCATTER.y)) * HEIGHT_SHARE;
   const heapRoll = Math.round(spread(HEAP_SCATTER.rollDeg));
@@ -230,10 +239,9 @@ function settle(order: number, random: () => number) {
     spotX,
     spotY,
     spotRoll,
-    swirl,
-    heapShiftX: heapX - (spotX * Math.cos(turned) - spotY * Math.sin(turned)),
-    heapShiftY: heapY - (spotX * Math.sin(turned) + spotY * Math.cos(turned)),
-    heapTurn: heapRoll - swirl - spotRoll,
+    heapShiftX: heapX - spotX,
+    heapShiftY: heapY - spotY,
+    heapTurn: heapRoll - spotRoll,
   };
 }
 

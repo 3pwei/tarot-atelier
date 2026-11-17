@@ -12,6 +12,7 @@ import {
   PILE_CENTER,
   seededRandom,
   VORTEX_CLIMB_MS,
+  VORTEX_FIREFLY_DELAY_MS,
   VORTEX_TIERS,
   VORTEX_TILT,
   vortexCards,
@@ -21,7 +22,7 @@ import {
 interface TableVortexProps {
   /** A new value scatters the cards and lights differently. */
   readonly seed: number;
-  /** True once the person has let go: the cards settle, swirl and leave. */
+  /** True once the person has let go: the cards come down and gather. */
   readonly gathering: boolean;
   /** A small pre-rendered back for cards in the air. */
   readonly backUrl?: string;
@@ -48,9 +49,9 @@ function CardBack({ backUrl }: { readonly backUrl?: string }) {
  * another they leave the top of the pack and climb to the near side of their
  * ring, then circle on a path of their own, flipping over now and then to
  * show a plain gold front, with a few soft lights circling among them.
- * Letting go brings every card down flat onto the table, where they swirl
- * round its middle, then drop in a loose heap low on the table, which slides
- * away; see ADR 0005 for why the flips are flat.
+ * Letting go stops the whirl: every card floats down flat onto the middle of
+ * the table, then they gather in a loose heap where the wheel opens; see
+ * ADR 0005 for why the flips are flat.
  */
 export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
   const cards = useMemo(() => vortexCards(seededRandom(seed)), [seed]);
@@ -66,7 +67,12 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
       ref={root}
       className="table-vortex"
       data-gathering={gathering || undefined}
-      style={{ "--climb-duration": `${VORTEX_CLIMB_MS}ms` } as CSSProperties}
+      style={
+        {
+          "--climb-duration": `${VORTEX_CLIMB_MS}ms`,
+          "--firefly-delay": `${VORTEX_FIREFLY_DELAY_MS}ms`,
+        } as CSSProperties
+      }
       aria-hidden="true"
     >
       <div className="table-vortex__whirl">
@@ -84,10 +90,11 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
             }
           >
             {cards
-              .filter((card) => card.tier === tierIndex)
-              .map((card) => (
+              .map((card, order) => ({ card, order }))
+              .filter(({ card }) => card.tier === tierIndex)
+              .map(({ card, order }) => (
                 <span
-                  key={card.launchMs}
+                  key={order}
                   className="table-vortex__lift"
                   style={
                     {
@@ -105,10 +112,7 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                   }
                 >
                   <span className="table-vortex__orbit">
-                    <span
-                      className="table-vortex__card"
-                      data-heap-from={card.launchMs}
-                    >
+                    <span className="table-vortex__card" data-heap-from={order}>
                       <span className="table-vortex__face">
                         <span className="table-vortex__flip">
                           <CardBack backUrl={backUrl} />
@@ -146,9 +150,9 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
       </div>
       {gathering && (
         <div className="table-vortex__settle">
-          {cards.map((card) => (
+          {cards.map((card, order) => (
             <span
-              key={card.launchMs}
+              key={order}
               className="table-vortex__heap-move"
               style={
                 {
@@ -158,30 +162,25 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
               }
             >
               <span
-                className="table-vortex__swirl"
-                style={{ "--swirl": `${card.swirl}deg` } as CSSProperties}
+                className="table-vortex__spot"
+                data-settle-to={order}
+                style={
+                  {
+                    "--spot-x": card.spotX,
+                    "--spot-y": card.spotY,
+                  } as CSSProperties
+                }
               >
                 <span
-                  className="table-vortex__spot"
-                  data-settle-to={card.launchMs}
+                  className="table-vortex__laid"
                   style={
                     {
-                      "--spot-x": card.spotX,
-                      "--spot-y": card.spotY,
+                      "--spot-roll": `${card.spotRoll}deg`,
+                      "--heap-turn": `${card.heapTurn}deg`,
                     } as CSSProperties
                   }
                 >
-                  <span
-                    className="table-vortex__laid"
-                    style={
-                      {
-                        "--spot-roll": `${card.spotRoll}deg`,
-                        "--heap-turn": `${card.heapTurn}deg`,
-                      } as CSSProperties
-                    }
-                  >
-                    <CardBack backUrl={backUrl} />
-                  </span>
+                  <CardBack backUrl={backUrl} />
                 </span>
               </span>
             </span>

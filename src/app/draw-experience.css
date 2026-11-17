@@ -548,8 +548,10 @@
   transform-origin: 100% 50%;
 }
 
+/* The lights wait until the whirl is full, then fade in. */
 .draw-experience[data-motion="animated"] .table-vortex__firefly-path {
-  animation: vortex-light-up var(--climb-duration) ease-out both;
+  animation: vortex-light-up var(--climb-duration) ease-out var(--firefly-delay)
+    both;
 }
 
 .draw-experience[data-motion="animated"] .table-vortex__firefly-orbit {
@@ -569,9 +571,9 @@
   animation: vortex-light-up var(--climb-duration) ease-out both;
 }
 
+/* Each card leaves slowly and picks up speed: the keyframes ease in. */
 .draw-experience[data-motion="animated"] .table-vortex__lift {
-  animation: vortex-climb var(--climb-duration) cubic-bezier(0.2, 0.7, 0.3, 1)
-    var(--launch-delay) both;
+  animation: vortex-climb var(--climb-duration) linear var(--launch-delay) both;
 }
 
 /* Two swings a quarter turn apart trace the ellipse; sine easing between the
@@ -587,24 +589,31 @@
     backwards;
 }
 
-/* Back up while it climbs; then a flip every two laps, at its own phase. */
+/* Back up while it climbs and for its first half lap; then a flip every two
+   laps, at its own phase. The first flip starts (40% into the cycle) between
+   half a lap and a lap and a third after the card joins its ring. */
+.table-vortex__lift {
+  --flip-delay: calc(
+    var(--orbit-delay) + var(--tier-turn) * 0.5 - var(--flip-phase) * 0.8 *
+      var(--tier-turn)
+  );
+}
+
 .draw-experience[data-motion="animated"] .table-vortex__flip {
   animation: vortex-flip calc(var(--tier-turn) * 2) var(--sine-in)
-    calc(var(--orbit-delay) - var(--flip-phase) * 2 * var(--tier-turn)) infinite
-    backwards;
+    var(--flip-delay) infinite backwards;
 }
 
 .draw-experience[data-motion="animated"] .table-vortex__front {
-  animation: vortex-front calc(var(--tier-turn) * 2) step-end
-    calc(var(--orbit-delay) - var(--flip-phase) * 2 * var(--tier-turn)) infinite
-    backwards;
+  animation: vortex-front calc(var(--tier-turn) * 2) step-end var(--flip-delay)
+    infinite backwards;
 }
 
-/* Letting go, however long the deck was held: every card comes down flat
-   onto the table, swirls round its middle, drops in a loose heap below and
-   slides off the bottom. Each card is four layers, each one motion:
-   heap-move (to the heap) > swirl (round the middle) > spot (down from the
-   air, to where it lies) > laid (its turn on the table, then in the heap). */
+/* Letting go, however long the deck was held: the whirl stops, every card
+   floats down flat onto the middle of the table, then they gather in a loose
+   heap where the wheel opens. Each card is three layers, each one motion:
+   heap-move (to the heap) > spot (down from the air, to where it lies) >
+   laid (its turn on the table, then in the heap). */
 .table-vortex[data-gathering] .table-vortex__whirl {
   visibility: hidden;
 }
@@ -624,13 +633,6 @@
     calc(var(--heap-shift-x) * 1cqw),
     calc(var(--heap-shift-y) * 1cqw)
   );
-}
-
-.table-vortex__swirl {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform: rotate(var(--swirl));
 }
 
 .table-vortex__spot {
@@ -656,34 +658,20 @@
   inset: 0;
 }
 
-.draw-experience[data-motion="animated"] .table-vortex__settle {
-  animation: heap-slide-away var(--heap-slide-duration) ease-in
-    calc(
-      var(--settle-land-duration) + var(--settle-swirl-duration) +
-        var(--heap-drop-duration)
-    )
-    both;
-}
-
 .draw-experience[data-motion="animated"] .table-vortex__heap-move {
   animation: settle-to-heap var(--heap-drop-duration)
-    cubic-bezier(0.3, 0, 0.3, 1)
-    calc(var(--settle-land-duration) + var(--settle-swirl-duration)) both;
+    cubic-bezier(0.4, 0, 0.3, 1) var(--settle-land-duration) both;
 }
 
-.draw-experience[data-motion="animated"] .table-vortex__swirl {
-  animation: settle-swirl var(--settle-swirl-duration)
-    cubic-bezier(0.45, 0, 0.55, 1) var(--settle-land-duration) both;
-}
-
+/* Floating down: gentle all the way, coming to rest without a bump. */
 .draw-experience[data-motion="animated"] .table-vortex__spot {
   animation: settle-land var(--settle-land-duration)
-    cubic-bezier(0.3, 0.6, 0.3, 1) both;
+    cubic-bezier(0.35, 0.1, 0.3, 1) both;
 }
 
 .draw-experience[data-motion="animated"] .table-vortex__laid {
   animation: settle-askew var(--heap-drop-duration) ease-out
-    calc(var(--settle-land-duration) + var(--settle-swirl-duration)) both;
+    var(--settle-land-duration) both;
 }
 
 .card-wheel {
@@ -692,11 +680,11 @@
   pointer-events: none;
 }
 
-/* Laid out below the table while the heap drops, then rising from the bottom
-   edge and opening out once the shuffle completes. */
+/* Laid out, out of sight, while the cards gather, then opening out of the
+   heap they gathered in once the shuffle completes. */
 .card-wheel[data-waiting] {
   visibility: hidden;
-  transform: translateY(45cqh) scaleX(0.55);
+  transform: translateY(8cqh) scaleX(0.3);
 }
 
 .draw-experience[data-motion="animated"] .card-wheel {
@@ -1210,6 +1198,7 @@
 @keyframes vortex-climb {
   0% {
     opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.4);
     transform: translateY(calc(var(--climb-from) * 1cqh - var(--orbit-y)))
       scale(calc(1 / var(--air-scale)));
   }
@@ -1224,6 +1213,7 @@
         calc((var(--climb-from) - var(--climb-rise)) * 1cqh - var(--orbit-y))
       )
       scale(1.25);
+    animation-timing-function: linear;
   }
 }
 
@@ -1275,12 +1265,6 @@
   }
 }
 
-@keyframes settle-swirl {
-  from {
-    transform: rotate(0deg);
-  }
-}
-
 @keyframes settle-to-heap {
   from {
     transform: translate(0, 0);
@@ -1291,12 +1275,6 @@
 @keyframes settle-askew {
   from {
     transform: translate(-50%, -50%) rotate(var(--spot-roll));
-  }
-}
-
-@keyframes heap-slide-away {
-  to {
-    transform: translateY(40cqh);
   }
 }
 

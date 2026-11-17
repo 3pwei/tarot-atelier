@@ -134,12 +134,24 @@ test("cards lift off the pile a few at a time until twenty are in the air", asyn
   await expect(page.locator(".table-vortex__firefly")).toHaveCount(8);
   const early = await airborne();
   expect(early).toBeLessThan(20);
+  // Climbing cards show only their backs, and the lights wait for a full whirl.
+  const shown = (selector: string) =>
+    page
+      .locator(selector)
+      .evaluateAll((nodes) =>
+        nodes.some((node) => Number(getComputedStyle(node).opacity) > 0),
+      );
+  expect(await shown(".table-vortex__front")).toBe(false);
+  expect(await shown(".table-vortex__firefly-path")).toBe(false);
   await expect.poll(airborne, { timeout: 8_000 }).toBe(20);
+  await expect
+    .poll(() => shown(".table-vortex__firefly-path"), { timeout: 8_000 })
+    .toBe(true);
   await page.mouse.up();
   await expect(fannedDeck(page)).toBeVisible();
 });
 
-test("a quick tap still brings every card down to swirl on the table", async ({
+test("a quick tap still floats every card down to the table, without swirling", async ({
   page,
 }) => {
   await deckPile(page).click();
@@ -149,10 +161,11 @@ test("a quick tap still brings every card down to swirl on the table", async ({
   await expect(page.locator(".table-vortex__firefly").first()).toBeHidden();
   expect(
     await page
-      .locator(".table-vortex__swirl")
+      .locator(".table-vortex__spot")
       .first()
       .evaluate((node) => getComputedStyle(node).animationName),
-  ).toBe("settle-swirl");
+  ).toBe("settle-land");
+  await expect(page.locator(".table-vortex__swirl")).toHaveCount(0);
   await expect(fannedDeck(page)).toBeVisible();
 });
 
