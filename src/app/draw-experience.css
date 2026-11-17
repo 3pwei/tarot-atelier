@@ -379,9 +379,6 @@
 .table-vortex {
   --sine-out: cubic-bezier(0.61, 1, 0.88, 1);
   --sine-in: cubic-bezier(0.12, 0, 0.39, 0);
-  /* How high above the pile a card rises before it swings into its path. */
-  --climb-rise: 22;
-
   position: absolute;
   inset: 0;
 }
@@ -583,8 +580,8 @@
 }
 
 /* Two swings a quarter turn apart trace the ellipse; sine easing between the
-   quarter points keeps the speed round it even. Until a card reaches the
-   peak of its shot they hold it at the near side. */
+   quarter points keeps the speed round it even. Until a card is drawn out
+   of the pack they hold it at the near side. */
 .draw-experience[data-motion="animated"] .table-vortex__orbit {
   animation: vortex-across var(--tier-turn) linear var(--orbit-delay) infinite
     backwards;
@@ -599,11 +596,6 @@
    laps, at its own phase. The first flip starts (40% into the cycle) between
    half a lap and a lap and a third after the card starts circling. */
 .table-vortex__lift {
-  /* From the pack up to wholly past the top edge. */
-  --shot-rise: calc(
-    (var(--tier-y) + var(--climb-from)) * 1cqh + var(--slot-w) *
-      var(--shot-past)
-  );
   --flip-delay: calc(
     var(--orbit-delay) + var(--tier-turn) * 0.5 - var(--flip-phase) * 0.8 *
       var(--tier-turn)
@@ -1203,52 +1195,47 @@
   }
 }
 
-/* Shot up and out of the top of the pack at full size, at about 45° to the
-   right (--shot-slope), fast at first and slowing, wholly past the top edge;
-   it turns back out of sight and, already circling with its ring (the orbit
-   starts at the peak, see VORTEX_SHOT_SHARE), spirals down into it, slowly
-   at first and picking up speed, shrinking.
+/* Drawn out of the front of the pack at full size and square with it, to
+   the front right at about 45° (--draw-out-slope), fast then slowing; from
+   there it already circles with its ring (the orbit starts then, see
+   VORTEX_DRAW_OUT_SHARE) and spirals straight out into it, shrinking.
    Positions are the card's, less where the near side puts it (--orbit-y). */
 @keyframes vortex-climb {
   0% {
     opacity: 0;
-    animation-timing-function: cubic-bezier(0.3, 0.55, 0.45, 1);
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1);
     transform: translateY(calc(var(--climb-from) * 1cqh - var(--orbit-y)))
       scale(calc(1 / var(--air-scale)));
   }
 
-  3% {
+  4% {
     opacity: 1;
   }
 
-  /* The peak: keep in step with VORTEX_SHOT_SHARE. */
-  40% {
-    animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+  /* Drawn out: keep in step with VORTEX_DRAW_OUT_SHARE. */
+  25% {
+    animation-timing-function: cubic-bezier(0.35, 0, 0.55, 1);
     transform: translate(
-        calc(var(--shot-slope) * var(--shot-rise)),
-        calc(var(--climb-from) * 1cqh - var(--shot-rise) - var(--orbit-y))
+        calc(var(--draw-out-slope) * var(--draw-out) * var(--slot-w)),
+        calc(
+          var(--climb-from) * 1cqh + var(--draw-out) * var(--slot-w) -
+            var(--orbit-y)
+        )
       )
       scale(calc(1 / var(--air-scale)));
   }
-
-  75% {
-    transform: translate(
-        calc(var(--shift-x) * 2cqw),
-        calc((var(--climb-from) - var(--climb-rise)) * 1cqh - var(--orbit-y))
-      )
-      scale(1.25);
-    animation-timing-function: linear;
-  }
 }
 
+/* Square with the pack while it is drawn out, then turning and tipping as
+   it starts to circle. */
 @keyframes vortex-straight {
   0%,
-  40% {
+  25% {
     transform: none;
     animation-timing-function: ease-in-out;
   }
 
-  75% {
+  55% {
     transform: rotate(var(--roll)) scaleY(var(--tip));
   }
 }

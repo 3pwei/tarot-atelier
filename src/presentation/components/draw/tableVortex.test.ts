@@ -12,8 +12,8 @@ import {
   VORTEX_SCATTER,
   VORTEX_TIERS,
   VORTEX_CLIMB_MS,
-  VORTEX_SHOT_SHARE,
-  VORTEX_SHOT_SLOPE,
+  VORTEX_DRAW_OUT_SHARE,
+  VORTEX_DRAW_OUT_SLOPE,
   launchAt,
   orbitStartMs,
   vortexCards,
@@ -69,23 +69,25 @@ describe("the vortex", () => {
     expect(gaps[0]!).toBeGreaterThan(4 * gaps.at(-1)!);
   });
 
-  it("shoots every card up and to the right at about 45°, each at its own angle", () => {
+  it("draws every card out to the front right at about 45°, each at its own angle", () => {
     for (const card of cards) {
-      expect(card.shotSlope).toBeGreaterThanOrEqual(VORTEX_SHOT_SLOPE.least);
-      expect(card.shotSlope).toBeLessThanOrEqual(VORTEX_SHOT_SLOPE.most);
+      expect(card.drawOutSlope).toBeGreaterThanOrEqual(
+        VORTEX_DRAW_OUT_SLOPE.least,
+      );
+      expect(card.drawOutSlope).toBeLessThanOrEqual(VORTEX_DRAW_OUT_SLOPE.most);
     }
-    expect(VORTEX_SHOT_SLOPE.least).toBeLessThan(1);
-    expect(VORTEX_SHOT_SLOPE.most).toBeGreaterThan(1);
-    expect(new Set(cards.map((card) => card.shotSlope)).size).toBeGreaterThan(
-      cards.length / 2,
-    );
+    expect(VORTEX_DRAW_OUT_SLOPE.least).toBeLessThan(1);
+    expect(VORTEX_DRAW_OUT_SLOPE.most).toBeGreaterThan(1);
+    expect(
+      new Set(cards.map((card) => card.drawOutSlope)).size,
+    ).toBeGreaterThan(cards.length / 2);
   });
 
-  it("starts each card circling at the peak of its shot, before it reaches its ring", () => {
+  it("starts each card circling as soon as it is drawn out", () => {
     expect(orbitStartMs(300)).toBe(
-      300 + Math.round(VORTEX_CLIMB_MS * VORTEX_SHOT_SHARE),
+      300 + Math.round(VORTEX_CLIMB_MS * VORTEX_DRAW_OUT_SHARE),
     );
-    expect(orbitStartMs(300)).toBeLessThan(300 + VORTEX_CLIMB_MS);
+    expect(VORTEX_DRAW_OUT_SHARE).toBeLessThanOrEqual(0.3);
   });
 
   it("spaces launches the same way for any number of cards", () => {

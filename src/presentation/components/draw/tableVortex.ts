@@ -60,35 +60,36 @@ export const VORTEX_LIFT_SPAN_MS = 1_500;
  */
 export const VORTEX_LAUNCH_EASE = 2;
 
-/** One card's climb from the pile to its ring, slow at first. */
-export const VORTEX_CLIMB_MS = 1_100;
+/** One card's way from the pile to its ring. */
+export const VORTEX_CLIMB_MS = 1_000;
 
 /**
- * Share of the climb spent shooting up to the peak past the top edge; it
- * must match the peak keyframe of `vortex-climb` (40%). From the peak on, the
- * card already circles with its ring, so it spirals down into it rather
- * than dropping straight and only then starting to turn.
+ * Share of that way spent being drawn out of the pack; it must match the
+ * drawn-out keyframe of `vortex-climb` (25%). From then on the card already
+ * circles with its ring, so it spirals straight out into it.
  */
-export const VORTEX_SHOT_SHARE = 0.4;
+export const VORTEX_DRAW_OUT_SHARE = 0.25;
 
 /** When a card starts circling with its ring, after the deck is first held. */
 export function orbitStartMs(launchMs: number): number {
-  return Math.round(launchMs + VORTEX_CLIMB_MS * VORTEX_SHOT_SHARE);
+  return Math.round(launchMs + VORTEX_CLIMB_MS * VORTEX_DRAW_OUT_SHARE);
 }
 
 /**
- * Each card shoots up out of the top of the pack, fast and slowing, until it
- * is wholly past the table's top edge: its centre ends this many card widths
- * above the edge. It turns back out of sight and falls into its ring.
+ * How far each card is drawn out of the front of the pack, towards the
+ * viewer, in card widths, before it starts circling.
  */
-export const VORTEX_SHOT_PAST = 1;
+export const VORTEX_DRAW_OUT = 0.8;
 
 /**
- * The shots all go up and to the right at about 45°, the way the near side of
- * the rings turns: how far sideways a card goes for each step up. Each card
- * has its own angle, so no two rise in one line.
+ * Cards are drawn out to the front right at about 45°, the way the near side
+ * of the rings turns: how far right a card goes for each step towards the
+ * viewer. Each card has its own angle, so no two leave in one line.
  */
-export const VORTEX_SHOT_SLOPE = Object.freeze({ least: 0.85, most: 1.15 });
+export const VORTEX_DRAW_OUT_SLOPE = Object.freeze({
+  least: 0.85,
+  most: 1.15,
+});
 
 /**
  * How unruly the cards are: each strays from its ring's path and size, and
@@ -142,8 +143,8 @@ export interface VortexCard {
    * on the table, where it is as large as the positions.
    */
   readonly airScale: number;
-  /** How it shoots out of the pack: rightwards per step up. */
-  readonly shotSlope: number;
+  /** How it is drawn out of the pack: rightwards per step towards the viewer. */
+  readonly drawOutSlope: number;
   /** Its own path's radius over its ring's. */
   readonly radiusScale: number;
   /** Its own path's shift from its ring's, in percent of the table. */
@@ -230,8 +231,12 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
       tier,
       launchMs: launchAt(order, total),
       airScale: ring.cardShare * size,
-      shotSlope: round2(
-        between(random, VORTEX_SHOT_SLOPE.least, VORTEX_SHOT_SLOPE.most),
+      drawOutSlope: round2(
+        between(
+          random,
+          VORTEX_DRAW_OUT_SLOPE.least,
+          VORTEX_DRAW_OUT_SLOPE.most,
+        ),
       ),
       radiusScale: 1 + spread(VORTEX_SCATTER.radius),
       shiftX: spread(VORTEX_SCATTER.shiftX),

@@ -13,7 +13,7 @@ import {
   seededRandom,
   VORTEX_CLIMB_MS,
   orbitStartMs,
-  VORTEX_SHOT_PAST,
+  VORTEX_DRAW_OUT,
   VORTEX_FIREFLY_DELAY_MS,
   VORTEX_TIERS,
   VORTEX_TILT,
@@ -72,7 +72,7 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
       style={
         {
           "--climb-duration": `${VORTEX_CLIMB_MS}ms`,
-          "--shot-past": VORTEX_SHOT_PAST,
+          "--draw-out": VORTEX_DRAW_OUT,
           "--firefly-delay": `${VORTEX_FIREFLY_DELAY_MS}ms`,
         } as CSSProperties
       }
@@ -107,7 +107,7 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                       "--air-scale": card.airScale,
                       "--radius-scale": card.radiusScale,
                       "--shift-x": card.shiftX,
-                      "--shot-slope": card.shotSlope,
+                      "--draw-out-slope": card.drawOutSlope,
                       "--shift-y": card.shiftY,
                       "--roll": `${card.roll}deg`,
                       "--tip": card.tip,
