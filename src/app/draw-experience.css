@@ -197,14 +197,20 @@
   animation: deck-breathe 2.8s ease-in-out infinite;
 }
 
-.deck-stack[data-can-shuffle] .deck-stack__pile:hover,
 .deck-stack[data-can-shuffle] .deck-stack__pile:focus-visible {
   transform: rotate(-2deg) translateY(-6px);
 }
 
-.deck-stack[data-can-shuffle] .deck-stack__pile:hover [data-deck-top] {
-  transform: translate(3px, -10px) rotate(2deg);
-  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+/* Only a real pointer hovers: a touch would leave the top card lifted. */
+@media (hover: hover) {
+  .deck-stack[data-can-shuffle] .deck-stack__pile:hover {
+    transform: rotate(-2deg) translateY(-6px);
+  }
+
+  .deck-stack[data-can-shuffle] .deck-stack__pile:hover [data-deck-top] {
+    transform: translate(3px, -10px) rotate(2deg);
+    transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
 }
 
 .deck-stack__pile:focus-visible {
@@ -267,6 +273,19 @@
 }
 
 /* The pack is as large as the positions' cards, like every card it holds. */
+/* Holding a card must shuffle, not open the phone's enlarged image preview
+   (iOS) or select it. */
+.table-deck {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.table-deck img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
 .table-deck .deck-stack {
   --deck-card-width: var(--slot-w);
 }

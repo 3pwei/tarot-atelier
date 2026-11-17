@@ -660,6 +660,17 @@ describe("DrawExperience spread table", () => {
     );
   });
 
+  it("keeps a long press on the pack from opening the phone's image menu", async () => {
+    renderTable();
+    await ready();
+    const pressed = new MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+    });
+    deckPile().dispatchEvent(pressed);
+    expect(pressed.defaultPrevented).toBe(true);
+  });
+
   it("explains holding the pack to people using assistive technology", async () => {
     renderTable();
     await ready();
