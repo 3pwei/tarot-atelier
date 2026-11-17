@@ -8,6 +8,8 @@
  * y of its height) or a time, so the stylesheet can scale it with the table.
  */
 
+import { STANDARD_SLOT_WIDTH_CQW } from "@/presentation/components/spread/boardGeometry";
+
 /** Where the pack lies and the vortex gathers, in percent of the table. */
 export const PILE_CENTER = Object.freeze({ x: 50, y: 48 });
 
@@ -80,14 +82,28 @@ function between(random: () => number, low: number, high: number): number {
   return low + random() * (high - low);
 }
 
-export function vortexCards(random: () => number): readonly VortexCard[] {
-  return VORTEX_TIERS.flatMap((tier, tierIndex) =>
-    Array.from({ length: tier.cards }, (_, place) => ({
+/**
+ * Cards on a ring. The funnel is laid out for standard-size cards; larger
+ * cards, which are as large as the positions, are fewer by their area, so the
+ * funnel never covers the whole table. Every ring keeps at least one.
+ */
+export function cardsOnTier(tier: VortexTier, cardWidth: number): number {
+  const share = Math.min(1, (STANDARD_SLOT_WIDTH_CQW / cardWidth) ** 2);
+  return Math.max(1, Math.round(tier.cards * share));
+}
+
+export function vortexCards(
+  random: () => number,
+  cardWidth: number,
+): readonly VortexCard[] {
+  return VORTEX_TIERS.flatMap((tier, tierIndex) => {
+    const count = cardsOnTier(tier, cardWidth);
+    return Array.from({ length: count }, (_, place) => ({
       tier: tierIndex,
-      offsetMs: Math.round((tier.turnMs * place) / tier.cards),
+      offsetMs: Math.round((tier.turnMs * place) / count),
       tilt: Math.round(between(random, -24, 24)),
-    })),
-  );
+    }));
+  });
 }
 
 /** Sparks stay inside the funnel's outline, from its rim to its tip. */

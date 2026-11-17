@@ -12,6 +12,8 @@ import {
 } from "@/presentation/components/draw/tableVortex";
 
 interface TableVortexProps {
+  /** Card width as a percentage of the table's width, as on the positions. */
+  readonly cardWidth: number;
   /** A new value gives the cards new tilts and the sparks new places. */
   readonly seed: number;
   /** True once the person has let go and the vortex closes into the pile. */
@@ -40,8 +42,16 @@ function orbitDelays(offsetMs: number, turnMs: number) {
  * viewer, the cards shrinking and dimming on the far side. Letting go closes
  * the whole funnel into the pile in the middle.
  */
-export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
-  const cards = useMemo(() => vortexCards(seededRandom(seed)), [seed]);
+export function TableVortex({
+  cardWidth,
+  seed,
+  gathering,
+  backUrl,
+}: TableVortexProps) {
+  const cards = useMemo(
+    () => vortexCards(seededRandom(seed), cardWidth),
+    [seed, cardWidth],
+  );
   const sparks = useMemo(() => vortexSparks(seededRandom(seed + 1)), [seed]);
 
   return (
