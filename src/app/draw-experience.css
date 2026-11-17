@@ -373,7 +373,7 @@
    a whirl: each climbs to the near side of its ring, then circles on a path
    of its own, the widest past the table's edges. Every motion is a transform
    or opacity of something painted once: cards flip flat (a squeeze across,
-   not a 3D turn), fronts and streaks are fixed images, and no card carries a
+   not a 3D turn), fronts are painted once, and no card carries a
    shadow, which a moving layer would repaint (ADR 0005, measured with
    `pnpm perf`). */
 .table-vortex {
@@ -443,23 +443,6 @@
   aspect-ratio: 2 / 3;
   transform: translate(-50%, calc(-50% + var(--orbit-y)))
     scale(var(--air-scale, 1));
-}
-
-/* A short glowing streak behind every other card, along the way it came. */
-.table-vortex__lift:nth-child(even) .table-vortex__trail {
-  display: none;
-}
-
-.table-vortex__trail {
-  position: absolute;
-  top: 50%;
-  right: 50%;
-  width: 210%;
-  height: 34%;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 40'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23ffe2a0' stop-opacity='0'/%3E%3Cstop offset='0.7' stop-color='%23ffe2a0' stop-opacity='0.35'/%3E%3Cstop offset='1' stop-color='%23fff8e6' stop-opacity='0.6'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23fff8e6' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23fff8e6' stop-opacity='0.95'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M256 24 Q150 28 6 10' fill='none' stroke='url%28%23t%29' stroke-width='10' stroke-linecap='round'/%3E%3Cpath d='M256 24 Q150 28 6 10' fill='none' stroke='url%28%23c%29' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")
-    center / 100% 100% no-repeat;
-  transform: translateY(-50%);
-  transform-origin: 100% 50%;
 }
 
 /* Turned in its own plane and tipped away: fixed for each card. */
@@ -552,13 +535,6 @@
     backwards;
 }
 
-/* The streak appears once the card is on its path, not while it climbs. */
-.draw-experience[data-motion="animated"] .table-vortex__trail {
-  animation:
-    vortex-trail var(--tier-turn) linear var(--orbit-delay) infinite backwards,
-    vortex-trail-in 300ms ease-out var(--orbit-delay) backwards;
-}
-
 /* Back up while it climbs; then a flip every two laps, at its own phase. */
 .draw-experience[data-motion="animated"] .table-vortex__flip {
   animation: vortex-flip calc(var(--tier-turn) * 2) var(--sine-in)
@@ -633,17 +609,6 @@
   inset: 0;
 }
 
-/* The streak trails along the swirl, behind every other card, only while
-   the cards turn. */
-.table-vortex__laid .table-vortex__trail {
-  opacity: 0;
-  transform: translateY(-50%);
-}
-
-.table-vortex__heap-move:nth-child(even) .table-vortex__trail {
-  display: none;
-}
-
 .draw-experience[data-motion="animated"] .table-vortex__settle {
   animation: heap-slide-away var(--heap-slide-duration) ease-in
     calc(
@@ -672,13 +637,6 @@
 .draw-experience[data-motion="animated"] .table-vortex__laid {
   animation: settle-askew var(--heap-drop-duration) ease-out
     calc(var(--settle-land-duration) + var(--settle-swirl-duration)) both;
-}
-
-.draw-experience[data-motion="animated"]
-  .table-vortex__laid
-  .table-vortex__trail {
-  animation: settle-trail var(--settle-swirl-duration) ease-in-out
-    var(--settle-land-duration) both;
 }
 
 .card-wheel {
@@ -1222,78 +1180,6 @@
   }
 }
 
-/* The streak points back along the ellipse: its slope at each sixteenth of
-   the lap, for a path 0.3 times as tall as it is wide (VORTEX_TILT). */
-@keyframes vortex-trail {
-  0% {
-    transform: translateY(-50%) rotate(-0deg);
-  }
-
-  6.25% {
-    transform: translateY(-50%) rotate(-7.1deg);
-  }
-
-  12.5% {
-    transform: translateY(-50%) rotate(-16.7deg);
-  }
-
-  18.75% {
-    transform: translateY(-50%) rotate(-35.9deg);
-  }
-
-  25% {
-    transform: translateY(-50%);
-  }
-
-  31.25% {
-    transform: translateY(-50%) rotate(-144.1deg);
-  }
-
-  37.5% {
-    transform: translateY(-50%) rotate(-163.3deg);
-  }
-
-  43.75% {
-    transform: translateY(-50%) rotate(-172.9deg);
-  }
-
-  50% {
-    transform: translateY(-50%) rotate(-180deg);
-  }
-
-  56.25% {
-    transform: translateY(-50%) rotate(-187.1deg);
-  }
-
-  62.5% {
-    transform: translateY(-50%) rotate(-196.7deg);
-  }
-
-  68.75% {
-    transform: translateY(-50%) rotate(-215.9deg);
-  }
-
-  75% {
-    transform: translateY(-50%) rotate(-270deg);
-  }
-
-  81.25% {
-    transform: translateY(-50%) rotate(-324.1deg);
-  }
-
-  87.5% {
-    transform: translateY(-50%) rotate(-343.3deg);
-  }
-
-  93.75% {
-    transform: translateY(-50%) rotate(-352.9deg);
-  }
-
-  100% {
-    transform: translateY(-50%) rotate(-360deg);
-  }
-}
-
 @keyframes pile-emptied {
   to {
     opacity: 0;
@@ -1361,27 +1247,9 @@
   }
 }
 
-@keyframes settle-trail {
-  0%,
-  100% {
-    opacity: 0;
-  }
-
-  20%,
-  75% {
-    opacity: 1;
-  }
-}
-
 @keyframes heap-slide-away {
   to {
     transform: translateY(40cqh);
-  }
-}
-
-@keyframes vortex-trail-in {
-  from {
-    opacity: 0;
   }
 }
 

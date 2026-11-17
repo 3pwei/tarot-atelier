@@ -47,8 +47,7 @@ function CardBack({ backUrl }: { readonly backUrl?: string }) {
  * Cards whirling upward over the table while the deck is held. One after
  * another they leave the top of the pack and climb to the near side of their
  * ring, then circle on a path of their own, flipping over now and then to
- * show a plain gold front, with a short glowing streak behind every other
- * card. Letting go brings every card down flat onto the table, where they
+ * show a plain gold front. Letting go brings every card down flat onto the table, where they
  * swirl round its middle, then drop in a loose heap low on the table, which
  * slides away; see ADR 0005 for why the flips are flat.
  */
@@ -106,7 +105,6 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                       className="table-vortex__card"
                       data-heap-from={card.launchMs}
                     >
-                      <span className="table-vortex__trail" />
                       <span className="table-vortex__face">
                         <span className="table-vortex__flip">
                           <CardBack backUrl={backUrl} />
@@ -169,7 +167,6 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                       } as CSSProperties
                     }
                   >
-                    <span className="table-vortex__trail" />
                     <CardBack backUrl={backUrl} />
                   </span>
                 </span>
