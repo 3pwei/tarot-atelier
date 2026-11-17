@@ -85,5 +85,6 @@
     "atelier-standard.pentacles.queen": "atelier-standard.pentacles.queen.webp",
     "atelier-standard.pentacles.king": "atelier-standard.pentacles.king.webp"
   },
-  "back": "back.webp"
+  "back": "back.webp",
+  "backSmall": "back-small.webp"
 }

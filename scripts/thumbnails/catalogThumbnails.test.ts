@@ -6,6 +6,7 @@ import {
   ARTWORK_SOURCES,
   artworkSourceHash,
   BACK_FILE_NAME,
+  BACK_SMALL_FILE_NAME,
   MANIFEST_PATH,
   THUMBNAIL_DECK_ID,
   THUMBNAIL_PUBLIC_DIR,
@@ -76,6 +77,18 @@ describe("committed catalog thumbnails", () => {
     );
     expect(
       existsSync(path.join("public", THUMBNAIL_PUBLIC_DIR, BACK_FILE_NAME)),
+    ).toBe(true);
+  });
+
+  it("include the half-size back for the cards in the air", () => {
+    expect(
+      manifest.backSmall,
+      `The small card back is missing. ${REGENERATE}`,
+    ).toBe(BACK_SMALL_FILE_NAME);
+    expect(
+      existsSync(
+        path.join("public", THUMBNAIL_PUBLIC_DIR, BACK_SMALL_FILE_NAME),
+      ),
     ).toBe(true);
   });
 });

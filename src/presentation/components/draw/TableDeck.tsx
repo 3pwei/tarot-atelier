@@ -25,6 +25,8 @@ interface TableDeckProps {
   readonly washSeed: number;
   /** Set while the pile lies on the wheel to choose from. */
   readonly fan?: CardFan;
+  /** False while the wheel waits below the table for the shuffle to end. */
+  readonly fanReady: boolean;
   /** Number of the position the next chosen card goes to. */
   readonly nextPositionIndex?: number;
   /** False once every position has its card: the rest of the deck leaves. */
@@ -34,6 +36,8 @@ interface TableDeckProps {
   readonly canShuffle: boolean;
   readonly label: string;
   readonly backUrl?: string;
+  /** A smaller back for the many cards in the air. */
+  readonly airBackUrl?: string;
   readonly hold: HoldHandlers;
   readonly onPick: (slot: number, origin: DOMRect) => void;
 }
@@ -51,6 +55,7 @@ export function TableDeck({
   gathering,
   washSeed,
   fan,
+  fanReady,
   nextPositionIndex,
   onTable,
   remaining,
@@ -58,6 +63,7 @@ export function TableDeck({
   canShuffle,
   label,
   backUrl,
+  airBackUrl,
   hold,
   onPick,
 }: TableDeckProps) {
@@ -82,6 +88,7 @@ export function TableDeck({
       {choosing ? (
         <CardWheelView
           fan={fan}
+          waiting={!fanReady}
           cardWidth={cardWidth}
           backUrl={backUrl}
           positionIndex={nextPositionIndex}
@@ -108,10 +115,9 @@ export function TableDeck({
       {/* Above the pack: cards leave from the top of it. */}
       {shuffling && (
         <TableVortex
-          cardWidth={cardWidth}
           seed={washSeed}
           gathering={gathering}
-          backUrl={backUrl}
+          backUrl={airBackUrl}
         />
       )}
     </div>

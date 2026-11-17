@@ -645,3 +645,23 @@ test("spreads are chosen straight from play, and there are no zoom buttons", asy
   await expect(page.getByRole("button", { name: "放大牌桌" })).toHaveCount(0);
   await expect(page.getByRole("group", { name: "牌桌縮放" })).toHaveCount(0);
 });
+
+test("in play the table steps back and hides frames and numbers; arranging shows them", async ({
+  page,
+}) => {
+  const table = page.locator(".spread-board__table");
+  const frame = page.locator(".spread-slot__frame").first();
+  await expect
+    .poll(() => table.evaluate((node) => getComputedStyle(node).transform))
+    .toContain("0.7");
+  expect(await frame.evaluate((node) => getComputedStyle(node).opacity)).toBe(
+    "0",
+  );
+  await page.getByRole("button", { name: "編輯牌陣" }).click();
+  await expect
+    .poll(() => table.evaluate((node) => getComputedStyle(node).transform))
+    .toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/u);
+  expect(await frame.evaluate((node) => getComputedStyle(node).opacity)).toBe(
+    "1",
+  );
+});

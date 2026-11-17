@@ -43,6 +43,8 @@ const TAP_SLOP_PX = 6;
 
 interface CardWheelViewProps {
   readonly fan: CardFan;
+  /** Laid out below the table, out of sight, until the shuffle completes. */
+  readonly waiting: boolean;
   /** Card width as a percentage of the table's width, as on the positions. */
   readonly cardWidth: number;
   readonly backUrl?: string;
@@ -91,6 +93,7 @@ interface WheelHandlers {
  */
 export function CardWheelView({
   fan,
+  waiting,
   cardWidth,
   backUrl,
   positionIndex,
@@ -282,6 +285,8 @@ export function CardWheelView({
       role="group"
       aria-label={`扇形牌堆，剩 ${open.length} 張`}
       data-turnable={layout.maxTurn > 0 || undefined}
+      data-waiting={waiting || undefined}
+      inert={waiting}
     >
       <p id={hintId} className="sr-only">
         {`左右鍵挑牌，Enter 把牌往前推，再按一次 Enter 抽出，放到牌位 ${positionIndex}`}

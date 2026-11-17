@@ -3,7 +3,13 @@ import {
   FLIGHT_MS,
   JUMPER_DELAY_MS,
   GATHER_MS,
+  DRAWING_TABLE_ZOOM,
+  HEAP_DROP_MS,
+  HEAP_SLIDE_MS,
+  TABLE_ZOOM_MS,
+  tableZoom,
   WASH_ROUND_MS,
+  WHEEL_RISE_MS,
   motionTimingStyle,
   landingDelayMs,
   washAfterRelease,
@@ -151,8 +157,29 @@ describe("motionTimingStyle", () => {
   it("hands every wash and flight timing to the stylesheet", () => {
     expect(motionTimingStyle()).toEqual({
       "--gather-duration": `${GATHER_MS}ms`,
+      "--heap-drop-duration": `${HEAP_DROP_MS}ms`,
+      "--heap-slide-duration": `${HEAP_SLIDE_MS}ms`,
+      "--wheel-rise-duration": `${WHEEL_RISE_MS}ms`,
+      "--table-zoom-duration": `${TABLE_ZOOM_MS}ms`,
       "--flight-duration": `${FLIGHT_MS}ms`,
       "--jumper-delay": `${JUMPER_DELAY_MS}ms`,
     });
+  });
+});
+
+describe("tableZoom", () => {
+  it("steps the table back while cards are being drawn", () => {
+    expect(tableZoom({ arranging: false, dealing: true })).toBe(
+      DRAWING_TABLE_ZOOM,
+    );
+    expect(DRAWING_TABLE_ZOOM).toBe(0.7);
+  });
+
+  it("brings it close again once the spread is dealt", () => {
+    expect(tableZoom({ arranging: false, dealing: false })).toBe(1);
+  });
+
+  it("shows it at full size while arranging", () => {
+    expect(tableZoom({ arranging: true, dealing: true })).toBe(1);
   });
 });

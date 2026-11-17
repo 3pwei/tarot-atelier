@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -26,6 +27,7 @@ import {
 } from "@/presentation/components/draw/cardFan";
 import {
   landingDelayMs,
+  tableZoom,
   washAfterRelease,
   type FlightRole,
   type ScreenBox,
@@ -100,6 +102,8 @@ interface DealerOptions {
   readonly motionMode: MotionMode;
   readonly root: RefObject<HTMLElement | null>;
   readonly tableScale: number;
+  /** Positions are being arranged: the table is shown at full size. */
+  readonly arranging: boolean;
   readonly dispatch: Dispatch<SpreadAction>;
 }
 
@@ -124,6 +128,7 @@ export function useSpreadDealer({
   motionMode,
   root,
   tableScale,
+  arranging,
   dispatch,
 }: DealerOptions) {
   const [pile, setPile] = useState<Pile>(() =>
@@ -178,6 +183,17 @@ export function useSpreadDealer({
     flights.length === 0 &&
     (phase === "idle" || phase === "revealed");
   const picking = phase === "ready" && fan !== undefined;
+  /**
+   * The wheel is laid out, out of sight, while the heap drops, so it only has
+   * to rise once the shuffle completes.
+   */
+  const waitingFan = useMemo(
+    () => (gathering ? openFan(remaining) : undefined),
+    [gathering, remaining],
+  );
+  /** Cards are still to be chosen, or still on their way to the table. */
+  const dealing = Boolean(next) || flights.length > 0;
+  const zoom = tableZoom({ arranging, dealing });
 
   usePhaseAnimation(
     phase === "shuffling" && finishDelay !== undefined,
@@ -200,7 +216,7 @@ export function useSpreadDealer({
       rotation:
         spread.positions.find((position) => position.id === slotId)?.rotation ??
         0,
-      scale: tableScale,
+      scale: tableScale * zoom,
     }),
   });
 
@@ -287,6 +303,8 @@ export function useSpreadDealer({
 
   return {
     phase,
+    /** The table's zoom while drawing (see `tableZoom`). */
+    zoom,
     holding,
     gathering,
     washSeed,
@@ -296,7 +314,9 @@ export function useSpreadDealer({
     next,
     emptyCount: empty.length,
     blocker,
-    fan: picking ? fan : undefined,
+    fan: picking ? fan : waitingFan,
+    /** The wheel takes picks; until then it waits below the table. */
+    fanReady: picking,
     /** Which card of this fan's round is being chosen, from 1. */
     pickNumber: roundTotal - empty.length + 1,
     roundTotal,

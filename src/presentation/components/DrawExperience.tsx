@@ -26,7 +26,10 @@ import { createBrowserReadingProvider } from "@/infrastructure/reading/readingPr
 import { TableDeck } from "@/presentation/components/draw/TableDeck";
 import { slotWidthFor } from "@/presentation/components/spread/boardGeometry";
 import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
-import { cardBackUrl } from "@/presentation/components/library/prerenderedArt";
+import {
+  cardBackSmallUrl,
+  cardBackUrl,
+} from "@/presentation/components/library/prerenderedArt";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
 import {
   hasUnsavedLayout,
@@ -138,6 +141,7 @@ export function DrawExperience({
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef);
   const motionMode = useMotionMode();
+  const [tableMode, setTableMode] = useState<TableMode>("play");
   const dealer = useSpreadDealer({
     deck,
     spread,
@@ -148,13 +152,14 @@ export function DrawExperience({
     motionMode,
     root,
     tableScale: viewport.view.scale,
+    arranging: tableMode === "arrange",
     dispatch,
   });
   const status = dealerStatus({
     loading,
     phase: dealer.phase,
     holding: dealer.holding,
-    picking: dealer.fan !== undefined,
+    picking: dealer.fanReady,
     pickNumber: dealer.pickNumber,
     roundTotal: dealer.roundTotal,
     blocker: dealer.blocker,
@@ -163,7 +168,6 @@ export function DrawExperience({
     allRevealed: dealer.allRevealed,
     remaining: dealer.remaining,
   });
-  const [tableMode, setTableMode] = useState<TableMode>("play");
   const abilities = tableAbilities(tableMode, dealer.layoutLocked);
   const shuffleHold = useHoldToShuffle({
     enabled: dealer.canShuffle && abilities.canPlay,
@@ -378,6 +382,7 @@ export function DrawExperience({
           <SpreadBoard
             spread={spread}
             slotWidth={slotWidth}
+            zoom={dealer.zoom}
             selectedId={selectedId}
             arrangeable={abilities.canArrange}
             awaitingIds={dealer.awaitingIds}
@@ -392,12 +397,13 @@ export function DrawExperience({
             overlay={
               arranging ? undefined : (
                 <TableDeck
-                  cardWidth={slotWidth}
+                  cardWidth={slotWidth * dealer.zoom}
                   shuffling={dealer.phase === "shuffling"}
                   holding={dealer.holding}
                   gathering={dealer.gathering}
                   washSeed={dealer.washSeed}
                   fan={dealer.fan}
+                  fanReady={dealer.fanReady}
                   nextPositionIndex={dealer.next?.index}
                   onTable={dealer.deckOnTable}
                   remaining={dealer.remaining}
@@ -409,6 +415,7 @@ export function DrawExperience({
                       : `牌堆：${status}`
                   }
                   backUrl={cardBackUrl(deck.id)}
+                  airBackUrl={cardBackSmallUrl(deck.id)}
                   hold={shuffleHold}
                   onPick={dealer.pick}
                 />

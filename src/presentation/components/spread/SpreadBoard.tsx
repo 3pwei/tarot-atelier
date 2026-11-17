@@ -13,6 +13,8 @@ interface SpreadBoardProps {
   readonly spread: Spread;
   /** Card width as a percentage of the table's width. */
   readonly slotWidth: number;
+  /** The table steps back to this while cards are drawn (see `tableZoom`). */
+  readonly zoom: number;
   readonly selectedId?: string;
   /** Positions may be moved and rotated. */
   readonly arrangeable: boolean;
@@ -49,6 +51,7 @@ export function visibleCenter(
 export function SpreadBoard({
   spread,
   slotWidth,
+  zoom,
   selectedId,
   arrangeable,
   awaitingIds,
@@ -85,27 +88,33 @@ export function SpreadBoard({
           if (!target.closest?.("[data-slot]")) onSelect(undefined);
         }}
       >
-        <TableOrnament />
-        <div ref={fieldRef} className="spread-board__field">
-          {spread.positions.map((position) => (
-            <PositionSlot
-              key={position.id}
-              position={position}
-              selected={position.id === selectedId}
-              arrangeable={arrangeable}
-              settled={
-                Boolean(position.drawResult) &&
-                !awaitingIds.includes(position.id)
-              }
-              field={fieldRef}
-              onSelect={onSelect}
-              onMove={onMove}
-              onNudge={onNudge}
-              onRotate={onRotate}
-            >
-              {renderCards(position)}
-            </PositionSlot>
-          ))}
+        {/* Zoomed inside the panned canvas, so pinching and panning stay exact. */}
+        <div
+          className="spread-board__table"
+          style={{ "--table-zoom": zoom } as CSSProperties}
+        >
+          <TableOrnament />
+          <div ref={fieldRef} className="spread-board__field">
+            {spread.positions.map((position) => (
+              <PositionSlot
+                key={position.id}
+                position={position}
+                selected={position.id === selectedId}
+                arrangeable={arrangeable}
+                settled={
+                  Boolean(position.drawResult) &&
+                  !awaitingIds.includes(position.id)
+                }
+                field={fieldRef}
+                onSelect={onSelect}
+                onMove={onMove}
+                onNudge={onNudge}
+                onRotate={onRotate}
+              >
+                {renderCards(position)}
+              </PositionSlot>
+            ))}
+          </div>
         </div>
         {spread.positions.length === 0 && (
           <p className="spread-board__empty">
