@@ -24,6 +24,7 @@ import {
 import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { TableDeck } from "@/presentation/components/draw/TableDeck";
+import { SLOT_WIDTH_CQW } from "@/presentation/components/spread/boardGeometry";
 import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
 import { cardBackUrl } from "@/presentation/components/library/prerenderedArt";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
@@ -364,6 +365,7 @@ export function DrawExperience({
         <div className="draw-table__stage spread-stage">
           <SpreadBoard
             spread={spread}
+            slotWidth={SLOT_WIDTH_CQW}
             selectedId={selectedId}
             arrangeable={abilities.canArrange}
             awaitingIds={dealer.awaitingIds}
@@ -378,6 +380,7 @@ export function DrawExperience({
             overlay={
               arranging ? undefined : (
                 <TableDeck
+                  cardWidth={SLOT_WIDTH_CQW}
                   shuffling={dealer.phase === "shuffling"}
                   holding={dealer.holding}
                   gathering={dealer.gathering}

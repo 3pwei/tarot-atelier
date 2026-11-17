@@ -20,7 +20,7 @@ const SCROLL_STEPS = 24;
 const SCROLL_STEP_PAUSE_MS = 120;
 const GESTURE_STEPS = 40;
 const HOLD_MS = 2_000;
-/** Long enough for the wash to gather and the wheel to lay out. */
+/** Long enough for the vortex to close and the wheel to lay out. */
 const WHEEL_SETTLE_MS = 1_600;
 /** Long enough for a chosen card to land. */
 const FLIGHT_SETTLE_MS = 1_200;
@@ -41,7 +41,7 @@ test("home page at rest and scrolling", async ({ page }, testInfo) => {
   await scriptKilobytes();
 });
 
-test("hold to wash, lay out the wheel, choose cards and burn reveal", async ({
+test("hold to shuffle in the vortex, lay out the wheel, choose cards and burn reveal", async ({
   page,
 }, testInfo) => {
   await openHome(page);
@@ -53,10 +53,10 @@ test("hold to wash, lay out the wheel, choose cards and burn reveal", async ({
 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await measure(page, testInfo, "hold-wash", () =>
+  await measure(page, testInfo, "hold-vortex", () =>
     page.waitForTimeout(HOLD_MS),
   );
-  // Letting go gathers the washed cards and lays every remaining card out.
+  // Letting go closes the vortex into the pile and lays every remaining card out.
   await measure(page, testInfo, "wheel-open", async () => {
     await page.mouse.up();
     await expect(fannedDeck(page)).toBeVisible();

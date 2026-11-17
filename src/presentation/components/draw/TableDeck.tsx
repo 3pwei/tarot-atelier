@@ -6,17 +6,16 @@ import {
   DeckStack,
   type HoldHandlers,
 } from "@/presentation/components/draw/DeckStack";
-import { TableWash } from "@/presentation/components/draw/TableWash";
-import { PILE_CENTER } from "@/presentation/components/draw/tableWash";
+import { TableVortex } from "@/presentation/components/draw/TableVortex";
+import { PILE_CENTER } from "@/presentation/components/draw/tableVortex";
 import type { CSSProperties } from "react";
 
-/** The pile's place reaches the stylesheet as plain numbers (cqw, cqh). */
-const PILE_STYLE = {
-  "--table-pile-x": PILE_CENTER.x,
-  "--table-pile-y": PILE_CENTER.y,
-} as CSSProperties;
-
 interface TableDeckProps {
+  /**
+   * Card width as a percentage of the table's width. Every card of the deck,
+   * in the pile, in the air or on the wheel, is as large as the positions.
+   */
+  readonly cardWidth: number;
   readonly shuffling: boolean;
   readonly holding: boolean;
   readonly gathering: boolean;
@@ -38,11 +37,12 @@ interface TableDeckProps {
 
 /**
  * Everything the deck does, on the table itself: the pack in the middle, the
- * wash across the whole cloth, and the wheel along the bottom edge to choose
- * from. It sits above the positions but outside the zoomed canvas, so it
+ * vortex it rises into while held, and the wheel along the bottom edge to
+ * choose from. It sits above the positions but outside the zoomed canvas, so it
  * stays in place while the table is zoomed or panned.
  */
 export function TableDeck({
+  cardWidth,
   shuffling,
   holding,
   gathering,
@@ -59,19 +59,27 @@ export function TableDeck({
   onPick,
 }: TableDeckProps) {
   const choosing = fan !== undefined && nextPositionIndex !== undefined;
+  // Plain numbers: the stylesheet scales them by the table's size (cqw, cqh).
+  const style = {
+    "--table-pile-x": PILE_CENTER.x,
+    "--table-pile-y": PILE_CENTER.y,
+    "--slot-w": `${cardWidth}cqw`,
+  } as CSSProperties;
   return (
     <div
       className="table-deck"
-      style={PILE_STYLE}
+      style={style}
       data-washing={shuffling || undefined}
+      data-gathering={(shuffling && gathering) || undefined}
       data-choosing={choosing || undefined}
     >
       {shuffling && (
-        <TableWash seed={washSeed} gathering={gathering} backUrl={backUrl} />
+        <TableVortex seed={washSeed} gathering={gathering} backUrl={backUrl} />
       )}
       {choosing ? (
         <CardWheelView
           fan={fan}
+          cardWidth={cardWidth}
           backUrl={backUrl}
           positionIndex={nextPositionIndex}
           onPick={onPick}
