@@ -15,6 +15,7 @@ import {
   VORTEX_TIERS,
   VORTEX_TILT,
   vortexCards,
+  vortexFireflies,
   vortexSparks,
 } from "@/presentation/components/draw/tableVortex";
 
@@ -47,13 +48,18 @@ function CardBack({ backUrl }: { readonly backUrl?: string }) {
  * Cards whirling upward over the table while the deck is held. One after
  * another they leave the top of the pack and climb to the near side of their
  * ring, then circle on a path of their own, flipping over now and then to
- * show a plain gold front. Letting go brings every card down flat onto the table, where they
- * swirl round its middle, then drop in a loose heap low on the table, which
- * slides away; see ADR 0005 for why the flips are flat.
+ * show a plain gold front, with a few soft lights circling among them.
+ * Letting go brings every card down flat onto the table, where they swirl
+ * round its middle, then drop in a loose heap low on the table, which slides
+ * away; see ADR 0005 for why the flips are flat.
  */
 export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
   const cards = useMemo(() => vortexCards(seededRandom(seed)), [seed]);
   const sparks = useMemo(() => vortexSparks(seededRandom(seed + 1)), [seed]);
+  const fireflies = useMemo(
+    () => vortexFireflies(seededRandom(seed + 2)),
+    [seed],
+  );
   const root = useRef<HTMLDivElement>(null);
   useSettleStarts(root, gathering);
 
@@ -111,6 +117,28 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                           <span className="table-vortex__front" />
                         </span>
                       </span>
+                    </span>
+                  </span>
+                </span>
+              ))}
+            {/* Above the cards, so they are not hidden behind them. */}
+            {fireflies
+              .filter((light) => light.tier === tierIndex)
+              .map((light, index) => (
+                <span
+                  key={`light-${index}`}
+                  className="table-vortex__firefly-path"
+                  style={
+                    {
+                      "--radius-scale": light.radiusScale,
+                      "--orbit-delay": `${-light.offsetMs}ms`,
+                      "--firefly-size": light.size,
+                    } as CSSProperties
+                  }
+                >
+                  <span className="table-vortex__firefly-orbit">
+                    <span className="table-vortex__firefly">
+                      <span className="table-vortex__firefly-tail" />
                     </span>
                   </span>
                 </span>

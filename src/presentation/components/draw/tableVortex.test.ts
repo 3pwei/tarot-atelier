@@ -7,10 +7,12 @@ import {
   seededRandom,
   SETTLE,
   VORTEX_LIFT_SPAN_MS,
+  VORTEX_FIREFLY_COUNT,
   VORTEX_SCATTER,
   VORTEX_SPARK_COUNT,
   VORTEX_TIERS,
   vortexCards,
+  vortexFireflies,
   vortexSparks,
 } from "@/presentation/components/draw/tableVortex";
 
@@ -134,6 +136,23 @@ describe("the vortex", () => {
       ).toBeLessThanOrEqual(HEAP_SCATTER.rollDeg);
     }
     expect(HEAP_CENTER.y).toBeGreaterThan(PILE_CENTER.y);
+  });
+
+  it("sends a handful of soft lights round the rings with the cards", () => {
+    const lights = vortexFireflies(seededRandom(4));
+    expect(lights).toHaveLength(VORTEX_FIREFLY_COUNT);
+    expect(VORTEX_FIREFLY_COUNT).toBeGreaterThanOrEqual(5);
+    expect(VORTEX_FIREFLY_COUNT).toBeLessThanOrEqual(10);
+    for (const light of lights) {
+      const tier = VORTEX_TIERS[light.tier]!;
+      expect(light.offsetMs).toBeGreaterThanOrEqual(0);
+      expect(light.offsetMs).toBeLessThanOrEqual(tier.turnMs);
+      expect(light.radiusScale).toBeGreaterThanOrEqual(0.8);
+      expect(light.radiusScale).toBeLessThanOrEqual(1.15);
+    }
+    expect(new Set(lights.map((light) => light.tier)).size).toBe(
+      VORTEX_TIERS.length,
+    );
   });
 
   it("looks the same for the same seed", () => {

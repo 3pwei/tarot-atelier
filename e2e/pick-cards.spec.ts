@@ -131,6 +131,7 @@ test("cards lift off the pile a few at a time until twenty are in the air", asyn
           ).length,
       );
   await expect(page.locator(".table-vortex__card")).toHaveCount(20);
+  await expect(page.locator(".table-vortex__firefly")).toHaveCount(8);
   const early = await airborne();
   expect(early).toBeLessThan(20);
   await expect.poll(airborne, { timeout: 8_000 }).toBe(20);
@@ -144,6 +145,8 @@ test("a quick tap still brings every card down to swirl on the table", async ({
   await deckPile(page).click();
   const settled = page.locator(".table-vortex__settle .table-vortex__laid");
   await expect(settled).toHaveCount(20);
+  // The circling lights belong to the air, not to the table.
+  await expect(page.locator(".table-vortex__firefly").first()).toBeHidden();
   expect(
     await page
       .locator(".table-vortex__swirl")

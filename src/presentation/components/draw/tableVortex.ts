@@ -94,6 +94,9 @@ export const HEAP_SCATTER = Object.freeze({
   rollDeg: 28,
 });
 
+/** Soft lights circling with the cards in the air, never on the table. */
+export const VORTEX_FIREFLY_COUNT = 8;
+
 /** Points of light drifting around the funnel. */
 export const VORTEX_SPARK_COUNT = 24;
 
@@ -137,6 +140,16 @@ export interface VortexCard {
   readonly heapShiftX: number;
   readonly heapShiftY: number;
   readonly heapTurn: number;
+}
+
+export interface VortexFirefly {
+  readonly tier: number;
+  /** How far round its ring it starts, as a time into the ring's turn. */
+  readonly offsetMs: number;
+  /** Its path's radius over its ring's: a little inside or outside it. */
+  readonly radiusScale: number;
+  /** Its size over the standard light's. */
+  readonly size: number;
 }
 
 export interface VortexSpark {
@@ -243,6 +256,21 @@ function furthestBehind(placed: readonly number[]): number {
     if (share < lowest) behind = index;
   });
   return behind;
+}
+
+/** Lights spread over the rings, top to tip, each at its own place. */
+export function vortexFireflies(
+  random: () => number,
+): readonly VortexFirefly[] {
+  return Array.from({ length: VORTEX_FIREFLY_COUNT }, (_, index) => {
+    const tier = index % VORTEX_TIERS.length;
+    return {
+      tier,
+      offsetMs: Math.round(random() * VORTEX_TIERS[tier]!.turnMs),
+      radiusScale: round2(between(random, 0.8, 1.15)),
+      size: round2(between(random, 0.7, 1.2)),
+    };
+  });
 }
 
 /** Sparks drift inside the funnel's outline, on the table. */

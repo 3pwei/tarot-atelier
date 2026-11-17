@@ -500,6 +500,70 @@
   content: "";
 }
 
+/* A few soft lights circling with the cards, in the air only. Each is a
+   glow painted once, with a few fading dots behind it turned to point back
+   along its path. Same two swings as the cards. */
+.table-vortex__firefly-path {
+  --orbit-x: calc(var(--tier-radius) * var(--radius-scale) * 1cqw);
+  --orbit-y: calc(var(--orbit-x) * var(--vortex-tilt));
+
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.table-vortex__firefly-orbit {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.table-vortex__firefly {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--firefly-size) * 6cqw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    #fffdf2 0 7%,
+    rgba(255, 238, 190, 0.95) 11%,
+    rgba(255, 222, 155, 0.6) 30%,
+    rgba(255, 205, 120, 0.22) 62%,
+    transparent
+  );
+  transform: translate(-50%, calc(-50% + var(--orbit-y)));
+}
+
+.table-vortex__firefly-tail {
+  position: absolute;
+  top: 50%;
+  right: 50%;
+  width: 120%;
+  height: 18%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 16'%3E%3Ccircle cx='87' cy='8' r='2.38' fill='%23ffe7a8' fill-opacity='0.456'/%3E%3Ccircle cx='78' cy='8' r='2.16' fill='%23ffe7a8' fill-opacity='0.368'/%3E%3Ccircle cx='69' cy='8' r='1.94' fill='%23ffe7a8' fill-opacity='0.287'/%3E%3Ccircle cx='60' cy='8' r='1.72' fill='%23ffe7a8' fill-opacity='0.215'/%3E%3Ccircle cx='51' cy='8' r='1.50' fill='%23ffe7a8' fill-opacity='0.150'/%3E%3Ccircle cx='42' cy='8' r='1.28' fill='%23ffe7a8' fill-opacity='0.095'/%3E%3Ccircle cx='33' cy='8' r='1.06' fill='%23ffe7a8' fill-opacity='0.050'/%3E%3Ccircle cx='24' cy='8' r='0.84' fill='%23ffe7a8' fill-opacity='0.016'/%3E%3Ccircle cx='15' cy='8' r='0.62' fill='%23ffe7a8' fill-opacity='0.000'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+  transform: translateY(-50%);
+  transform-origin: 100% 50%;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__firefly-path {
+  animation: vortex-light-up var(--climb-duration) ease-out both;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__firefly-orbit {
+  animation: vortex-across var(--tier-turn) linear var(--orbit-delay) infinite;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__firefly {
+  animation: firefly-bob var(--tier-turn) linear var(--orbit-delay) infinite;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__firefly-tail {
+  animation: firefly-heading var(--tier-turn) linear var(--orbit-delay) infinite;
+}
+
 .table-vortex__spark {
   position: absolute;
   top: calc(var(--spark-y) * 1cqh);
@@ -1298,6 +1362,101 @@
     transform: translate(-50%, calc(-50% - var(--orbit-y)))
       scale(calc(var(--air-scale, 1) * 0.72));
     animation-timing-function: var(--sine-in);
+  }
+}
+
+/* Like the cards' bob: near side low and bright, far side high and faint. */
+@keyframes firefly-bob {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% + var(--orbit-y)));
+    animation-timing-function: var(--sine-in);
+  }
+
+  25%,
+  75% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(0.85);
+    animation-timing-function: var(--sine-out);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: translate(-50%, calc(-50% - var(--orbit-y))) scale(0.7);
+    animation-timing-function: var(--sine-in);
+  }
+}
+
+/* The tail points back along the ellipse: its slope at each sixteenth of the
+   lap, for a path 0.3 times as tall as it is wide (VORTEX_TILT). */
+@keyframes firefly-heading {
+  0% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+
+  6.25% {
+    transform: translateY(-50%) rotate(-7.1deg);
+  }
+
+  12.5% {
+    transform: translateY(-50%) rotate(-16.7deg);
+  }
+
+  18.75% {
+    transform: translateY(-50%) rotate(-35.9deg);
+  }
+
+  25% {
+    transform: translateY(-50%) rotate(-90deg);
+  }
+
+  31.25% {
+    transform: translateY(-50%) rotate(-144.1deg);
+  }
+
+  37.5% {
+    transform: translateY(-50%) rotate(-163.3deg);
+  }
+
+  43.75% {
+    transform: translateY(-50%) rotate(-172.9deg);
+  }
+
+  50% {
+    transform: translateY(-50%) rotate(-180deg);
+  }
+
+  56.25% {
+    transform: translateY(-50%) rotate(-187.1deg);
+  }
+
+  62.5% {
+    transform: translateY(-50%) rotate(-196.7deg);
+  }
+
+  68.75% {
+    transform: translateY(-50%) rotate(-215.9deg);
+  }
+
+  75% {
+    transform: translateY(-50%) rotate(-270deg);
+  }
+
+  81.25% {
+    transform: translateY(-50%) rotate(-324.1deg);
+  }
+
+  87.5% {
+    transform: translateY(-50%) rotate(-343.3deg);
+  }
+
+  93.75% {
+    transform: translateY(-50%) rotate(-352.9deg);
+  }
+
+  100% {
+    transform: translateY(-50%) rotate(-360deg);
   }
 }
 
