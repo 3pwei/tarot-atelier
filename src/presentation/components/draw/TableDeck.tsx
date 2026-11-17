@@ -75,14 +75,6 @@ export function TableDeck({
       onContextMenu={(event) => event.preventDefault()}
       data-choosing={choosing || undefined}
     >
-      {shuffling && (
-        <TableVortex
-          cardWidth={cardWidth}
-          seed={washSeed}
-          gathering={gathering}
-          backUrl={backUrl}
-        />
-      )}
       {choosing ? (
         <CardWheelView
           fan={fan}
@@ -108,6 +100,15 @@ export function TableDeck({
             hold={hold}
           />
         </div>
+      )}
+      {/* Above the pack: cards leave from the top of it. */}
+      {shuffling && (
+        <TableVortex
+          cardWidth={cardWidth}
+          seed={washSeed}
+          gathering={gathering}
+          backUrl={backUrl}
+        />
       )}
     </div>
   );

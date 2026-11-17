@@ -47,10 +47,24 @@ export const VORTEX_TIERS: readonly VortexTier[] = Object.freeze([
 export const VORTEX_LIFT_SPAN_MS = 1_500;
 
 /** One card's climb from the pile to its ring. */
-export const VORTEX_CLIMB_MS = 650;
+export const VORTEX_CLIMB_MS = 550;
 
-/** Points of light racing round each ring, ahead of the cards. */
-export const VORTEX_COMETS_PER_TIER = 3;
+/**
+ * How unruly the cards are: each strays from its ring's path and size, and
+ * tumbles at its own angles, by up to these amounts.
+ */
+export const VORTEX_SCATTER = Object.freeze({
+  /** Share of the ring's radius a card's own path is wider or narrower. */
+  radius: 0.25,
+  /** Sideways and up-and-down shift of a card's path, in percent of the table. */
+  shiftX: 4,
+  shiftY: 5,
+  /** Share of the ring's card size a card is larger or smaller. */
+  size: 0.25,
+  /** Tumbling: tipped forward or back, and turned in the card's own plane. */
+  pitchDeg: 55,
+  rollDeg: 70,
+});
 
 /** Points of light drifting around the funnel. */
 export const VORTEX_SPARK_COUNT = 24;
@@ -64,8 +78,19 @@ export interface VortexCard {
    * on the table, where it is as large as the positions.
    */
   readonly airScale: number;
-  /** A slight tilt of its own, so the cards do not look stamped. */
-  readonly tilt: number;
+  /** Its own path's radius over its ring's. */
+  readonly radiusScale: number;
+  /** Its own path's shift from its ring's, in percent of the table. */
+  readonly shiftX: number;
+  readonly shiftY: number;
+  /** How far it is tipped forward or back, and turned in its own plane. */
+  readonly pitch: number;
+  readonly roll: number;
+  /**
+   * Its turn about its upright axis when it joins the ring; it keeps turning
+   * once per lap, so it is seen edge-on at the sides and only briefly face-on.
+   */
+  readonly spinFrom: number;
 }
 
 export interface VortexSpark {
@@ -113,13 +138,20 @@ export function vortexCards(
     const tier = furthestBehind(placed);
     placed[tier] = (placed[tier] ?? 0) + 1;
     const ring = VORTEX_TIERS[tier]!;
+    const spread = (amount: number) => between(random, -amount, amount);
+    const size = 1 + spread(VORTEX_SCATTER.size);
     return {
       tier,
       launchMs: Math.round(
         total > 1 ? (VORTEX_LIFT_SPAN_MS * order) / (total - 1) : 0,
       ),
-      airScale: ring.cardWidth / tableCardWidth,
-      tilt: Math.round(between(random, -24, 24)),
+      airScale: (ring.cardWidth * size) / tableCardWidth,
+      radiusScale: 1 + spread(VORTEX_SCATTER.radius),
+      shiftX: spread(VORTEX_SCATTER.shiftX),
+      shiftY: spread(VORTEX_SCATTER.shiftY),
+      pitch: Math.round(spread(VORTEX_SCATTER.pitchDeg)),
+      roll: Math.round(spread(VORTEX_SCATTER.rollDeg)),
+      spinFrom: Math.round(between(random, 0, 360)),
     };
   });
 }

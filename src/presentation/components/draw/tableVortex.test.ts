@@ -7,6 +7,7 @@ import {
   PILE_CENTER,
   seededRandom,
   VORTEX_LIFT_SPAN_MS,
+  VORTEX_SCATTER,
   VORTEX_SPARK_COUNT,
   VORTEX_TIERS,
   vortexCards,
@@ -61,23 +62,42 @@ describe("the vortex", () => {
     });
   });
 
-  it("shrinks cards in the air to their ring's size, whatever their size on the table", () => {
-    for (const tableWidth of [
-      STANDARD_SLOT_WIDTH_CQW,
-      LARGEST_SLOT_WIDTH_CQW,
-    ]) {
-      for (const card of vortexCards(seededRandom(2), tableWidth)) {
-        const ring = VORTEX_TIERS[card.tier]!;
-        expect(card.airScale * tableWidth).toBeCloseTo(ring.cardWidth);
-        expect(card.airScale).toBeLessThan(1);
-      }
+  it("sizes cards in the air by their ring, whatever their size on the table", () => {
+    const standard = vortexCards(seededRandom(2), STANDARD_SLOT_WIDTH_CQW);
+    const large = vortexCards(seededRandom(2), LARGEST_SLOT_WIDTH_CQW);
+    standard.forEach((card, index) => {
+      expect(card.airScale * STANDARD_SLOT_WIDTH_CQW).toBeCloseTo(
+        large[index]!.airScale * LARGEST_SLOT_WIDTH_CQW,
+      );
+      expect(card.airScale).toBeLessThan(1);
+    });
+  });
+
+  it("scatters each card off its ring's path and size, within bounds", () => {
+    for (const card of cards) {
+      expect(Math.abs(card.radiusScale - 1)).toBeLessThanOrEqual(
+        VORTEX_SCATTER.radius,
+      );
+      expect(Math.abs(card.shiftX)).toBeLessThanOrEqual(VORTEX_SCATTER.shiftX);
+      expect(Math.abs(card.shiftY)).toBeLessThanOrEqual(VORTEX_SCATTER.shiftY);
+      const ringSize =
+        VORTEX_TIERS[card.tier]!.cardWidth / STANDARD_SLOT_WIDTH_CQW;
+      expect(Math.abs(card.airScale / ringSize - 1)).toBeLessThanOrEqual(
+        VORTEX_SCATTER.size,
+      );
     }
   });
 
-  it("tilts cards only slightly", () => {
+  it("tumbles every card at angles of its own", () => {
     for (const card of cards) {
-      expect(Math.abs(card.tilt)).toBeLessThanOrEqual(24);
+      expect(Math.abs(card.pitch)).toBeLessThanOrEqual(VORTEX_SCATTER.pitchDeg);
+      expect(Math.abs(card.roll)).toBeLessThanOrEqual(VORTEX_SCATTER.rollDeg);
+      expect(card.spinFrom).toBeGreaterThanOrEqual(0);
+      expect(card.spinFrom).toBeLessThanOrEqual(360);
     }
+    expect(new Set(cards.map((card) => card.spinFrom)).size).toBeGreaterThan(
+      cards.length / 2,
+    );
   });
 
   it("looks the same for the same seed", () => {
