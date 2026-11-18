@@ -13,7 +13,15 @@ import {
   BUILT_IN_TEMPLATES,
   createSpreadFromTemplate,
 } from "@/domain/spread/templates";
+import { createCardInstance } from "@/domain/deck/draw";
+import { assignDraw, type SpreadUpdate } from "@/domain/spread/spread";
 import type { SpreadSession } from "@/domain/spread/spreadSnapshot";
+import type { Spread } from "@/domain/spread/types";
+
+function unwrap(update: SpreadUpdate): Spread {
+  if (!update.ok) throw new Error(`Expected success, got ${update.code}`);
+  return update.spread;
+}
 
 class MemoryStorage implements SpreadSessionStorage {
   value: string | null = null;
@@ -51,7 +59,38 @@ describe("spread session persistence", () => {
     expect(saveSpreadSession(storage, session())).toEqual({ ok: true });
 
     const restored = restoreSpreadSession(storage, atelierStandardDeck);
-    expect(restored).toEqual({ status: "restored", session: session() });
+    expect(restored).toEqual({
+      status: "restored",
+      session: session(),
+      returnedCount: 0,
+    });
+  });
+
+  it("puts a round left half chosen back in the deck", () => {
+    const storage = new MemoryStorage();
+    const saved = session();
+    const [first] = saved.spread.positions;
+    const card = atelierStandardDeck.cards[0]!;
+    const halfChosen = unwrap(
+      assignDraw(saved.spread, first!.id, {
+        primary: createCardInstance({
+          instanceId: `${atelierStandardDeck.id}-${card.id}`,
+          deckId: atelierStandardDeck.id,
+          cardId: card.id,
+          supportsReversals: false,
+        }),
+        drawnAt: "2026-11-18T00:00:00.000Z",
+      }),
+    );
+    saveSpreadSession(storage, { ...saved, spread: halfChosen });
+
+    const restored = restoreSpreadSession(storage, atelierStandardDeck);
+
+    expect(restored).toEqual({
+      status: "restored",
+      session: saved,
+      returnedCount: 1,
+    });
   });
 
   it("reports an empty store and survives blocked storage", () => {

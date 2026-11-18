@@ -286,6 +286,27 @@ test("the spread survives a page reload", async ({ page }) => {
   await expect(page.locator("[data-draw-card]")).toHaveCount(0);
 });
 
+test("a reload in the middle of choosing puts that round back in the deck", async ({
+  page,
+}) => {
+  await deckPile(page).click();
+  await expect(page.getByText(/^請選第 1 張（共 3 張）/u)).toBeVisible();
+  await chooseFirstCard(page);
+  await expect(page.getByText(/^請選第 2 張（共 3 張）/u)).toBeVisible();
+  await expect(slot(page, 1).locator("[data-draw-card]")).not.toHaveCount(0);
+  await page.waitForTimeout(400);
+
+  await page.reload();
+  await expect(
+    page.getByText("上次沒抽完的 1 張牌已放回牌堆，請重新洗牌。"),
+  ).toBeVisible();
+  await expect(page.locator("[data-draw-card]")).toHaveCount(0);
+  await expect(page.getByText("準備好了，按住牌桌洗牌")).toBeVisible();
+  // Starting over: the shuffle gives a round for all three positions.
+  await deckPile(page).click();
+  await expect(page.getByText(/^請選第 1 張（共 3 張）/u)).toBeVisible();
+});
+
 test("corrupted saved data falls back to a working table", async ({ page }) => {
   // Written as the page reloads: a save still pending from the question
   // typed before could otherwise overwrite it first.
