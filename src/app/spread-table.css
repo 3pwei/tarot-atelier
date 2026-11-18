@@ -405,8 +405,7 @@
 
 /* Frames and numbers belong to arranging; in play only the cards show. A
    focused position still shows its number for keyboard users. */
-.spread-board:not([data-arranging]) .spread-slot__frame,
-.spread-board:not([data-arranging]) .spread-slot__handle:not(:focus-visible) {
+.spread-board:not([data-arranging]) .spread-slot__frame {
   opacity: 0;
 }
 
@@ -554,8 +553,19 @@
   );
   box-shadow: inset 0 0 0 0.35cqw rgba(6, 5, 14, 0.4);
   color: var(--color-gold);
-  font-size: calc(var(--slot-w) * 0.3);
-  text-shadow: 0 0 1rem rgba(230, 197, 122, 0.6);
+}
+
+/* The position's number, as a faint watermark in the middle of the frame,
+   upright whatever the position's rotation. */
+.spread-slot__number {
+  font-family: var(--font-display);
+  font-size: calc(var(--slot-w) * 0.6);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.32;
+  transform: rotate(calc(var(--rot) * -1));
+  user-select: none;
 }
 
 .spread-slot[data-missing-question] .spread-slot__frame {
@@ -571,27 +581,17 @@
     0 0 1.6rem rgba(230, 197, 122, 0.45);
 }
 
+/* The position's own control: an invisible button over the whole frame, for
+   focus and the keyboard. Pointer gestures belong to the slot around it, and
+   cards dealt onto the position lie above it. */
 .spread-slot__handle {
   position: absolute;
-  z-index: 8;
-  top: 0;
-  left: 0;
-  display: grid;
-  width: max(1.35rem, calc(var(--slot-w) * 0.3));
-  aspect-ratio: 1;
+  z-index: 1;
+  inset: 0;
   padding: 0;
-  place-items: center;
-  border: 1px solid rgba(251, 234, 184, 0.8);
-  border-radius: 50%;
-  color: #1a1206;
-  background: linear-gradient(135deg, #fbeab8, #e6c57a 55%, #b98a42);
-  box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.5);
-  font-family: var(--font-display);
-  font-size: max(0.72rem, calc(var(--slot-w) * 0.15));
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  /* Stays upright and readable whatever the position's rotation. */
-  transform: translate(-40%, -40%) rotate(calc(var(--rot) * -1));
+  border: 0;
+  border-radius: 6% / 4%;
+  background: none;
   cursor: inherit;
 }
 
@@ -633,52 +633,13 @@
   box-shadow: var(--focus-ring);
 }
 
-.spread-slot[data-missing-question] .spread-slot__handle {
-  background: linear-gradient(135deg, #ffe0a8, #ff9a3c);
-}
-
 .spread-slot__handle:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
 
-/*
- * During play the number keeps out of the way of the cards and their
- * reveal: a small muted numeral under an empty position, and nothing once
- * a card lies there. Arranging brings the gold badge back as the handle.
- */
-.spread-board:not([data-arranging]) .spread-slot__handle {
-  top: 100%;
-  left: 50%;
-  width: auto;
-  min-width: 1.5rem;
-  aspect-ratio: auto;
-  padding: 0.1rem 0.35rem;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  color: rgba(244, 234, 214, 0.45);
-  font-size: max(0.66rem, calc(var(--slot-w) * 0.11));
-  font-weight: 400;
-  transform: translate(-50%, 0.25rem) rotate(calc(var(--rot) * -1));
-}
-
-.spread-board:not([data-arranging]) .spread-slot:hover .spread-slot__handle,
-.spread-board:not([data-arranging]) .spread-slot__handle:focus-visible {
-  color: var(--color-gold);
-}
-
-.spread-board:not([data-arranging])
-  .spread-slot[data-missing-question]
-  .spread-slot__handle {
-  background: none;
-  color: #ff9a3c;
-}
-
-/*
- * A position drops its number once its own card has landed, not when the
- * deal begins. The drawn cards carry the number in their own labels.
- */
+/* A position whose card has landed leaves the tab order: the card carries
+   the number in its own label. */
 .spread-board:not([data-arranging])
   .spread-slot[data-settled]
   .spread-slot__handle {
@@ -687,6 +648,7 @@
 
 .spread-slot__cards {
   position: absolute;
+  z-index: 2;
   inset: 0;
 }
 

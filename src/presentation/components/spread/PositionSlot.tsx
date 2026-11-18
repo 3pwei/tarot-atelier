@@ -166,9 +166,7 @@ export function PositionSlot({
         aria-describedby={hintId}
         aria-label={`牌位 ${position.index}：${question || "尚未設定問題"}`}
         onKeyDown={handleKeyDown}
-      >
-        {position.index}
-      </button>
+      />
       {(selected || gestures.rotating) && arrangeable && (
         <button
           type="button"
@@ -200,9 +198,10 @@ export function PositionSlot({
           ? "方向鍵或數字鍵盤移動，Shift 加大步幅；[ 與 ] 旋轉；Enter 編輯。觸控或滑鼠：拖曳移動，長按後拖曳旋轉。"
           : "Enter 編輯問題。要移動或旋轉，請先按「編輯牌陣」。"}
       </span>
-      {/* The frame stays under the cards, so dealing never empties the table. */}
+      {/* The frame stays under the cards, so dealing never empties the table.
+          Its number is a watermark; the handle carries it for screen readers. */}
       <div className="spread-slot__frame" aria-hidden="true">
-        <span>{question ? "✦" : "?"}</span>
+        <span className="spread-slot__number">{position.index}</span>
       </div>
       {hasCards && <div className="spread-slot__cards">{children}</div>}
     </div>

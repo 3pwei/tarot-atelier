@@ -46,7 +46,9 @@ function session(deckId = atelierStandardDeck.id): SpreadSession {
   return {
     deckId,
     spread: createSpreadFromTemplate({
-      template: BUILT_IN_TEMPLATES[1]!,
+      template: BUILT_IN_TEMPLATES.find(
+        (template) => template.id === "five-card",
+      )!,
       createId: () => `id-${(next += 1)}`,
     }),
     revealedInstanceIds: [],
