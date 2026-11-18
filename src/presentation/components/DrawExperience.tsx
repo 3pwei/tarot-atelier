@@ -26,7 +26,11 @@ import { createBrowserReadingProvider } from "@/infrastructure/reading/readingPr
 import { TableDeck } from "@/presentation/components/draw/TableDeck";
 import { slotWidthFor } from "@/presentation/components/spread/boardGeometry";
 import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
-import { cardBackUrl } from "@/presentation/components/library/prerenderedArt";
+import { useTableHold } from "@/presentation/components/draw/useTableHold";
+import {
+  cardBackSmallUrl,
+  cardBackUrl,
+} from "@/presentation/components/library/prerenderedArt";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
 import {
   hasUnsavedLayout,
@@ -138,6 +142,7 @@ export function DrawExperience({
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef);
   const motionMode = useMotionMode();
+  const [tableMode, setTableMode] = useState<TableMode>("play");
   const dealer = useSpreadDealer({
     deck,
     spread,
@@ -148,13 +153,14 @@ export function DrawExperience({
     motionMode,
     root,
     tableScale: viewport.view.scale,
+    arranging: tableMode === "arrange",
     dispatch,
   });
   const status = dealerStatus({
     loading,
     phase: dealer.phase,
     holding: dealer.holding,
-    picking: dealer.fan !== undefined,
+    picking: dealer.fanReady,
     pickNumber: dealer.pickNumber,
     roundTotal: dealer.roundTotal,
     blocker: dealer.blocker,
@@ -163,13 +169,25 @@ export function DrawExperience({
     allRevealed: dealer.allRevealed,
     remaining: dealer.remaining,
   });
-  const [tableMode, setTableMode] = useState<TableMode>("play");
   const abilities = tableAbilities(tableMode, dealer.layoutLocked);
+  const shuffleReady = dealer.canShuffle && abilities.canPlay;
   const shuffleHold = useHoldToShuffle({
-    enabled: dealer.canShuffle && abilities.canPlay,
+    enabled: shuffleReady,
     onHold: dealer.hold,
     onRelease: dealer.release,
   });
+  // The whole table is the deck to hold until the shuffle ends.
+  const tableHold = useTableHold({
+    enabled: shuffleReady,
+    press: shuffleHold.press,
+    tap: shuffleHold.tap,
+  });
+  const boardGestures = {
+    ...viewport.gestureHandlers({
+      canPan: !shuffleReady && dealer.phase !== "shuffling",
+    }),
+    ...tableHold,
+  };
   const [inspected, setInspected] = useState<string>();
   const reading = useReadingSession({
     spread,
@@ -378,10 +396,12 @@ export function DrawExperience({
           <SpreadBoard
             spread={spread}
             slotWidth={slotWidth}
+            zoom={dealer.zoom}
             selectedId={selectedId}
             arrangeable={abilities.canArrange}
             awaitingIds={dealer.awaitingIds}
-            viewport={viewport}
+            view={viewport.view}
+            gestures={boardGestures}
             viewportRef={viewportRef}
             fieldRef={fieldRef}
             renderCards={renderCards}
@@ -392,24 +412,22 @@ export function DrawExperience({
             overlay={
               arranging ? undefined : (
                 <TableDeck
-                  cardWidth={slotWidth}
+                  cardWidth={slotWidth * dealer.zoom}
                   shuffling={dealer.phase === "shuffling"}
                   holding={dealer.holding}
                   gathering={dealer.gathering}
                   washSeed={dealer.washSeed}
                   fan={dealer.fan}
+                  fanReady={dealer.fanReady}
                   nextPositionIndex={dealer.next?.index}
                   onTable={dealer.deckOnTable}
                   remaining={dealer.remaining}
                   total={dealer.total}
-                  canShuffle={dealer.canShuffle && abilities.canPlay}
-                  label={
-                    dealer.canShuffle && abilities.canPlay
-                      ? "按住牌堆洗牌"
-                      : `牌堆：${status}`
-                  }
+                  canShuffle={shuffleReady}
+                  label={shuffleReady ? "按住牌堆洗牌" : `牌堆：${status}`}
                   backUrl={cardBackUrl(deck.id)}
-                  hold={shuffleHold}
+                  airBackUrl={cardBackSmallUrl(deck.id)}
+                  hold={shuffleHold.handlers}
                   onPick={dealer.pick}
                 />
               )

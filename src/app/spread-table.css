@@ -394,6 +394,22 @@
   transform-origin: 0 0;
 }
 
+/* The table steps back while cards are drawn; see `tableZoom`. */
+.spread-board__table {
+  position: absolute;
+  inset: 0;
+  transform: scale(var(--table-zoom, 1));
+  transition: transform var(--table-zoom-duration, 0ms)
+    cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+/* Frames and numbers belong to arranging; in play only the cards show. A
+   focused position still shows its number for keyboard users. */
+.spread-board:not([data-arranging]) .spread-slot__frame,
+.spread-board:not([data-arranging]) .spread-slot__handle:not(:focus-visible) {
+  opacity: 0;
+}
+
 .spread-board__canvas .table-ornament {
   position: absolute;
   top: 50%;

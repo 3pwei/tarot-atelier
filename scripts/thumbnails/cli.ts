@@ -17,6 +17,8 @@ import { site } from "../site/siteConfig.ts";
 import {
   artworkSourceHash,
   BACK_FILE_NAME,
+  BACK_SMALL_FILE_NAME,
+  BACK_SMALL_SCALE,
   CAPTURE_CSS_WIDTH,
   CAPTURE_PIXEL_RATIO,
   emptyManifest,
@@ -43,8 +45,11 @@ async function fixCatalogWidth(page: Page) {
   });
 }
 
-/** The top card of the deck, drawn at the capture width. */
-async function captureBack(page: Page, outputDir: string): Promise<string> {
+/** The top card of the deck, drawn at the capture width and at half of it. */
+async function captureBack(
+  page: Page,
+  outputDir: string,
+): Promise<{ readonly back: string; readonly backSmall: string }> {
   // Captured at rest: no hover tilt, riffle or edge depth of the pack.
   await page.addStyleTag({
     content: `.deck-stack { --deck-card-width: ${CAPTURE_CSS_WIDTH}px !important; }
@@ -57,22 +62,28 @@ async function captureBack(page: Page, outputDir: string): Promise<string> {
   if (!box) throw new Error("The deck's top card is not visible.");
   const png = await page.screenshot({ clip: box });
   writeFileSync(path.join(outputDir, BACK_FILE_NAME), await toWebp(page, png));
-  return BACK_FILE_NAME;
+  writeFileSync(
+    path.join(outputDir, BACK_SMALL_FILE_NAME),
+    await toWebp(page, png, BACK_SMALL_SCALE),
+  );
+  return { back: BACK_FILE_NAME, backSmall: BACK_SMALL_FILE_NAME };
 }
 
-async function toWebp(page: Page, png: Buffer): Promise<Buffer> {
+async function toWebp(page: Page, png: Buffer, scale = 1): Promise<Buffer> {
   const dataUrl = await page.evaluate(
-    async ({ base64, quality }) => {
+    async ({ base64, quality, scale }) => {
       const image = new Image();
       image.src = `data:image/png;base64,${base64}`;
       await image.decode();
       const canvas = document.createElement("canvas");
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      canvas.getContext("2d")?.drawImage(image, 0, 0);
+      canvas.width = Math.round(image.naturalWidth * scale);
+      canvas.height = Math.round(image.naturalHeight * scale);
+      canvas
+        .getContext("2d")
+        ?.drawImage(image, 0, 0, canvas.width, canvas.height);
       return canvas.toDataURL("image/webp", quality);
     },
-    { base64: png.toString("base64"), quality: WEBP_QUALITY },
+    { base64: png.toString("base64"), quality: WEBP_QUALITY, scale },
   );
   const [, base64 = ""] = dataUrl.split(",");
   return Buffer.from(base64, "base64");
@@ -134,13 +145,13 @@ async function main() {
     await fixCatalogWidth(page);
     await page.mouse.move(0, 0);
     const { cards, size } = await capture(page, outputDir);
-    const back = await captureBack(page, outputDir);
+    const backs = await captureBack(page, outputDir);
     writeManifest({
       ...emptyManifest(),
       sourceHash: artworkSourceHash((file) => readFileSync(file, "utf8")),
       ...size,
       cards,
-      back,
+      ...backs,
     });
     console.log(
       `Captured ${Object.keys(cards).length} thumbnails into ${outputDir}.`,

@@ -1,20 +1,9 @@
-import {
-  useId,
-  type CSSProperties,
-  type KeyboardEvent,
-  type PointerEvent,
-} from "react";
+import { useId, type CSSProperties } from "react";
+import type { HoldHandlers } from "@/presentation/components/draw/useHoldToShuffle";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 
+/** The full pack is this many 1px slices thick. */
 const MAX_EDGE_DEPTH_PX = 14;
-
-/** Press-and-hold handlers from useHoldToShuffle. */
-export interface HoldHandlers {
-  readonly onPointerDown: (event: PointerEvent<HTMLElement>) => void;
-  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
-  readonly onKeyUp: (event: KeyboardEvent<HTMLElement>) => void;
-  readonly onClick: () => void;
-}
 
 interface DeckStackProps {
   readonly remaining: number;
@@ -28,21 +17,13 @@ interface DeckStackProps {
   readonly hold: HoldHandlers;
 }
 
-/** Stacked 1px offsets suggest the thickness of the cards still in the pack. */
-function edgeShadow(remaining: number, total: number): string {
-  const depth = Math.round(
-    (remaining / Math.max(1, total)) * MAX_EDGE_DEPTH_PX,
-  );
-  const layers = Array.from({ length: depth }, (_, index) => {
-    const step = index + 1;
-    const tone = step % 3 === 0 ? "rgba(230, 197, 122, 0.55)" : "#d9cdb4";
-    return `${step * 0.35}px ${step}px 0 ${tone}`;
-  });
-  return [...layers, `0 ${depth + 14}px 28px rgba(0, 0, 0, 0.55)`].join(", ");
+/** Slices of edge under the top card: as many as the pack is thick. */
+export function edgeSlices(remaining: number, total: number): number {
+  return Math.round((remaining / Math.max(1, total)) * MAX_EDGE_DEPTH_PX);
 }
 
 const HOLD_HINT =
-  "按住牌堆，牌會在整張牌桌上飛舞洗牌，放開後收回中央攤開；按一下洗一輪。";
+  "按住牌桌任何地方或牌堆，牌會在整張牌桌上飛舞洗牌，放開後收回並攤開；按一下洗一輪。";
 
 /** The pack lying on the table: hold it down to wash the cards. */
 export function DeckStack({
@@ -55,9 +36,8 @@ export function DeckStack({
   hold,
 }: DeckStackProps) {
   const hintId = useId();
-  const style = {
-    "--deck-edge": edgeShadow(remaining, total),
-  } as CSSProperties;
+  const slices = edgeSlices(remaining, total);
+  const style = { "--slices": slices } as CSSProperties;
 
   return (
     <div
@@ -74,6 +54,16 @@ export function DeckStack({
         style={style}
         {...hold}
       >
+        {/* The pack's edge, slice by slice; while washing the slices leave
+            one after another, so the pack thins as its cards fly off. */}
+        {Array.from({ length: slices }, (_, index) => (
+          <span
+            key={index}
+            className="deck-stack__slice"
+            style={{ "--slice": index + 1 } as CSSProperties}
+            aria-hidden="true"
+          />
+        ))}
         {remaining === 0 ? (
           <span className="deck-stack__empty" aria-hidden="true">
             ✦

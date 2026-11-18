@@ -2,12 +2,13 @@
 
 import type { CardFan } from "@/presentation/components/draw/cardFan";
 import { CardWheelView } from "@/presentation/components/draw/CardWheelView";
-import {
-  DeckStack,
-  type HoldHandlers,
-} from "@/presentation/components/draw/DeckStack";
+import { DeckStack } from "@/presentation/components/draw/DeckStack";
+import type { HoldHandlers } from "@/presentation/components/draw/useHoldToShuffle";
 import { TableVortex } from "@/presentation/components/draw/TableVortex";
-import { PILE_CENTER } from "@/presentation/components/draw/tableVortex";
+import {
+  PILE_CENTER,
+  VORTEX_LIFT_SPAN_MS,
+} from "@/presentation/components/draw/tableVortex";
 import type { CSSProperties } from "react";
 
 interface TableDeckProps {
@@ -22,6 +23,8 @@ interface TableDeckProps {
   readonly washSeed: number;
   /** Set while the pile lies on the wheel to choose from. */
   readonly fan?: CardFan;
+  /** False while the wheel waits below the table for the shuffle to end. */
+  readonly fanReady: boolean;
   /** Number of the position the next chosen card goes to. */
   readonly nextPositionIndex?: number;
   /** False once every position has its card: the rest of the deck leaves. */
@@ -31,6 +34,8 @@ interface TableDeckProps {
   readonly canShuffle: boolean;
   readonly label: string;
   readonly backUrl?: string;
+  /** A smaller back for the many cards in the air. */
+  readonly airBackUrl?: string;
   readonly hold: HoldHandlers;
   readonly onPick: (slot: number, origin: DOMRect) => void;
 }
@@ -48,6 +53,7 @@ export function TableDeck({
   gathering,
   washSeed,
   fan,
+  fanReady,
   nextPositionIndex,
   onTable,
   remaining,
@@ -55,6 +61,7 @@ export function TableDeck({
   canShuffle,
   label,
   backUrl,
+  airBackUrl,
   hold,
   onPick,
 }: TableDeckProps) {
@@ -64,6 +71,7 @@ export function TableDeck({
     "--table-pile-x": PILE_CENTER.x,
     "--table-pile-y": PILE_CENTER.y,
     "--slot-w": `${cardWidth}cqw`,
+    "--vortex-lift-span": `${VORTEX_LIFT_SPAN_MS}ms`,
   } as CSSProperties;
   return (
     <div
@@ -75,27 +83,20 @@ export function TableDeck({
       onContextMenu={(event) => event.preventDefault()}
       data-choosing={choosing || undefined}
     >
-      {shuffling && (
-        <TableVortex
-          cardWidth={cardWidth}
-          seed={washSeed}
-          gathering={gathering}
-          backUrl={backUrl}
-        />
-      )}
       {choosing ? (
         <CardWheelView
           fan={fan}
+          waiting={!fanReady}
           cardWidth={cardWidth}
           backUrl={backUrl}
           positionIndex={nextPositionIndex}
           onPick={onPick}
         />
       ) : (
-        // Stays mounted while washing: the held key or pointer belongs to it.
+        // Stays mounted while washing: the held key belongs to it. Pointers
+        // press through to the table, which holds the same shuffle.
         <div
           className="table-deck__pack"
-          data-own-gesture
           data-gone={onTable ? undefined : true}
         >
           <DeckStack
@@ -108,6 +109,14 @@ export function TableDeck({
             hold={hold}
           />
         </div>
+      )}
+      {/* Above the pack: cards leave from the top of it. */}
+      {shuffling && (
+        <TableVortex
+          seed={washSeed}
+          gathering={gathering}
+          backUrl={airBackUrl}
+        />
       )}
     </div>
   );

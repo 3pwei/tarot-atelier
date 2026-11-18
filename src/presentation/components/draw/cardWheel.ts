@@ -9,8 +9,11 @@
 export const CARD_SPACING_PX = 13;
 /** Larger cards show a little more of themselves, as a share of their width. */
 export const CARD_SPACING_SHARE = 0.12;
-/** How far a chosen card slides forward out of the wheel, of its height. */
-export const NUDGE_SHARE = 0.08;
+/**
+ * How far a chosen card slides forward out of the wheel, of its height:
+ * enough that it clearly stands out from its neighbours.
+ */
+export const NUDGE_SHARE = 0.2;
 /**
  * The wheel's cards are as large as the positions, so the wheel lies along
  * the table's bottom edge with only this much of its top card showing.

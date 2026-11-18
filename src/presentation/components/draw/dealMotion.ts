@@ -5,28 +5,36 @@ import type { CSSProperties } from "react";
  * motion on the compositor, so it stays smooth on slow phones; these values
  * reach the stylesheet as custom properties and the dealer waits on them.
  */
-/** A tap still washes the cards this long; holding the deck keeps going. */
-export const WASH_ROUND_MS = 1600;
-/** The washed cards sweep back into one pile in the middle of the table. */
-export const GATHER_MS = 520;
+/**
+ * Letting go, however long the deck was held: the cards stop circling and
+ * float slowly down onto the middle of the table, then gather in a loose heap
+ * where the wheel opens. A quick tap gets the same, so it never ends abruptly.
+ */
+export const TABLE_LAND_MS = 750;
+export const HEAP_DROP_MS = 420;
+export const GATHER_MS = TABLE_LAND_MS + HEAP_DROP_MS;
+/** The wheel opening out of the heap once the cards are gathered. */
+export const WHEEL_RISE_MS = 460;
 /** Time for a chosen card to fly from the wheel to its position. */
 export const FLIGHT_MS = 900;
 /** The jumper follows the chosen card this long after it. */
 export const JUMPER_DELAY_MS = 420;
 
-/** What happens after the person lets go of the deck. */
-export interface WashFinish {
-  /** The cards keep washing this long: a quick tap still gets a full round. */
-  readonly washMs: number;
-  /** Then they gather into one pile. */
-  readonly gatherMs: number;
-}
+/** How far the table steps back while cards are being drawn. */
+export const DRAWING_TABLE_ZOOM = 0.7;
+/** Stepping back, and coming close again once every position has its card. */
+export const TABLE_ZOOM_MS = 700;
 
-export function washAfterRelease(heldMs: number): WashFinish {
-  return {
-    washMs: Math.max(0, WASH_ROUND_MS - Math.max(0, heldMs)),
-    gatherMs: GATHER_MS,
-  };
+/**
+ * The table's zoom: stepped back from the first shuffle until every position
+ * has its card and every card has landed; full size while arranging and once
+ * the spread is dealt.
+ */
+export function tableZoom(state: {
+  readonly arranging: boolean;
+  readonly dealing: boolean;
+}): number {
+  return state.arranging || !state.dealing ? 1 : DRAWING_TABLE_ZOOM;
 }
 
 /** When a chosen card, or the jumper that slipped out with it, has landed. */
@@ -38,6 +46,10 @@ export function landingDelayMs(role: FlightRole): number {
 export function motionTimingStyle(): CSSProperties {
   return {
     "--gather-duration": `${GATHER_MS}ms`,
+    "--settle-land-duration": `${TABLE_LAND_MS}ms`,
+    "--heap-drop-duration": `${HEAP_DROP_MS}ms`,
+    "--wheel-rise-duration": `${WHEEL_RISE_MS}ms`,
+    "--table-zoom-duration": `${TABLE_ZOOM_MS}ms`,
     "--flight-duration": `${FLIGHT_MS}ms`,
     "--jumper-delay": `${JUMPER_DELAY_MS}ms`,
   } as CSSProperties;

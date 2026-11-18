@@ -4,6 +4,7 @@ import {
   deckPile,
   fannedDeck,
   slot,
+  wheelRisen,
 } from "./support/spreadTable";
 
 /** Hold the pack in the middle to wash, then choose cards from the wheel by pulling them. */
@@ -108,6 +109,66 @@ test("a touch on the pack does not lift or enlarge its top card", async ({
   ).toBe("none");
 });
 
+test("cards lift off the pile a few at a time until twenty are in the air", async ({
+  page,
+}) => {
+  const pile = await centreOf(deckPile(page));
+  await page.mouse.move(pile.x, pile.y);
+  await page.mouse.down();
+  // A card is in the air once its climb from the pile has begun.
+  const airborne = () =>
+    page
+      .locator(".table-vortex__lift")
+      .evaluateAll(
+        (lifts) =>
+          lifts.filter((lift) =>
+            lift
+              .getAnimations()
+              .some(
+                (climb) =>
+                  (climb.effect?.getComputedTiming().progress ?? 0) > 0,
+              ),
+          ).length,
+      );
+  await expect(page.locator(".table-vortex__card")).toHaveCount(20);
+  await expect(page.locator(".table-vortex__firefly")).toHaveCount(8);
+  const early = await airborne();
+  expect(early).toBeLessThan(20);
+  // Climbing cards show only their backs, and the lights wait for a full whirl.
+  const shown = (selector: string) =>
+    page
+      .locator(selector)
+      .evaluateAll((nodes) =>
+        nodes.some((node) => Number(getComputedStyle(node).opacity) > 0),
+      );
+  expect(await shown(".table-vortex__front")).toBe(false);
+  expect(await shown(".table-vortex__firefly-path")).toBe(false);
+  await expect.poll(airborne, { timeout: 8_000 }).toBe(20);
+  await expect
+    .poll(() => shown(".table-vortex__firefly-path"), { timeout: 8_000 })
+    .toBe(true);
+  await page.mouse.up();
+  await expect(fannedDeck(page)).toBeVisible();
+});
+
+test("a quick tap still floats every card down to the table, without swirling", async ({
+  page,
+}) => {
+  await deckPile(page).click();
+  const settled = page.locator(".table-vortex__settle .table-vortex__laid");
+  await expect(settled).toHaveCount(20);
+  // The circling lights belong to the air, not to the table.
+  await expect(page.locator(".table-vortex__firefly").first()).toBeHidden();
+  expect(
+    await page
+      .locator(".table-vortex__spot")
+      .first()
+      .evaluate((node) => getComputedStyle(node).animationName),
+  ).toBe("settle-land");
+  await expect(page.locator(".table-vortex__swirl")).toHaveCount(0);
+  await expect(fannedDeck(page)).toBeVisible();
+});
+
 test("starting over from the laid-out wheel needs no confirmation", async ({
   page,
 }) => {
@@ -134,6 +195,102 @@ test("holding the deck keeps shuffling until it is let go", async ({
   await page.mouse.up();
   await expect(fannedDeck(page)).toBeVisible();
   await expect(fannedDeck(page).locator("[data-fan-slot]")).toHaveCount(78);
+});
+
+type Point = { readonly x: number; readonly y: number };
+
+/** A point on the table, as shares of its width and height. */
+async function onTable(page: Page, share: Point): Promise<Point> {
+  const box = await page.locator(".spread-board").boundingBox();
+  if (!box) throw new Error("the table is not visible");
+  return { x: box.x + box.width * share.x, y: box.y + box.height * share.y };
+}
+
+/** Presses the table with one finger or the mouse, holds, and lets go. */
+async function pressTable(
+  page: Page,
+  at: Point,
+  holdMs: number,
+  isMobile: boolean,
+  whileHeld: () => Promise<void> = async () => undefined,
+) {
+  if (!isMobile) {
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
+    await page.waitForTimeout(holdMs);
+    await whileHeld();
+    await page.mouse.up();
+    return;
+  }
+  const client = await page.context().newCDPSession(page);
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [at],
+  });
+  await page.waitForTimeout(holdMs);
+  await whileHeld();
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+}
+
+test("holding anywhere on the table shuffles, not only the pack", async ({
+  page,
+  isMobile,
+}) => {
+  const corner = await onTable(page, { x: 0.08, y: 0.12 });
+  await pressTable(page, corner, 1_500, isMobile, async () => {
+    await expect(page.getByText("洗牌中，放開後收牌攤開")).toBeVisible();
+  });
+
+  await expect(fannedDeck(page)).toBeVisible();
+  await expect(fannedDeck(page).locator("[data-fan-slot]")).toHaveCount(78);
+});
+
+test("pressing a position before the shuffle shuffles instead of selecting it", async ({
+  page,
+  isMobile,
+}) => {
+  await pressTable(page, await centreOf(slot(page, 1)), 300, isMobile);
+
+  await expect(fannedDeck(page)).toBeVisible();
+  await expect(slot(page, 1)).not.toHaveAttribute("data-selected");
+});
+
+test("two fingers still pinch the table before the shuffle", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "only touch screens pinch with two fingers");
+  const client = await page.context().newCDPSession(page);
+  // Across the pack, where a pinch is most likely to start.
+  const middle = await onTable(page, { x: 0.5, y: 0.45 });
+  const fingers = (gap: number) => [
+    { x: middle.x - gap, y: middle.y, id: 1 },
+    { x: middle.x + gap, y: middle.y, id: 2 },
+  ];
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: fingers(30),
+  });
+  for (let gap = 40; gap <= 120; gap += 10) {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: fingers(gap),
+    });
+  }
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+
+  await expect(page.locator(".spread-board")).toHaveAttribute(
+    "data-zoomed",
+    "true",
+  );
+  await expect(page.getByText("準備好了，按住牌桌洗牌")).toBeVisible();
+  await expect(fannedDeck(page)).toHaveCount(0);
 });
 
 test("a lifted card pulled up and out goes to the next position", async ({
@@ -164,7 +321,8 @@ test("a sideways drag turns the wheel on a narrow table", async ({
 }) => {
   test.skip(!isMobile, "the whole deck fits on a wide table");
   await deckPile(page).click();
-  await expect(fannedDeck(page)).toBeVisible();
+  // A drag is aimed at where the wheel ends up, so it has to have risen.
+  await wheelRisen(page);
   const wheel = page.locator(".card-wheel__wheel");
   const board = await page.locator(".spread-board").boundingBox();
   if (!board) throw new Error("the table is not visible");

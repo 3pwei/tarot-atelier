@@ -15,7 +15,7 @@ function Deck(props: {
     now: props.now,
   });
   return (
-    <button type="button" {...hold}>
+    <button type="button" {...hold.handlers} onPointerDown={hold.press}>
       洗牌
     </button>
   );

@@ -55,6 +55,8 @@ export interface ThumbnailManifest {
   readonly cards: Readonly<Record<string, string>>;
   /** The card back, shared by every card of the fanned deck. */
   readonly back?: string;
+  /** The back at half size, for the many small cards in the air. */
+  readonly backSmall?: string;
 }
 
 export function emptyManifest(): ThumbnailManifest {
@@ -79,6 +81,9 @@ export function artworkSourceHash(read: (path: string) => string): string {
 }
 
 export const BACK_FILE_NAME = "back.webp";
+export const BACK_SMALL_FILE_NAME = "back-small.webp";
+/** The small back's width over the full back's. */
+export const BACK_SMALL_SCALE = 0.5;
 
 /** File name for a card id, safe on every file system and URL. */
 export function thumbnailFileName(cardId: string): string {

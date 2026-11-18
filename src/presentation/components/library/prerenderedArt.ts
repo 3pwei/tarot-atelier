@@ -13,6 +13,7 @@ interface Manifest {
   readonly height: number;
   readonly cards: Readonly<Record<string, string>>;
   readonly back?: string;
+  readonly backSmall?: string;
 }
 
 const prerendered: Manifest = manifest;
@@ -41,4 +42,11 @@ export function catalogThumbnailUrl(
 export function cardBackUrl(deckId: string): string | undefined {
   if (deckId !== prerendered.deckId || !prerendered.back) return undefined;
   return urlOf(prerendered.back);
+}
+
+/** The card back at half size, for the many small cards in the air. */
+export function cardBackSmallUrl(deckId: string): string | undefined {
+  if (deckId !== prerendered.deckId) return undefined;
+  const file = prerendered.backSmall ?? prerendered.back;
+  return file ? urlOf(file) : undefined;
 }

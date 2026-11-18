@@ -3,10 +3,14 @@ import {
   FLIGHT_MS,
   JUMPER_DELAY_MS,
   GATHER_MS,
-  WASH_ROUND_MS,
+  DRAWING_TABLE_ZOOM,
+  HEAP_DROP_MS,
+  TABLE_ZOOM_MS,
+  tableZoom,
+  TABLE_LAND_MS,
+  WHEEL_RISE_MS,
   motionTimingStyle,
   landingDelayMs,
-  washAfterRelease,
   flightStyle,
   planFlight,
   toLocalOffset,
@@ -126,17 +130,11 @@ describe("flightStyle", () => {
   });
 });
 
-describe("washAfterRelease", () => {
-  it("still washes a full round after a quick tap", () => {
-    expect(washAfterRelease(0)).toEqual({
-      washMs: WASH_ROUND_MS,
-      gatherMs: GATHER_MS,
-    });
-    expect(washAfterRelease(400).washMs).toBe(WASH_ROUND_MS - 400);
-  });
-
-  it("gathers straight away after a long hold", () => {
-    expect(washAfterRelease(WASH_ROUND_MS * 3).washMs).toBe(0);
+describe("GATHER_MS", () => {
+  it("floats the cards down, then gathers them, whatever the hold", () => {
+    expect(GATHER_MS).toBe(TABLE_LAND_MS + HEAP_DROP_MS);
+    // Slowly enough to watch the cards come down.
+    expect(TABLE_LAND_MS).toBeGreaterThanOrEqual(600);
   });
 });
 
@@ -151,8 +149,29 @@ describe("motionTimingStyle", () => {
   it("hands every wash and flight timing to the stylesheet", () => {
     expect(motionTimingStyle()).toEqual({
       "--gather-duration": `${GATHER_MS}ms`,
+      "--settle-land-duration": `${TABLE_LAND_MS}ms`,
+      "--heap-drop-duration": `${HEAP_DROP_MS}ms`,
+      "--wheel-rise-duration": `${WHEEL_RISE_MS}ms`,
+      "--table-zoom-duration": `${TABLE_ZOOM_MS}ms`,
       "--flight-duration": `${FLIGHT_MS}ms`,
       "--jumper-delay": `${JUMPER_DELAY_MS}ms`,
     });
+  });
+});
+
+describe("tableZoom", () => {
+  it("steps the table back while cards are being drawn", () => {
+    expect(tableZoom({ arranging: false, dealing: true })).toBe(
+      DRAWING_TABLE_ZOOM,
+    );
+    expect(DRAWING_TABLE_ZOOM).toBe(0.7);
+  });
+
+  it("brings it close again once the spread is dealt", () => {
+    expect(tableZoom({ arranging: false, dealing: false })).toBe(1);
+  });
+
+  it("shows it at full size while arranging", () => {
+    expect(tableZoom({ arranging: true, dealing: true })).toBe(1);
   });
 });

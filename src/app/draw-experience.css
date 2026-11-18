@@ -1,6 +1,8 @@
 /* Draw table: deck, drawn cards and the burn reveal. The spread board lives in spread-table.css. */
 
 .draw-experience {
+  /* How the pile lies on the cloth; a card leaving it starts at this turn. */
+  --pile-turn: -4deg;
   --deck-card-width: clamp(6.5rem, 15vw, 10.5rem);
   --drawn-card-width: clamp(10rem, 22vw, 14rem);
   --table-radius: clamp(1.25rem, 3.5vw, 2.4rem);
@@ -141,10 +143,30 @@
   border: 0;
   border-radius: 6% / 4%;
   background: transparent;
-  box-shadow: var(--deck-edge);
+  box-shadow: 0 calc(var(--slices) * 1px + 14px) 28px rgba(0, 0, 0, 0.55);
   cursor: pointer;
-  transform: rotate(-4deg);
+  transform: rotate(var(--pile-turn));
   transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* One slice of the pack's edge: deep violet like the backs, with a faint
+   gold line now and then, so the pack reads as cards without glaring. */
+.deck-stack__slice {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: 6% / 4%;
+  background: #2a1d3a;
+  box-shadow: 0 0 0 0.5px rgba(201, 168, 106, 0.22);
+  transform: translate(calc(var(--slice) * 0.35px), calc(var(--slice) * 1px));
+}
+
+.deck-stack__slice:nth-child(even) {
+  background: #35264a;
+}
+
+.deck-stack__slice:nth-child(3n) {
+  background: #4a3a56;
 }
 
 .deck-stack__pile:disabled {
@@ -215,7 +237,7 @@
 
 .deck-stack__pile:focus-visible {
   outline: none;
-  box-shadow: var(--deck-edge), var(--focus-ring);
+  box-shadow: var(--focus-ring);
 }
 
 .deck-stack__hint {
@@ -306,16 +328,38 @@
   height: 100%;
 }
 
-/* Washing: the pack's cards are up in the vortex. It stays mounted, and
-   focusable, because the held key or pointer belongs to it. */
-.table-deck[data-washing] .table-deck__pack {
+/* The pack stays in the middle while its cards fly off the top of it, and is
+   gone once the last of them has left. */
+.draw-experience[data-motion="animated"]
+  .table-deck[data-washing]
+  .table-deck__pack {
+  animation: pile-emptied 1ms linear var(--vortex-lift-span) both;
+}
+
+/* Letting go sends the cards to a loose heap below, not back to the pack. */
+.draw-experience[data-motion="animated"]
+  .table-deck[data-gathering]
+  .table-deck__pack {
+  animation: none;
   opacity: 0;
 }
 
-/* The vortex closes into it: the pile forms again in the middle. */
-.table-deck[data-gathering] .table-deck__pack {
-  opacity: 1;
-  transition: opacity var(--gather-duration) ease-out;
+/* The pack thins as its cards leave: the deepest slice goes first and the
+   last just before the top card does. */
+.draw-experience[data-motion="animated"]
+  .table-deck[data-washing]
+  .deck-stack__slice {
+  animation: pile-emptied 1ms linear
+    calc(var(--vortex-lift-span) * (1 - var(--slice) / var(--slices))) both;
+}
+
+/* Its glow stays still while washing: a glow growing under the moving cards
+   is redrawn every frame. */
+.table-deck[data-washing] .deck-stack__pile::before {
+  animation: none;
+  opacity: 0;
+  transform: none;
+  transition: none;
 }
 
 /* Positions step back while the cards circle over them. */
@@ -325,22 +369,27 @@
 }
 
 /* ── Vortex ──
-   Holding the pack lifts its cards into a funnel of golden light: flattened
-   rings, wide at the top and narrow at the bottom, each turning faster than
-   the one above. Cards ride the rings facing the viewer, the same size as the
-   positions, shrinking and dimming on the far side. Every motion is a
-   transform or opacity. */
+   Holding the pack sends its cards one after another off the top and up into
+   a whirl: each climbs to the near side of its ring, then circles on a path
+   of its own, the widest past the table's edges. Every motion is a transform
+   or opacity of something painted once: cards flip flat (a squeeze across,
+   not a 3D turn), fronts are painted once, and no card carries a
+   shadow, which a moving layer would repaint (ADR 0005, measured with
+   `pnpm perf`). */
 .table-vortex {
-  --vortex-swing: cubic-bezier(0.37, 0, 0.63, 1);
-
+  --sine-out: cubic-bezier(0.61, 1, 0.88, 1);
+  --sine-in: cubic-bezier(0.12, 0, 0.39, 0);
   position: absolute;
   inset: 0;
-  transform-origin: calc(var(--table-pile-x) * 1%)
-    calc(var(--table-pile-y) * 1%);
 }
 
-/* A soft light under the funnel. */
-.table-vortex::before {
+.table-vortex__whirl {
+  position: absolute;
+  inset: 0;
+}
+
+/* A soft light under the whirl. */
+.table-vortex__whirl::before {
   position: absolute;
   inset: 10% 14% 14%;
   background: radial-gradient(
@@ -353,9 +402,6 @@
 }
 
 .table-vortex__tier {
-  --orbit-x: calc(var(--tier-radius) * 1cqw);
-  --orbit-y: calc(var(--tier-radius) * var(--vortex-tilt) * 1cqw);
-
   position: absolute;
   top: calc(var(--tier-y) * 1cqh);
   left: calc(var(--table-pile-x) * 1cqw);
@@ -363,116 +409,272 @@
   height: 0;
 }
 
-/* The ring's faint outline: an ellipse, painted once. */
-.table-vortex__ring {
+/* Each card's own path: its ring's ellipse, wider or narrower, shifted. */
+.table-vortex__lift {
+  --orbit-x: calc(var(--tier-radius) * var(--radius-scale) * 1cqw);
+  --orbit-y: calc(var(--orbit-x) * var(--vortex-tilt));
+
   position: absolute;
-  top: calc(var(--orbit-y) * -1 * var(--ring-scale));
-  left: calc(var(--orbit-x) * -1 * var(--ring-scale));
-  width: calc(var(--orbit-x) * 2 * var(--ring-scale));
-  height: calc(var(--orbit-y) * 2 * var(--ring-scale));
-  border: 1.5px solid rgba(255, 220, 150, 0.35);
-  border-radius: 50%;
-  box-shadow:
-    0 0 10px rgba(255, 210, 130, 0.25),
-    inset 0 0 10px rgba(255, 210, 130, 0.15);
+  top: 0;
+  left: 0;
+  transform: translate(
+    calc(var(--shift-x) * 1cqw),
+    calc(var(--shift-y) * 1cqh)
+  );
 }
 
-/* Across the ring; the card inside swings up and down a quarter turn later. */
+/* Across the path; the card inside swings up and down, a quarter turn apart.
+   Both start at the near side, where the card joins its path. */
 .table-vortex__orbit {
   position: absolute;
   top: 0;
   left: 0;
-  transform: translateX(calc(var(--orbit-x) * -1));
 }
 
+/* As large as the pack's cards on the table; its own share in the air. */
 .table-vortex__card {
   position: absolute;
   top: 0;
   left: 0;
   width: var(--slot-w);
   aspect-ratio: 2 / 3;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, calc(-50% + var(--orbit-y)))
+    scale(var(--air-scale, 1));
 }
 
-/* A point of light racing round the ring ahead of the cards. */
-.table-vortex__comet {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #fff8e6;
-  box-shadow:
-    0 0 6px 2px rgba(255, 214, 140, 0.9),
-    0 0 18px 6px rgba(255, 200, 110, 0.35);
-  transform: translate(-50%, -50%);
-}
-
+/* Turned in its own plane and tipped away: fixed for each card. */
 .table-vortex__face {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--roll)) scaleY(var(--tip));
+}
+
+/* The flip: squeezed across to an edge, then out again showing the other
+   side, once a lap. */
+.table-vortex__flip {
+  position: absolute;
+  inset: 0;
+}
+
+.table-vortex__back,
+.table-vortex__flip .procedural-svg {
+  position: absolute;
   display: block;
-  overflow: hidden;
   width: 100%;
   height: 100%;
   border-radius: 6% / 4%;
-  box-shadow:
-    0 0 0 1px rgba(251, 234, 184, 0.35),
-    0 0 14px rgba(255, 210, 120, 0.45);
-  rotate: var(--card-tilt);
 }
 
-.table-vortex__face img,
-.table-vortex__face .procedural-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.table-vortex__spark {
+/* The front shows no card, only gold light. */
+.table-vortex__front {
   position: absolute;
-  top: calc(var(--spark-y) * 1cqh);
-  left: calc(var(--spark-x) * 1cqw);
-  width: 3px;
-  height: 3px;
+  inset: 0;
+  border-radius: 6% / 4%;
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    #fff3c9 0%,
+    #f2cf7a 38%,
+    #c99a3c 75%,
+    #9b7230 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 72, 24, 0.55),
+    inset 0 0 0 4px rgba(255, 246, 214, 0.35);
+  opacity: 0;
+}
+
+/* Its glow, painted once with the front. */
+.table-vortex__front::before {
+  position: absolute;
+  z-index: -1;
+  inset: -14% -18%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 214, 130, 0.55),
+    rgba(255, 200, 110, 0.18) 60%,
+    transparent
+  );
+  content: "";
+}
+
+/* A few soft lights circling with the cards, in the air only. Each is a
+   glow painted once, with a few fading dots behind it turned to point back
+   along its path. Same two swings as the cards. */
+.table-vortex__firefly-path {
+  --orbit-x: calc(var(--tier-radius) * var(--radius-scale) * 1cqw);
+  --orbit-y: calc(var(--orbit-x) * var(--vortex-tilt));
+
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.table-vortex__firefly-orbit {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.table-vortex__firefly {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--firefly-size) * 6cqw);
+  aspect-ratio: 1;
   border-radius: 50%;
-  background: #fff1c8;
-  box-shadow: 0 0 6px 1px rgba(255, 214, 140, 0.8);
-  opacity: 0;
+  background: radial-gradient(
+    closest-side,
+    #fffdf2 0 7%,
+    rgba(255, 238, 190, 0.95) 11%,
+    rgba(255, 222, 155, 0.6) 30%,
+    rgba(255, 205, 120, 0.22) 62%,
+    transparent
+  );
+  transform: translate(-50%, calc(-50% + var(--orbit-y)));
 }
 
-.draw-experience[data-motion="animated"] .table-vortex {
-  animation: vortex-rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+.table-vortex__firefly-tail {
+  position: absolute;
+  top: 50%;
+  right: 50%;
+  width: 120%;
+  height: 18%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 16'%3E%3Ccircle cx='87' cy='8' r='2.38' fill='%23ffe7a8' fill-opacity='0.456'/%3E%3Ccircle cx='78' cy='8' r='2.16' fill='%23ffe7a8' fill-opacity='0.368'/%3E%3Ccircle cx='69' cy='8' r='1.94' fill='%23ffe7a8' fill-opacity='0.287'/%3E%3Ccircle cx='60' cy='8' r='1.72' fill='%23ffe7a8' fill-opacity='0.215'/%3E%3Ccircle cx='51' cy='8' r='1.50' fill='%23ffe7a8' fill-opacity='0.150'/%3E%3Ccircle cx='42' cy='8' r='1.28' fill='%23ffe7a8' fill-opacity='0.095'/%3E%3Ccircle cx='33' cy='8' r='1.06' fill='%23ffe7a8' fill-opacity='0.050'/%3E%3Ccircle cx='24' cy='8' r='0.84' fill='%23ffe7a8' fill-opacity='0.016'/%3E%3Ccircle cx='15' cy='8' r='0.62' fill='%23ffe7a8' fill-opacity='0.000'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+  transform: translateY(-50%);
+  transform-origin: 100% 50%;
 }
 
-/* Two half-turn swings a quarter turn apart trace the ellipse; easing them
-   like a sine keeps the speed round the ring even. */
+/* The lights wait until the whirl is full, then fade in. */
+.draw-experience[data-motion="animated"] .table-vortex__firefly-path {
+  animation: vortex-light-up var(--climb-duration) ease-out var(--firefly-delay)
+    both;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__firefly-orbit {
+  animation: vortex-across var(--tier-turn) linear var(--orbit-delay) infinite;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__firefly {
+  animation: firefly-bob var(--tier-turn) linear var(--orbit-delay) infinite;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__firefly-tail {
+  animation: firefly-heading var(--tier-turn) linear var(--orbit-delay) infinite;
+}
+
+/* The light comes up as the first cards leave; the cards bring themselves. */
+.draw-experience[data-motion="animated"] .table-vortex__whirl::before {
+  animation: vortex-light-up var(--climb-duration) ease-out both;
+}
+
+/* Each card leaves slowly and picks up speed: the keyframes ease in. */
+.draw-experience[data-motion="animated"] .table-vortex__lift {
+  animation: vortex-climb var(--climb-duration) linear var(--launch-delay) both;
+}
+
+/* Square with the pack while it is drawn out, then turning and tipping away. */
+.draw-experience[data-motion="animated"] .table-vortex__face {
+  animation: vortex-straight var(--climb-duration) linear var(--launch-delay)
+    both;
+}
+
+/* Two swings a quarter turn apart trace the ellipse; sine easing between the
+   quarter points keeps the speed round it even. Until a card is drawn out
+   of the pack they hold it at the near side. */
 .draw-experience[data-motion="animated"] .table-vortex__orbit {
-  animation: vortex-across calc(var(--tier-turn) / 2) var(--vortex-swing)
-    var(--orbit-delay) infinite alternate;
+  animation: vortex-across var(--tier-turn) linear var(--orbit-delay) infinite
+    backwards;
 }
 
-.draw-experience[data-motion="animated"] .table-vortex__card,
-.draw-experience[data-motion="animated"] .table-vortex__comet {
-  animation: vortex-bob calc(var(--tier-turn) / 2) var(--vortex-swing)
-    var(--bob-delay) infinite alternate;
+.draw-experience[data-motion="animated"] .table-vortex__card {
+  animation: vortex-bob var(--tier-turn) linear var(--orbit-delay) infinite
+    backwards;
 }
 
-.draw-experience[data-motion="animated"] .table-vortex__spark {
-  animation: vortex-twinkle 1.6s ease-in-out calc(var(--spark-phase) * -1.6s)
-    infinite;
+/* Back up while it climbs and for its first half lap; then a flip every two
+   laps, at its own phase. The first flip starts (40% into the cycle) between
+   half a lap and a lap and a third after the card starts circling. */
+.table-vortex__lift {
+  --flip-delay: calc(
+    var(--orbit-delay) + var(--tier-turn) * 0.5 - var(--flip-phase) * 0.8 *
+      var(--tier-turn)
+  );
 }
 
-/* Letting go closes the funnel into the pile in the middle. */
-.table-vortex[data-gathering] {
-  opacity: 0;
-  transform: scale(0.08);
-  transition:
-    opacity var(--gather-duration) ease-in,
-    transform var(--gather-duration) cubic-bezier(0.5, 0, 0.75, 0.2);
+.draw-experience[data-motion="animated"] .table-vortex__flip {
+  animation: vortex-flip calc(var(--tier-turn) * 2) var(--sine-in)
+    var(--flip-delay) infinite backwards;
 }
 
-.draw-experience[data-motion="animated"] .table-vortex[data-gathering] {
-  animation: none;
+.draw-experience[data-motion="animated"] .table-vortex__front {
+  animation: vortex-front calc(var(--tier-turn) * 2) step-end var(--flip-delay)
+    infinite backwards;
+}
+
+/* Letting go, however long the deck was held: the whirl stops, every card
+   floats down flat onto the middle of the table, then they gather in a loose
+   heap where the wheel opens. Each card is three layers, each one motion:
+   heap-move (to the heap) > spot (down from the air, to where it lies) >
+   laid (its turn on the table, then in the heap). */
+.table-vortex[data-gathering] .table-vortex__whirl {
+  visibility: hidden;
+}
+
+.table-vortex__settle {
+  position: absolute;
+  inset: 0;
+}
+
+.table-vortex__heap-move {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translate(
+    calc(var(--heap-shift-x) * 1cqw),
+    calc(var(--heap-shift-y) * 1cqw)
+  );
+}
+
+.table-vortex__spot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(calc(var(--spot-x) * 1cqw), calc(var(--spot-y) * 1cqw));
+}
+
+.table-vortex__laid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--slot-w);
+  aspect-ratio: 2 / 3;
+  transform: translate(-50%, -50%)
+    rotate(calc(var(--spot-roll) + var(--heap-turn)));
+}
+
+.table-vortex__laid .table-vortex__back,
+.table-vortex__laid .procedural-svg {
+  position: absolute;
+  inset: 0;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__heap-move {
+  animation: settle-to-heap var(--heap-drop-duration)
+    cubic-bezier(0.4, 0, 0.3, 1) var(--settle-land-duration) both;
+}
+
+/* Floating down: gentle all the way, coming to rest without a bump. */
+.draw-experience[data-motion="animated"] .table-vortex__spot {
+  animation: settle-land var(--settle-land-duration)
+    cubic-bezier(0.35, 0.1, 0.3, 1) both;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__laid {
+  animation: settle-askew var(--heap-drop-duration) ease-out
+    var(--settle-land-duration) both;
 }
 
 .card-wheel {
@@ -481,8 +683,21 @@
   pointer-events: none;
 }
 
-.draw-experience[data-motion="animated"] .card-wheel__wheel {
-  animation: wheel-lay 460ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+/* Laid out, out of sight, while the cards gather, then opening out of the
+   heap they gathered in once the shuffle completes. */
+.card-wheel[data-waiting] {
+  visibility: hidden;
+  transform: translateY(8cqh) scaleX(0.3);
+}
+
+.draw-experience[data-motion="animated"] .card-wheel {
+  transform-origin: 50% 100%;
+  transition: transform var(--wheel-rise-duration)
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.draw-experience[data-motion="animated"] .card-wheel[data-waiting] {
+  transition: none;
 }
 
 /* The wheel's centre sits below the table; turning it moves one layer. */
@@ -974,36 +1189,89 @@
   }
 }
 
-/* The funnel rises out of the pile. */
-@keyframes vortex-rise {
+@keyframes vortex-light-up {
   from {
     opacity: 0;
-    transform: scale(0.08);
   }
 }
 
-@keyframes vortex-across {
-  to {
-    transform: translateX(var(--orbit-x));
+/* Drawn out of the front of the pack at full size and square with it, to
+   the front right at about 45° (--draw-out-slope), fast then slowing; from
+   there it already circles with its ring (the orbit starts then, see
+   VORTEX_DRAW_OUT_SHARE) and spirals straight out into it, shrinking.
+   Positions are the card's, less where the near side puts it (--orbit-y). */
+@keyframes vortex-climb {
+  0% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1);
+    transform: translateY(calc(var(--climb-from) * 1cqh - var(--orbit-y)))
+      scale(calc(1 / var(--air-scale)));
   }
-}
 
-/* Up at the far side, small and dim; down at the near side, full and bright. */
-@keyframes vortex-bob {
-  from {
-    opacity: 0.6;
-    transform: translate(-50%, calc(-50% - var(--orbit-y))) scale(0.72);
-  }
-
-  to {
+  4% {
     opacity: 1;
-    transform: translate(-50%, calc(-50% + var(--orbit-y))) scale(1);
+  }
+
+  /* Drawn out: keep in step with VORTEX_DRAW_OUT_SHARE. */
+  25% {
+    animation-timing-function: cubic-bezier(0.35, 0, 0.55, 1);
+    transform: translate(
+        calc(var(--draw-out-slope) * var(--draw-out) * var(--slot-w)),
+        calc(
+          var(--climb-from) * 1cqh + var(--draw-out) * var(--slot-w) -
+            var(--orbit-y)
+        )
+      )
+      scale(calc(1 / var(--air-scale)));
   }
 }
 
-@keyframes vortex-twinkle {
+/* Square with the pack while it is drawn out, then turning and tipping as
+   it starts to circle. */
+@keyframes vortex-straight {
   0%,
+  25% {
+    transform: none;
+    animation-timing-function: ease-in-out;
+  }
+
+  55% {
+    transform: rotate(var(--roll)) scaleY(var(--tip));
+  }
+}
+
+@keyframes pile-emptied {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Over two laps: mostly its back, then squeezed to an edge, out again
+   showing the gold front (mirrored, so it reads the same) and back over, so
+   only a few cards show their fronts at once. */
+@keyframes vortex-flip {
+  0%,
+  40%,
+  80%,
   100% {
+    transform: scaleX(1);
+  }
+
+  50%,
+  70% {
+    transform: scaleX(0.02);
+    animation-timing-function: var(--sine-out);
+  }
+
+  60% {
+    transform: scaleX(-1);
+    animation-timing-function: var(--sine-in);
+  }
+}
+
+@keyframes vortex-front {
+  0%,
+  70% {
     opacity: 0;
   }
 
@@ -1012,14 +1280,171 @@
   }
 }
 
-/* The gathered pile settles onto the wheel along the bottom edge. */
-@keyframes wheel-lay {
+/* Down from where the card was in the air (or the pack) to where it lies. */
+@keyframes settle-land {
   from {
-    opacity: 0;
-    transform: translateY(-28cqh) rotate(var(--wheel-turn, 0deg));
+    transform: translate(calc(var(--from-x) * 1cqw), calc(var(--from-y) * 1cqw))
+      scale(var(--from-scale, 1));
   }
 }
 
+@keyframes settle-to-heap {
+  from {
+    transform: translate(0, 0);
+  }
+}
+
+/* Lying at its spot's turn until it drops, then askew in the heap. */
+@keyframes settle-askew {
+  from {
+    transform: translate(-50%, -50%) rotate(var(--spot-roll));
+  }
+}
+
+/* x = r·sin θ: from the middle out to one edge, back, to the other edge. */
+@keyframes vortex-across {
+  0%,
+  50% {
+    transform: translateX(0);
+    animation-timing-function: var(--sine-out);
+  }
+
+  25% {
+    transform: translateX(var(--orbit-x));
+    animation-timing-function: var(--sine-in);
+  }
+
+  75% {
+    transform: translateX(calc(var(--orbit-x) * -1));
+    animation-timing-function: var(--sine-in);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* y = r·cos θ: near side (low, large, bright) to far side (high, small, dim). */
+@keyframes vortex-bob {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% + var(--orbit-y)))
+      scale(var(--air-scale, 1));
+    animation-timing-function: var(--sine-in);
+  }
+
+  25%,
+  75% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(calc(var(--air-scale, 1) * 0.86));
+    animation-timing-function: var(--sine-out);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: translate(-50%, calc(-50% - var(--orbit-y)))
+      scale(calc(var(--air-scale, 1) * 0.72));
+    animation-timing-function: var(--sine-in);
+  }
+}
+
+/* Like the cards' bob: near side low and bright, far side high and faint. */
+@keyframes firefly-bob {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% + var(--orbit-y)));
+    animation-timing-function: var(--sine-in);
+  }
+
+  25%,
+  75% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(0.85);
+    animation-timing-function: var(--sine-out);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: translate(-50%, calc(-50% - var(--orbit-y))) scale(0.7);
+    animation-timing-function: var(--sine-in);
+  }
+}
+
+/* The tail points back along the ellipse: its slope at each sixteenth of the
+   lap, for a path 0.3 times as tall as it is wide (VORTEX_TILT). */
+@keyframes firefly-heading {
+  0% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+
+  6.25% {
+    transform: translateY(-50%) rotate(-7.1deg);
+  }
+
+  12.5% {
+    transform: translateY(-50%) rotate(-16.7deg);
+  }
+
+  18.75% {
+    transform: translateY(-50%) rotate(-35.9deg);
+  }
+
+  25% {
+    transform: translateY(-50%) rotate(-90deg);
+  }
+
+  31.25% {
+    transform: translateY(-50%) rotate(-144.1deg);
+  }
+
+  37.5% {
+    transform: translateY(-50%) rotate(-163.3deg);
+  }
+
+  43.75% {
+    transform: translateY(-50%) rotate(-172.9deg);
+  }
+
+  50% {
+    transform: translateY(-50%) rotate(-180deg);
+  }
+
+  56.25% {
+    transform: translateY(-50%) rotate(-187.1deg);
+  }
+
+  62.5% {
+    transform: translateY(-50%) rotate(-196.7deg);
+  }
+
+  68.75% {
+    transform: translateY(-50%) rotate(-215.9deg);
+  }
+
+  75% {
+    transform: translateY(-50%) rotate(-270deg);
+  }
+
+  81.25% {
+    transform: translateY(-50%) rotate(-324.1deg);
+  }
+
+  87.5% {
+    transform: translateY(-50%) rotate(-343.3deg);
+  }
+
+  93.75% {
+    transform: translateY(-50%) rotate(-352.9deg);
+  }
+
+  100% {
+    transform: translateY(-50%) rotate(-360deg);
+  }
+}
+
+/* The gathered pile settles onto the wheel along the bottom edge. */
 @keyframes deal-flight {
   0% {
     transform: translate(var(--flight-start-x), var(--flight-start-y))

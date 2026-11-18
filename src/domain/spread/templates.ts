@@ -83,9 +83,9 @@ export const BUILT_IN_TEMPLATES: TemplateLibrary = Object.freeze([
     name: "經典三張",
     builtIn: true,
     positions: [
-      { question: "這件事的過去與起因是什麼？", x: 0.22, y: 0.5, rotation: 0 },
+      { question: "這件事的過去與起因是什麼？", x: 0.16, y: 0.5, rotation: 0 },
       { question: "現在的狀態是什麼？", x: 0.5, y: 0.5, rotation: 0 },
-      { question: "接下來可能的走向是什麼？", x: 0.78, y: 0.5, rotation: 0 },
+      { question: "接下來可能的走向是什麼？", x: 0.84, y: 0.5, rotation: 0 },
     ],
   },
   {

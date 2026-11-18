@@ -47,6 +47,8 @@ describe("wheelLayout", () => {
 
   it("slides a chosen card forward by a share of its height", () => {
     expect(desktop.nudge).toBeCloseTo(desktop.cardHeight * NUDGE_SHARE);
+    // A chosen card stands out by at least a fifth of its height.
+    expect(NUDGE_SHARE).toBeGreaterThanOrEqual(0.2);
   });
 
   it("lets a narrow table turn the wheel to reach every card", () => {
