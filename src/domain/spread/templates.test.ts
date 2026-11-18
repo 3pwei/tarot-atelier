@@ -174,6 +174,7 @@ describe("deleting and restoring", () => {
     const restored = restoreBuiltIns(removal.library);
     expect(restored.map((t) => t.name)).toEqual([
       "經典三張",
+      "單張指引",
       "五張十字",
       "圓環",
       "我的",
@@ -193,9 +194,70 @@ describe("template library storage", () => {
     ).toEqual([]);
   });
 
+  it("offers the single-card spread first among the built-ins after three cards", () => {
+    expect(BUILT_IN_TEMPLATES.map((template) => template.name)).toEqual([
+      "經典三張",
+      "單張指引",
+      "五張十字",
+      "圓環",
+    ]);
+    const single = BUILT_IN_TEMPLATES[1]!;
+    expect(single.positions).toHaveLength(1);
+    // It answers the main question itself, under the usual rule that every
+    // position has a question.
+    expect(single.positions[0]!.question).toBe("這個問題的答案是什麼？");
+  });
+
+  describe("a library saved before the single-card spread (v1)", () => {
+    const v1 = (templates: readonly unknown[]) => ({
+      schemaVersion: 1,
+      templates,
+    });
+    const [threeCard, single, fiveCard, circle] = BUILT_IN_TEMPLATES;
+
+    it("gets it after the three-card spread, keeping everything else", () => {
+      const { library } = save(
+        BUILT_IN_TEMPLATES.filter((template) => template !== single),
+        "我的",
+      );
+      expect(
+        parseTemplateLibrary(v1(library))?.map((template) => template.name),
+      ).toEqual(["經典三張", "單張指引", "五張十字", "圓環", "我的"]);
+    });
+
+    it("gets it first when the three-card spread was deleted", () => {
+      expect(
+        parseTemplateLibrary(v1([fiveCard, circle]))?.map(
+          (template) => template.id,
+        ),
+      ).toEqual(["single-card", "five-card", "circle"]);
+    });
+
+    it("does not get it over a template of the same name", () => {
+      const mine = { ...circle!, id: "mine", name: "單張指引", builtIn: false };
+      expect(parseTemplateLibrary(v1([threeCard, mine]))).toEqual([
+        threeCard,
+        mine,
+      ]);
+    });
+
+    it("gives it even to an emptied library, which never had it", () => {
+      expect(parseTemplateLibrary(v1([]))).toEqual([single]);
+    });
+  });
+
+  it("keeps the single-card spread deleted from a current library", () => {
+    const current = BUILT_IN_TEMPLATES.filter(
+      (template) => template.id !== "single-card",
+    );
+    expect(
+      parseTemplateLibrary(JSON.parse(serializeTemplateLibrary(current))),
+    ).toEqual(current);
+  });
+
   it.each([
     ["no version", { templates: [] }],
-    ["a future version", { schemaVersion: 2, templates: [] }],
+    ["a future version", { schemaVersion: 3, templates: [] }],
     [
       "a bad name",
       { schemaVersion: 1, templates: [{ ...BUILT_IN_TEMPLATES[0], name: "" }] },
