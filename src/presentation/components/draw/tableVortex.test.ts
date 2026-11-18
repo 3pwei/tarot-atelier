@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BOARD_HEIGHT_CQW } from "@/presentation/components/spread/boardGeometry";
 import {
@@ -11,11 +13,16 @@ import {
   VORTEX_FIREFLY_DELAY_MS,
   VORTEX_SCATTER,
   VORTEX_TIERS,
+  VORTEX_TILT,
   VORTEX_CLIMB_MS,
   VORTEX_DRAW_OUT_SHARE,
   VORTEX_DRAW_OUT_SLOPE,
   launchAt,
+  VORTEX_LAUNCH_GAP_MS,
+  VORTEX_RITUAL_MS,
   orbitStartMs,
+  rotationOf,
+  shortestTurn,
   vortexCards,
   vortexFireflies,
 } from "@/presentation/components/draw/tableVortex";
@@ -90,11 +97,9 @@ describe("the vortex", () => {
     expect(VORTEX_DRAW_OUT_SHARE).toBeLessThanOrEqual(0.3);
   });
 
-  it("spaces launches the same way for any number of cards", () => {
-    expect(launchAt(0, 1)).toBe(0);
-    expect(launchAt(0, 5)).toBe(0);
-    expect(launchAt(4, 5)).toBe(VORTEX_LIFT_SPAN_MS);
-    expect(launchAt(2, 5)).toBeGreaterThan(VORTEX_LIFT_SPAN_MS / 2);
+  it("waits for the opening ritual, then launches one ring's place apart", () => {
+    expect(launchAt(0)).toBe(VORTEX_RITUAL_MS);
+    expect(launchAt(1) - launchAt(0)).toBe(Math.round(VORTEX_LAUNCH_GAP_MS));
   });
 
   it("fills the rings together rather than one ring after another", () => {
@@ -193,5 +198,56 @@ describe("the vortex", () => {
     expect(vortexFireflies(seededRandom(7))).toEqual(
       vortexFireflies(seededRandom(7)),
     );
+  });
+});
+
+describe("carrying a card's turn from the air to the table", () => {
+  it("reads the rotation of a computed transform", () => {
+    expect(rotationOf("none")).toBe(0);
+    expect(rotationOf("matrix(1, 0, 0, 1, 0, 0)")).toBeCloseTo(0);
+    expect(rotationOf("matrix(0, 1, -1, 0, 10, 20)")).toBeCloseTo(90);
+    expect(rotationOf("matrix(0, -1, 1, 0, 0, 0)")).toBeCloseTo(-90);
+    const turned = Math.cos(Math.PI / 6);
+    expect(
+      rotationOf(
+        `matrix3d(${turned}, 0.5, 0, 0, -0.5, ${turned}, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)`,
+      ),
+    ).toBeCloseTo(30);
+  });
+
+  it("turns the short way round", () => {
+    expect(shortestTurn(0)).toBe(0);
+    expect(shortestTurn(190)).toBe(-170);
+    expect(shortestTurn(-190)).toBe(170);
+    expect(shortestTurn(-350)).toBe(10);
+    expect(shortestTurn(720 + 45)).toBe(45);
+  });
+});
+
+describe("the vortex-heading keyframes", () => {
+  it("follow the slope of a ring as flat as VORTEX_TILT", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/app/draw-experience.css"),
+      "utf8",
+    );
+    const block = /@keyframes vortex-heading \{([\s\S]*?)\n\}/u.exec(css)?.[1];
+    expect(block).toBeDefined();
+    const stops = [
+      ...block!.matchAll(
+        /([\d.]+)% \{\s*transform: rotate\((-?[\d.]+)deg\);/gu,
+      ),
+    ].map(([, at, degrees]) => ({
+      at: Number(at) / 100,
+      degrees: Number(degrees),
+    }));
+    expect(stops).toHaveLength(17);
+    for (const { at, degrees } of stops) {
+      const angle = 2 * Math.PI * at;
+      // Moving round x = r·sin θ, y = tilt·r·cos θ; one full turn a lap.
+      const slope = Math.atan2(-VORTEX_TILT * Math.sin(angle), Math.cos(angle));
+      const expected = (slope * 180) / Math.PI;
+      expect(shortestTurn(degrees - expected)).toBeCloseTo(0, 0);
+    }
+    expect(stops.at(-1)!.degrees).toBe(-360);
   });
 });

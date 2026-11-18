@@ -25,7 +25,7 @@ export const HEAP_CENTER = Object.freeze({ x: 50, y: 88 });
  * are drawn as ellipses, never by squashing a circle: a squashed layer is
  * redrawn on every frame and halved the frame rate on a throttled desktop.
  */
-export const VORTEX_TILT = 0.3;
+export const VORTEX_TILT = 0.45;
 
 /** One ring of the funnel. Wider rings turn more slowly, like a whirlwind. */
 export interface VortexTier {
@@ -45,20 +45,24 @@ export interface VortexTier {
 }
 
 export const VORTEX_TIERS: readonly VortexTier[] = Object.freeze([
-  { y: 26, radius: 56, turnMs: 3_000, cards: 7, cardShare: 0.95 },
-  { y: 42, radius: 38, turnMs: 2_400, cards: 6, cardShare: 0.85 },
-  { y: 57, radius: 22, turnMs: 1_800, cards: 4, cardShare: 0.75 },
-  { y: 68, radius: 10, turnMs: 1_300, cards: 3, cardShare: 0.65 },
+  // One ribbon: every card on the same ring, evenly spaced, chasing the one
+  // ahead like water poured out of the pack and round it.
+  { y: 44, radius: 38, turnMs: 3_600, cards: 20, cardShare: 0.85 },
 ]);
 
-/** From the first card leaving the pile to the last. */
-export const VORTEX_LIFT_SPAN_MS = 1_500;
-
 /**
- * How sharply launches crowd together: the first cards leave one by one,
- * the gaps shrinking until the last ones go almost together.
+ * The opening before the first card leaves: the table dims, the pack draws a
+ * breath of light and a ring of light spreads out from it.
  */
-export const VORTEX_LAUNCH_EASE = 2;
+export const VORTEX_RITUAL_MS = 900;
+
+/** Cards leave one ring's place apart, so the ribbon is evenly spaced. */
+export const VORTEX_LAUNCH_GAP_MS =
+  VORTEX_TIERS[0]!.turnMs / VORTEX_TIERS[0]!.cards;
+
+/** From the first card leaving the pile to the last. */
+export const VORTEX_LIFT_SPAN_MS =
+  VORTEX_LAUNCH_GAP_MS * (VORTEX_TIERS[0]!.cards - 1);
 
 /** One card's way from the pile to its ring. */
 export const VORTEX_CLIMB_MS = 1_000;
@@ -97,16 +101,16 @@ export const VORTEX_DRAW_OUT_SLOPE = Object.freeze({
  */
 export const VORTEX_SCATTER = Object.freeze({
   /** Share of the ring's radius a card's own path is wider or narrower. */
-  radius: 0.25,
+  radius: 0,
   /** Sideways and up-and-down shift of a card's path, in percent of the table. */
-  shiftX: 6,
-  shiftY: 8,
+  shiftX: 0,
+  shiftY: 0,
   /** Share of the ring's card size a card is larger or smaller. */
-  size: 0.15,
+  size: 0,
   /** Turned in its own plane. */
-  rollDeg: 60,
+  rollDeg: 0,
   /** Tipped away: the shortest a card may look, as a share of its height. */
-  shortest: 0.55,
+  shortest: 1,
 });
 
 /** Where the cards come down, round the middle of the table. */
@@ -132,7 +136,7 @@ export const VORTEX_FIREFLY_COUNT = 8;
  * The lights come up only once the whirl is full: after the last card has
  * left the pile, not with the first ones.
  */
-export const VORTEX_FIREFLY_DELAY_MS = 1_600;
+export const VORTEX_FIREFLY_DELAY_MS = VORTEX_RITUAL_MS + VORTEX_LIFT_SPAN_MS;
 
 export interface VortexCard {
   readonly tier: number;
@@ -229,7 +233,7 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
     const size = 1 + spread(VORTEX_SCATTER.size);
     return {
       tier,
-      launchMs: launchAt(order, total),
+      launchMs: launchAt(order),
       airScale: ring.cardShare * size,
       drawOutSlope: round2(
         between(
@@ -250,12 +254,8 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
 }
 
 /** Ease-out over the span: wide gaps first, then ever narrower. */
-export function launchAt(order: number, total: number): number {
-  if (total <= 1) return 0;
-  const along = order / (total - 1);
-  return Math.round(
-    VORTEX_LIFT_SPAN_MS * (1 - (1 - along) ** VORTEX_LAUNCH_EASE),
-  );
+export function launchAt(order: number): number {
+  return Math.round(VORTEX_RITUAL_MS + order * VORTEX_LAUNCH_GAP_MS);
 }
 
 /** Percent of the table's height, as percent of its width. */
@@ -306,4 +306,21 @@ export function vortexFireflies(
       size: round2(between(random, 0.7, 1.2)),
     };
   });
+}
+
+/**
+ * The rotation, in degrees, of a computed CSS transform ("none" or a 2D or 3D
+ * matrix): the angle its x axis is turned through.
+ */
+export function rotationOf(transform: string): number {
+  const values = /^matrix(?:3d)?\(([^)]*)\)$/u.exec(transform.trim());
+  if (!values) return 0;
+  const [a = 1, b = 0] = values[1]!.split(",").map(Number);
+  return (Math.atan2(b, a) * 180) / Math.PI;
+}
+
+/** The same turn as `degrees`, the short way round: within ±180°. */
+export function shortestTurn(degrees: number): number {
+  const turn = ((((degrees + 180) % 360) + 360) % 360) - 180;
+  return Object.is(turn, -0) ? 0 : turn;
 }

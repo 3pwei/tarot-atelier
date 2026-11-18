@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -10,8 +11,11 @@ import {
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 import {
   PILE_CENTER,
+  rotationOf,
   seededRandom,
+  shortestTurn,
   VORTEX_CLIMB_MS,
+  VORTEX_RITUAL_MS,
   orbitStartMs,
   VORTEX_DRAW_OUT,
   VORTEX_FIREFLY_DELAY_MS,
@@ -63,6 +67,7 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
   );
   const root = useRef<HTMLDivElement>(null);
   useSettleStarts(root, gathering);
+  useRitualBuzz();
 
   return (
     <div
@@ -71,6 +76,7 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
       data-gathering={gathering || undefined}
       style={
         {
+          "--ritual-duration": `${VORTEX_RITUAL_MS}ms`,
           "--climb-duration": `${VORTEX_CLIMB_MS}ms`,
           "--draw-out": VORTEX_DRAW_OUT,
           "--firefly-delay": `${VORTEX_FIREFLY_DELAY_MS}ms`,
@@ -78,6 +84,11 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
       }
       aria-hidden="true"
     >
+      {/* The opening: the table dims, the pack breathes light, a ring of
+          light spreads out, and only then do the cards begin to flow. */}
+      <span className="table-vortex__dim" />
+      <span className="table-vortex__breath" />
+      <span className="table-vortex__ritual-ring" />
       <div className="table-vortex__whirl">
         {VORTEX_TIERS.map((tier, tierIndex) => (
           <div
@@ -117,10 +128,12 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                 >
                   <span className="table-vortex__orbit">
                     <span className="table-vortex__card" data-heap-from={order}>
-                      <span className="table-vortex__face">
-                        <span className="table-vortex__flip">
-                          <CardBack backUrl={backUrl} />
-                          <span className="table-vortex__front" />
+                      <span className="table-vortex__heading">
+                        <span className="table-vortex__face">
+                          <span className="table-vortex__flip">
+                            <CardBack backUrl={backUrl} />
+                            <span className="table-vortex__front" />
+                          </span>
                         </span>
                       </span>
                     </span>
@@ -200,6 +213,23 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
  * measurement per card, written before the first paint, so the keyframes
  * run from there without a jump. Cards still in the pack start from it.
  */
+/** The computed transform of the part of `card` that `selector` names. */
+function turnOf(card: HTMLElement, selector: string): string {
+  const part = card.querySelector<HTMLElement>(selector);
+  return part ? getComputedStyle(part).transform : "none";
+}
+
+/** A short-long buzz as the ring of light spreads, where phones can. */
+function useRitualBuzz() {
+  useEffect(() => {
+    const buzz = setTimeout(
+      () => navigator.vibrate?.([12, 70, 30]),
+      VORTEX_RITUAL_MS * 0.3,
+    );
+    return () => clearTimeout(buzz);
+  }, []);
+}
+
 function useSettleStarts(
   root: RefObject<HTMLDivElement | null>,
   gathering: boolean,
@@ -235,6 +265,18 @@ function useSettleStarts(
       spot.style.setProperty(
         "--from-scale",
         String(width / Math.max(1, laid?.offsetWidth ?? 1)),
+      );
+      // Turned with its path and its own roll; it comes down turning the
+      // short way to where it lies, rather than snapping to it.
+      const turned =
+        rotationOf(turnOf(from, ".table-vortex__heading")) +
+        rotationOf(turnOf(from, ".table-vortex__face"));
+      const lies = Number.parseFloat(
+        getComputedStyle(spot).getPropertyValue("--spot-roll"),
+      );
+      spot.style.setProperty(
+        "--from-turn",
+        `${shortestTurn(turned - (Number.isFinite(lies) ? lies : 0))}deg`,
       );
     }
   }, [root, gathering]);
