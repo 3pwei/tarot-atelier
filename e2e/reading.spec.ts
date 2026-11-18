@@ -1,5 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { answerReadings, type EndpointAnswer } from "./support/readingEndpoint";
+import {
+  answerReadings,
+  MOCK_PRIMARY_INTERPRETATION,
+  type EndpointAnswer,
+} from "./support/readingEndpoint";
 import {
   askMainQuestion,
   deckPile,
@@ -53,8 +57,10 @@ test("reads a finished spread with AI through the site's own endpoint", async ({
   const sections = panel.locator("details.reading-section");
   await expect(sections).toHaveCount(3 + 3);
   await expect(sections.first()).toHaveAttribute("open", "");
+  // Exactly the main card's sentence: a jumper, if position 1 drew one,
+  // says something else.
   await expect(
-    sections.first().getByText("這是模擬的 AI 解讀。"),
+    sections.first().getByText(MOCK_PRIMARY_INTERPRETATION, { exact: true }),
   ).toBeVisible();
 
   const synthesis = panel.locator("details", { hasText: "全局關聯" });

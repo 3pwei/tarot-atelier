@@ -5,15 +5,28 @@ import type {
   ReadingResult,
 } from "../../src/domain/reading/types";
 
+/** What the mocked AI says of a position's main card. */
+export const MOCK_PRIMARY_INTERPRETATION = "這是模擬的 AI 解讀。";
+/**
+ * What it says of a jumper. It differs from the main card's, so a position
+ * that happens to draw a jumper (a random, rare event) never shows the same
+ * sentence twice and a test can always tell the two apart.
+ */
+export const MOCK_JUMPER_INTERPRETATION = "這是模擬的 AI 跳牌解讀。";
+
 /** A minimal AI reading that answers `request` position by position. */
 function aiReadingFor(request: ReadingRequest): ReadingResult {
-  const card = (id: string, orientation: "upright" | "reversed") => ({
+  const card = (
+    id: string,
+    orientation: "upright" | "reversed",
+    interpretation: string,
+  ) => ({
     cardId: id,
     cardName: "測試牌",
     orientation,
     meaningMode: orientation,
     symbolism: "測試用的象徵。",
-    interpretation: "這是模擬的 AI 解讀。",
+    interpretation,
   });
   return {
     schemaVersion: request.schemaVersion,
@@ -22,9 +35,19 @@ function aiReadingFor(request: ReadingRequest): ReadingResult {
     positions: request.positions.map((position) => ({
       index: position.index,
       question: position.question,
-      primary: card(position.primary.id, position.primary.orientation),
+      primary: card(
+        position.primary.id,
+        position.primary.orientation,
+        MOCK_PRIMARY_INTERPRETATION,
+      ),
       ...(position.jumper
-        ? { jumper: card(position.jumper.id, position.jumper.orientation) }
+        ? {
+            jumper: card(
+              position.jumper.id,
+              position.jumper.orientation,
+              MOCK_JUMPER_INTERPRETATION,
+            ),
+          }
         : {}),
     })),
     synthesis: "模擬的 AI 全局關聯。",
