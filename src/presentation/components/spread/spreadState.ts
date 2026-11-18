@@ -171,7 +171,7 @@ const TEMPLATE_MESSAGES: Readonly<Record<TemplateRuleCode, string>> = {
 };
 
 const LOCKED_BY_DRAWS =
-  "已有抽牌結果；請按「完成編輯」，在抽牌畫面清除本次牌陣後再換牌陣。";
+  "已有抽牌結果；請按「結束編輯」，在抽牌畫面清除本次牌陣後再換牌陣。";
 
 function applyUpdate(
   state: SpreadUiState,

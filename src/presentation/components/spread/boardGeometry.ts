@@ -12,6 +12,11 @@
  */
 export const STANDARD_SLOT_WIDTH_CQW = 14;
 export const LARGEST_SLOT_WIDTH_CQW = STANDARD_SLOT_WIDTH_CQW * 1.5;
+/**
+ * While arranging, cards keep the smallest size: a drag never makes them grow
+ * or shrink, and the layout shows its most crowded look.
+ */
+export const ARRANGING_SLOT_WIDTH_CQW = STANDARD_SLOT_WIDTH_CQW;
 /** The card width the built-in layouts were drawn for (before 2026-11-08). */
 export const LAYOUT_SLOT_WIDTH_CQW = 11;
 /** How finely the width shrinks to make room. */

@@ -6,6 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import {
+  ARRANGING_SLOT_WIDTH_CQW,
   LARGEST_SLOT_WIDTH_CQW,
   STANDARD_SLOT_WIDTH_CQW,
 } from "@/presentation/components/spread/boardGeometry";
@@ -145,7 +146,7 @@ function arrangeIfNeeded() {
 }
 
 function finishArranging() {
-  fireEvent.click(screen.getByRole("button", { name: "完成編輯" }));
+  fireEvent.click(screen.getByRole("button", { name: "結束編輯" }));
 }
 
 /** Layout changes are kept only once saved to the library. */
@@ -390,6 +391,34 @@ describe("DrawExperience spread table", () => {
     expect(slot(2).style.getPropertyValue("--rot")).toBe("345deg");
   });
 
+  it("keeps cards at the smallest size while arranging, whatever moves", async () => {
+    renderTable();
+    await ready();
+    const cardWidth = () =>
+      document
+        .querySelector<HTMLElement>(".spread-board__canvas")
+        ?.style.getPropertyValue("--slot-w");
+    const inPlay = cardWidth();
+    expect(inPlay).toBe(`${LARGEST_SLOT_WIDTH_CQW}cqw`);
+
+    arrange();
+    expect(cardWidth()).toBe(`${ARRANGING_SLOT_WIDTH_CQW}cqw`);
+    finishArranging();
+    expect(cardWidth()).toBe(inPlay);
+
+    arrange();
+    // Moving a position away from the others would fit larger cards and
+    // moving it next to one smaller; while arranging the size holds still.
+    const first = handle(1);
+    first.focus();
+    for (const key of ["ArrowDown", "ArrowRight", "ArrowRight"]) {
+      for (let step = 0; step < 4; step += 1) {
+        fireEvent.keyDown(first, { key, shiftKey: true });
+        expect(cardWidth()).toBe(`${ARRANGING_SLOT_WIDTH_CQW}cqw`);
+      }
+    }
+  });
+
   it("offers zoom buttons only while arranging, and stops at the table's limits", async () => {
     renderTable();
     await ready();
@@ -478,7 +507,7 @@ describe("DrawExperience spread table", () => {
     arrange();
     fireEvent.click(screen.getByRole("button", { name: "清除並編輯" }));
     expect(
-      screen.getByRole("button", { name: "完成編輯", pressed: true }),
+      screen.getByRole("button", { name: "結束編輯", pressed: true }),
     ).toBeInTheDocument();
     expect(document.querySelector("[data-draw-card]")).toBeNull();
     expect(screen.getByText("剩餘 78 張")).toBeInTheDocument();
@@ -571,7 +600,7 @@ describe("DrawExperience spread table", () => {
     // Arranging takes the deck off the table.
     expect(queryDeckPile()).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "完成編輯", pressed: true }),
+      screen.getByRole("button", { name: "結束編輯", pressed: true }),
     ).toBeInTheDocument();
 
     finishArranging();
