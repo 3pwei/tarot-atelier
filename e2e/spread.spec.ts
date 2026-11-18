@@ -286,6 +286,27 @@ test("the spread survives a page reload", async ({ page }) => {
   await expect(page.locator("[data-draw-card]")).toHaveCount(0);
 });
 
+test("a reload in the middle of choosing puts that round back in the deck", async ({
+  page,
+}) => {
+  await deckPile(page).click();
+  await expect(page.getByText(/^請選第 1 張（共 3 張）/u)).toBeVisible();
+  await chooseFirstCard(page);
+  await expect(page.getByText(/^請選第 2 張（共 3 張）/u)).toBeVisible();
+  await expect(slot(page, 1).locator("[data-draw-card]")).not.toHaveCount(0);
+  await page.waitForTimeout(400);
+
+  await page.reload();
+  await expect(
+    page.getByText("上次沒抽完的 1 張牌已放回牌堆，請重新洗牌。"),
+  ).toBeVisible();
+  await expect(page.locator("[data-draw-card]")).toHaveCount(0);
+  await expect(page.getByText("準備好了，按住牌桌洗牌")).toBeVisible();
+  // Starting over: the shuffle gives a round for all three positions.
+  await deckPile(page).click();
+  await expect(page.getByText(/^請選第 1 張（共 3 張）/u)).toBeVisible();
+});
+
 test("corrupted saved data falls back to a working table", async ({ page }) => {
   // Written as the page reloads: a save still pending from the question
   // typed before could otherwise overwrite it first.
@@ -670,6 +691,55 @@ test("arranging shows each position's number as a watermark in its middle, and n
   // Centred, give or take the glyph's own side bearings.
   expect(Math.abs(number.x - frame.x)).toBeLessThan(width * 0.1);
   expect(Math.abs(number.y - frame.y)).toBeLessThan(width * 0.1);
+});
+
+test("the single-card spread lays one position that answers the main question", async ({
+  page,
+}) => {
+  const picker = page.getByRole("region", { name: "選擇牌陣" });
+  await expect(picker.getByRole("button")).toHaveText([
+    /經典三張/u,
+    /單張指引/u,
+    /五張十字/u,
+    /圓環/u,
+  ]);
+  await picker.getByRole("button", { name: "單張指引", exact: true }).click();
+  await expect(page.locator("[data-slot]")).toHaveCount(1);
+  await expect(page.getByText("這個問題的答案是什麼？")).toBeVisible();
+
+  await deckPile(page).click();
+  await expect(page.getByText(/^請選第 1 張（共 1 張）/u)).toBeVisible();
+  await chooseFirstCard(page);
+  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(slot(page, 1).locator("[data-draw-card]")).not.toHaveCount(0);
+});
+
+test("a library saved before the single-card spread gets it after a reload", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const template = (id: string, name: string, x: number) => ({
+      id,
+      name,
+      builtIn: false,
+      positions: [{ question: "我的問題", x, y: 0.5, rotation: 0 }],
+    });
+    window.localStorage.setItem(
+      "tarot-atelier:spread-templates",
+      JSON.stringify({
+        schemaVersion: 1,
+        templates: [template("mine", "我的牌陣", 0.3)],
+      }),
+    );
+  });
+  await page.reload();
+  const picker = page.getByRole("region", { name: "選擇牌陣" });
+  await expect(picker.getByRole("button")).toHaveText([
+    /單張指引/u,
+    /我的牌陣/u,
+  ]);
 });
 
 test("in play the table steps back and hides frames and numbers; arranging shows them", async ({
