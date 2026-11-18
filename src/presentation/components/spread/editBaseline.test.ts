@@ -90,7 +90,9 @@ describe("editing the layout", () => {
   it("compares with a newly applied template", () => {
     const editing = play({ type: "begin-edit" });
     const moved = reduce(editing, moveFirst(editing));
-    const fiveCard = BUILT_IN_TEMPLATES[1];
+    const fiveCard = BUILT_IN_TEMPLATES.find(
+      (template) => template.id === "five-card",
+    );
     if (!fiveCard) throw new Error("expected a second built-in template");
 
     const applied = reduce(moved, {
