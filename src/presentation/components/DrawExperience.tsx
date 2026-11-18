@@ -26,6 +26,7 @@ import { createBrowserReadingProvider } from "@/infrastructure/reading/readingPr
 import { TableDeck } from "@/presentation/components/draw/TableDeck";
 import {
   ARRANGING_SLOT_WIDTH_CQW,
+  DECK_CARD_WIDTH_CQW,
   slotWidthFor,
 } from "@/presentation/components/spread/boardGeometry";
 import { BoardZoomControls } from "@/presentation/components/spread/BoardZoomControls";
@@ -143,9 +144,9 @@ export function DrawExperience({
   const viewport = useBoardViewport(viewportRef);
   const motionMode = useMotionMode();
   const [tableMode, setTableMode] = useState<TableMode>("play");
-  // One card size for the whole deck: positions, pile, vortex and wheel. In
-  // play it is as large as the layout allows; while arranging it holds still
-  // at the smallest size, so cards never grow or shrink under a drag.
+  // The positions' card size. In play it is as large as the layout allows;
+  // while arranging it holds still at the smallest size, so cards never grow
+  // or shrink under a drag. The deck has one size for every spread.
   const fittedSlotWidth = useMemo(
     () => slotWidthFor(spread.positions),
     [spread.positions],
@@ -428,7 +429,7 @@ export function DrawExperience({
                 />
               ) : (
                 <TableDeck
-                  cardWidth={slotWidth * dealer.zoom}
+                  cardWidth={DECK_CARD_WIDTH_CQW * dealer.zoom}
                   shuffling={dealer.phase === "shuffling"}
                   holding={dealer.holding}
                   gathering={dealer.gathering}

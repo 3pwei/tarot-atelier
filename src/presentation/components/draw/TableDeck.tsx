@@ -14,7 +14,7 @@ import type { CSSProperties } from "react";
 interface TableDeckProps {
   /**
    * Card width as a percentage of the table's width. Every card of the deck,
-   * in the pile, in the air or on the wheel, is as large as the positions.
+   * in the pile, in the air or on the wheel, is this size, for every spread.
    */
   readonly cardWidth: number;
   readonly shuffling: boolean;
