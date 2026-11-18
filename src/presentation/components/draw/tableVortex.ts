@@ -45,9 +45,10 @@ export interface VortexTier {
 }
 
 export const VORTEX_TIERS: readonly VortexTier[] = Object.freeze([
-  // One ribbon: every card on the same ring, evenly spaced, chasing the one
-  // ahead like water poured out of the pack and round it.
-  { y: 44, radius: 38, turnMs: 3_600, cards: 20, cardShare: 0.85 },
+  { y: 26, radius: 56, turnMs: 3_000, cards: 7, cardShare: 0.95 },
+  { y: 42, radius: 38, turnMs: 2_400, cards: 6, cardShare: 0.85 },
+  { y: 57, radius: 22, turnMs: 1_800, cards: 4, cardShare: 0.75 },
+  { y: 68, radius: 10, turnMs: 1_300, cards: 3, cardShare: 0.65 },
 ]);
 
 /**
@@ -56,16 +57,26 @@ export const VORTEX_TIERS: readonly VortexTier[] = Object.freeze([
  */
 export const VORTEX_RITUAL_MS = 900;
 
-/** Cards leave one ring's place apart, so the ribbon is evenly spaced. */
-export const VORTEX_LAUNCH_GAP_MS =
-  VORTEX_TIERS[0]!.turnMs / VORTEX_TIERS[0]!.cards;
-
 /** From the first card leaving the pile to the last. */
-export const VORTEX_LIFT_SPAN_MS =
-  VORTEX_LAUNCH_GAP_MS * (VORTEX_TIERS[0]!.cards - 1);
+export const VORTEX_LIFT_SPAN_MS = 1_500;
 
-/** One card's way from the pile to its ring. */
+/**
+ * How sharply launches crowd together: the first cards leave one by one,
+ * the gaps shrinking until the last ones go almost together.
+ */
+export const VORTEX_LAUNCH_EASE = 2;
+
+/** One card's way from the pile to the outer ring. */
 export const VORTEX_CLIMB_MS = 1_000;
+
+/**
+ * Every card is flung out to the outer ring first and then drawn in, slowly,
+ * to its own: it circles there this long before it starts in.
+ */
+export const VORTEX_OUTER_HOLD_MS = 400;
+
+/** How long a card takes to be drawn in from the outer ring to its own. */
+export const VORTEX_DRAW_IN_MS = 1_600;
 
 /**
  * Share of that way spent being drawn out of the pack; it must match the
@@ -73,6 +84,13 @@ export const VORTEX_CLIMB_MS = 1_000;
  * circles with its ring, so it spirals straight out into it.
  */
 export const VORTEX_DRAW_OUT_SHARE = 0.25;
+
+/**
+ * How far round its ring, as a share of a lap from the near side, a card
+ * joins it: the right side, heading up, so a card drawn out up and to the
+ * right is carried straight on. The orbit keyframes start there.
+ */
+export const VORTEX_JOIN_PHASE = 0.25;
 
 /** When a card starts circling with its ring, after the deck is first held. */
 export function orbitStartMs(launchMs: number): number {
@@ -86,9 +104,9 @@ export function orbitStartMs(launchMs: number): number {
 export const VORTEX_DRAW_OUT = 0.8;
 
 /**
- * Cards are drawn out to the front right at about 45°, the way the near side
- * of the rings turns: how far right a card goes for each step towards the
- * viewer. Each card has its own angle, so no two leave in one line.
+ * Cards are drawn out up and to the right at about 45°, the way the right
+ * side of the rings turns: how far right a card goes for each step up the
+ * table. Each card has its own angle, so no two leave in one line.
  */
 export const VORTEX_DRAW_OUT_SLOPE = Object.freeze({
   least: 0.85,
@@ -101,16 +119,16 @@ export const VORTEX_DRAW_OUT_SLOPE = Object.freeze({
  */
 export const VORTEX_SCATTER = Object.freeze({
   /** Share of the ring's radius a card's own path is wider or narrower. */
-  radius: 0,
+  radius: 0.25,
   /** Sideways and up-and-down shift of a card's path, in percent of the table. */
-  shiftX: 0,
-  shiftY: 0,
+  shiftX: 6,
+  shiftY: 8,
   /** Share of the ring's card size a card is larger or smaller. */
-  size: 0,
+  size: 0.15,
   /** Turned in its own plane. */
-  rollDeg: 0,
+  rollDeg: 60,
   /** Tipped away: the shortest a card may look, as a share of its height. */
-  shortest: 1,
+  shortest: 0.55,
 });
 
 /** Where the cards come down, round the middle of the table. */
@@ -136,7 +154,7 @@ export const VORTEX_FIREFLY_COUNT = 8;
  * The lights come up only once the whirl is full: after the last card has
  * left the pile, not with the first ones.
  */
-export const VORTEX_FIREFLY_DELAY_MS = VORTEX_RITUAL_MS + VORTEX_LIFT_SPAN_MS;
+export const VORTEX_FIREFLY_DELAY_MS = VORTEX_RITUAL_MS + 1_600;
 
 export interface VortexCard {
   readonly tier: number;
@@ -147,7 +165,18 @@ export interface VortexCard {
    * on the table, the deck's size.
    */
   readonly airScale: number;
-  /** How it is drawn out of the pack: rightwards per step towards the viewer. */
+  /** Its look on the outer ring, where every card first circles. */
+  readonly outerAirScale: number;
+  /** The outer ring's radius over its own ring's: 1 on the outer ring. */
+  readonly drawInFrom: number;
+  /**
+   * How far the outer ring sits above its own, in percent of the table's
+   * height: 0 on the outer ring.
+   */
+  readonly drawInRise: number;
+  /** When it starts to be drawn in to its own ring. */
+  readonly drawInMs: number;
+  /** How it is drawn out of the pack: rightwards per step up the table. */
   readonly drawOutSlope: number;
   /** Its own path's radius over its ring's. */
   readonly radiusScale: number;
@@ -231,10 +260,16 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
     const ring = VORTEX_TIERS[tier]!;
     const spread = (amount: number) => between(random, -amount, amount);
     const size = 1 + spread(VORTEX_SCATTER.size);
+    const outer = VORTEX_TIERS[0]!;
+    const launchMs = launchAt(order, total);
     return {
       tier,
-      launchMs: launchAt(order),
+      launchMs,
       airScale: ring.cardShare * size,
+      outerAirScale: outer.cardShare * size,
+      drawInFrom: round2(outer.radius / ring.radius),
+      drawInRise: outer.y - ring.y,
+      drawInMs: launchMs + VORTEX_CLIMB_MS + VORTEX_OUTER_HOLD_MS,
       drawOutSlope: round2(
         between(
           random,
@@ -253,9 +288,17 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
   });
 }
 
-/** Ease-out over the span: wide gaps first, then ever narrower. */
-export function launchAt(order: number): number {
-  return Math.round(VORTEX_RITUAL_MS + order * VORTEX_LAUNCH_GAP_MS);
+/**
+ * After the opening, eased over the span: wide gaps first, then ever
+ * narrower.
+ */
+export function launchAt(order: number, total: number): number {
+  if (total <= 1) return VORTEX_RITUAL_MS;
+  const along = order / (total - 1);
+  return (
+    VORTEX_RITUAL_MS +
+    Math.round(VORTEX_LIFT_SPAN_MS * (1 - (1 - along) ** VORTEX_LAUNCH_EASE))
+  );
 }
 
 /** Percent of the table's height, as percent of its width. */

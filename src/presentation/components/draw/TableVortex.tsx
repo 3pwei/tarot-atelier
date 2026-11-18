@@ -15,6 +15,7 @@ import {
   seededRandom,
   shortestTurn,
   VORTEX_CLIMB_MS,
+  VORTEX_DRAW_IN_MS,
   VORTEX_RITUAL_MS,
   orbitStartMs,
   VORTEX_DRAW_OUT,
@@ -78,6 +79,7 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
         {
           "--ritual-duration": `${VORTEX_RITUAL_MS}ms`,
           "--climb-duration": `${VORTEX_CLIMB_MS}ms`,
+          "--draw-in-duration": `${VORTEX_DRAW_IN_MS}ms`,
           "--draw-out": VORTEX_DRAW_OUT,
           "--firefly-delay": `${VORTEX_FIREFLY_DELAY_MS}ms`,
         } as CSSProperties
@@ -116,6 +118,10 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                       "--orbit-delay": `${orbitStartMs(card.launchMs)}ms`,
                       "--climb-from": PILE_CENTER.y - tier.y,
                       "--air-scale": card.airScale,
+                      "--outer-air-scale": card.outerAirScale,
+                      "--draw-in-from": card.drawInFrom,
+                      "--draw-in-rise": card.drawInRise,
+                      "--draw-in-delay": `${card.drawInMs}ms`,
                       "--radius-scale": card.radiusScale,
                       "--shift-x": card.shiftX,
                       "--draw-out-slope": card.drawOutSlope,
@@ -126,13 +132,20 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
                     } as CSSProperties
                   }
                 >
-                  <span className="table-vortex__orbit">
-                    <span className="table-vortex__card" data-heap-from={order}>
-                      <span className="table-vortex__heading">
-                        <span className="table-vortex__face">
-                          <span className="table-vortex__flip">
-                            <CardBack backUrl={backUrl} />
-                            <span className="table-vortex__front" />
+                  <span className="table-vortex__draw-in">
+                    <span className="table-vortex__orbit">
+                      <span
+                        className="table-vortex__card"
+                        data-heap-from={order}
+                      >
+                        <span className="table-vortex__unshrink">
+                          <span className="table-vortex__heading">
+                            <span className="table-vortex__face">
+                              <span className="table-vortex__flip">
+                                <CardBack backUrl={backUrl} />
+                                <span className="table-vortex__front" />
+                              </span>
+                            </span>
                           </span>
                         </span>
                       </span>

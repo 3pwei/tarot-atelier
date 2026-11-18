@@ -9,17 +9,18 @@ import {
   seededRandom,
   SETTLE,
   VORTEX_LIFT_SPAN_MS,
+  VORTEX_JOIN_PHASE,
+  VORTEX_RITUAL_MS,
   VORTEX_FIREFLY_COUNT,
   VORTEX_FIREFLY_DELAY_MS,
   VORTEX_SCATTER,
   VORTEX_TIERS,
   VORTEX_TILT,
   VORTEX_CLIMB_MS,
+  VORTEX_OUTER_HOLD_MS,
   VORTEX_DRAW_OUT_SHARE,
   VORTEX_DRAW_OUT_SLOPE,
   launchAt,
-  VORTEX_LAUNCH_GAP_MS,
-  VORTEX_RITUAL_MS,
   orbitStartMs,
   rotationOf,
   shortestTurn,
@@ -62,10 +63,10 @@ describe("the vortex", () => {
     });
   });
 
-  it("launches cards one by one at first, then faster and faster, over a second and a half", () => {
+  it("launches cards one by one after the opening, then faster and faster, over a second and a half", () => {
     const launches = cards.map((card) => card.launchMs);
-    expect(launches[0]).toBe(0);
-    expect(launches.at(-1)).toBe(VORTEX_LIFT_SPAN_MS);
+    expect(launches[0]).toBe(VORTEX_RITUAL_MS);
+    expect(launches.at(-1)).toBe(VORTEX_RITUAL_MS + VORTEX_LIFT_SPAN_MS);
     const gaps = launches
       .slice(1)
       .map((launch, index) => launch - launches[index]!);
@@ -76,7 +77,7 @@ describe("the vortex", () => {
     expect(gaps[0]!).toBeGreaterThan(4 * gaps.at(-1)!);
   });
 
-  it("draws every card out to the front right at about 45°, each at its own angle", () => {
+  it("draws every card out up and to the right at about 45°, each at its own angle", () => {
     for (const card of cards) {
       expect(card.drawOutSlope).toBeGreaterThanOrEqual(
         VORTEX_DRAW_OUT_SLOPE.least,
@@ -97,9 +98,34 @@ describe("the vortex", () => {
     expect(VORTEX_DRAW_OUT_SHARE).toBeLessThanOrEqual(0.3);
   });
 
-  it("waits for the opening ritual, then launches one ring's place apart", () => {
-    expect(launchAt(0)).toBe(VORTEX_RITUAL_MS);
-    expect(launchAt(1) - launchAt(0)).toBe(Math.round(VORTEX_LAUNCH_GAP_MS));
+  it("spaces launches the same way for any number of cards", () => {
+    expect(launchAt(0, 1)).toBe(VORTEX_RITUAL_MS);
+    expect(launchAt(0, 5)).toBe(VORTEX_RITUAL_MS);
+    expect(launchAt(4, 5)).toBe(VORTEX_RITUAL_MS + VORTEX_LIFT_SPAN_MS);
+    expect(launchAt(2, 5) - VORTEX_RITUAL_MS).toBeGreaterThan(
+      VORTEX_LIFT_SPAN_MS / 2,
+    );
+  });
+
+  it("flings every card to the outer ring first, then draws it in to its own", () => {
+    const outer = VORTEX_TIERS[0]!;
+    for (const card of cards) {
+      const ring = VORTEX_TIERS[card.tier]!;
+      expect(card.drawInFrom).toBeCloseTo(outer.radius / ring.radius, 2);
+      expect(card.drawInRise).toBe(outer.y - ring.y);
+      expect(card.outerAirScale / card.airScale).toBeCloseTo(
+        outer.cardShare / ring.cardShare,
+        9,
+      );
+      expect(card.drawInMs).toBe(
+        card.launchMs + VORTEX_CLIMB_MS + VORTEX_OUTER_HOLD_MS,
+      );
+    }
+    const onOuter = cards.filter((card) => card.tier === 0);
+    for (const card of onOuter) {
+      expect(card.drawInFrom).toBe(1);
+      expect(card.drawInRise).toBe(0);
+    }
   });
 
   it("fills the rings together rather than one ring after another", () => {
@@ -172,8 +198,10 @@ describe("the vortex", () => {
   });
 
   it("brings the lights up only once every card has left the pile", () => {
-    expect(VORTEX_FIREFLY_DELAY_MS).toBe(1_600);
-    expect(VORTEX_FIREFLY_DELAY_MS).toBeGreaterThan(VORTEX_LIFT_SPAN_MS);
+    expect(VORTEX_FIREFLY_DELAY_MS).toBe(VORTEX_RITUAL_MS + 1_600);
+    expect(VORTEX_FIREFLY_DELAY_MS).toBeGreaterThan(
+      VORTEX_RITUAL_MS + VORTEX_LIFT_SPAN_MS,
+    );
   });
 
   it("sends a handful of soft lights round the rings with the cards", () => {
@@ -225,7 +253,7 @@ describe("carrying a card's turn from the air to the table", () => {
 });
 
 describe("the vortex-heading keyframes", () => {
-  it("follow the slope of a ring as flat as VORTEX_TILT", () => {
+  it("follow the slope of a ring as flat as VORTEX_TILT, from where cards join it", () => {
     const css = readFileSync(
       resolve(process.cwd(), "src/app/draw-experience.css"),
       "utf8",
@@ -242,12 +270,13 @@ describe("the vortex-heading keyframes", () => {
     }));
     expect(stops).toHaveLength(17);
     for (const { at, degrees } of stops) {
-      const angle = 2 * Math.PI * at;
+      const angle = 2 * Math.PI * (at + VORTEX_JOIN_PHASE);
       // Moving round x = r·sin θ, y = tilt·r·cos θ; one full turn a lap.
       const slope = Math.atan2(-VORTEX_TILT * Math.sin(angle), Math.cos(angle));
       const expected = (slope * 180) / Math.PI;
       expect(shortestTurn(degrees - expected)).toBeCloseTo(0, 0);
     }
-    expect(stops.at(-1)!.degrees).toBe(-360);
+    expect(stops[0]!.degrees).toBe(-360 * VORTEX_JOIN_PHASE);
+    expect(stops.at(-1)!.degrees - stops[0]!.degrees).toBe(-360);
   });
 });
