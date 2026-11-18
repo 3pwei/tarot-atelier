@@ -78,7 +78,13 @@ type Gesture =
 
 /** Stable for the life of the wheel; they read the latest render from a ref. */
 interface WheelHandlers {
-  choose(slot: number, focus: boolean): void;
+  /** Slides a card forward where it lies, as a tap or Enter does. */
+  choose(slot: number): void;
+  /**
+   * Slides a card forward and turns the wheel to bring it into view, as the
+   * arrow keys do when they move to a card that may be off to one side.
+   */
+  chooseAndShow(slot: number): void;
   draw(slot: number): void;
   setTurn(degrees: number): void;
   keyDown(event: KeyboardEvent<HTMLButtonElement>, slot: number): void;
@@ -86,8 +92,10 @@ interface WheelHandlers {
 
 /**
  * The shuffled pile laid face down on a wheel along the bottom of the table.
- * Tap a card to slide it forward, then pull it forward out of the wheel;
- * Enter does the same from the keyboard. A sideways drag turns the wheel when
+ * Tap a card to slide it forward where it lies, then pull it forward out of
+ * the wheel; Enter does the same from the keyboard, and the arrow keys move
+ * along the wheel, turning it to keep the chosen card in view. A sideways
+ * drag turns the wheel when
  * not every card fits. Turning moves one layer, and only the chosen card
  * re-renders, so the other cards stay still and cheap.
  */
@@ -144,11 +152,16 @@ export function CardWheelView({
       turn.current = degrees;
       wheel.current?.style.setProperty("--wheel-turn", `${degrees}deg`);
     };
-    const choose = (slot: number, focus: boolean) => {
+    // The wheel stays put, so the card that slides forward is the one under
+    // the finger.
+    const choose = (slot: number) => {
+      setChosen(slot);
+    };
+    const chooseAndShow = (slot: number) => {
       const { layout: geometry, size: count } = latest.current;
       setChosen(slot);
       setTurn(turnToShow(geometry, slot, count));
-      if (focus) cardAt(slot)?.focus();
+      cardAt(slot)?.focus();
     };
     const draw = (slot: number) => {
       const card = cardAt(slot);
@@ -158,6 +171,7 @@ export function CardWheelView({
     };
     return {
       choose,
+      chooseAndShow,
       draw,
       setTurn,
       keyDown(event, slot) {
@@ -168,12 +182,12 @@ export function CardWheelView({
           slot;
         // Enter or Space draws the chosen card; on any other card, chooses it.
         const chooseOrDraw = () =>
-          chosenSlot === slot ? draw(slot) : choose(slot, false);
+          chosenSlot === slot ? draw(slot) : choose(slot);
         const keys: Readonly<Record<string, () => void>> = {
-          ArrowRight: () => choose(at(1), true),
-          ArrowLeft: () => choose(at(-1), true),
-          Home: () => choose(slots[0] ?? slot, true),
-          End: () => choose(slots.at(-1) ?? slot, true),
+          ArrowRight: () => chooseAndShow(at(1)),
+          ArrowLeft: () => chooseAndShow(at(-1)),
+          Home: () => chooseAndShow(slots[0] ?? slot),
+          End: () => chooseAndShow(slots.at(-1) ?? slot),
           Enter: chooseOrDraw,
           " ": chooseOrDraw,
         };
@@ -256,7 +270,7 @@ export function CardWheelView({
     gesture.current = null;
     const released = event.type === "pointerup";
     if (active.kind === "pending") {
-      if (released) handlers.choose(active.slot, false);
+      if (released) handlers.choose(active.slot);
       return;
     }
     if (active.kind !== "pulling") return;

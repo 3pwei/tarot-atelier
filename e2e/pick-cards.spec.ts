@@ -315,6 +315,45 @@ test("a lifted card pulled up and out goes to the next position", async ({
   await expect(deckPile(page)).toHaveCount(0);
 });
 
+test("a tapped card slides forward right where it was tapped", async ({
+  page,
+  isMobile,
+}) => {
+  await deckPile(page).click();
+  await wheelRisen(page);
+  const wheel = page.locator(".card-wheel__wheel");
+  const turnBefore = await wheel.evaluate((element) =>
+    element.style.getPropertyValue("--wheel-turn"),
+  );
+  const box = await fannedDeck(page).boundingBox();
+  if (!box) throw new Error("the wheel is not visible");
+
+  for (const share of [0.25, 0.75]) {
+    const at = { x: box.x + box.width * share, y: box.y + box.height - 20 };
+    const under = await page.evaluate(
+      ({ x, y }) =>
+        document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-fan-slot]")
+          ?.dataset.fanSlot,
+      at,
+    );
+    if (isMobile) await page.touchscreen.tap(at.x, at.y);
+    else await page.mouse.click(at.x, at.y);
+
+    const chosen = fannedDeck(page).locator(`[data-fan-slot="${under}"]`);
+    await expect(chosen).toHaveAttribute("aria-pressed", "true");
+    const lifted = await chosen.boundingBox();
+    if (!lifted) throw new Error("the chosen card is not visible");
+    // Still under the finger: the wheel did not turn it away.
+    expect(at.x).toBeGreaterThanOrEqual(lifted.x);
+    expect(at.x).toBeLessThanOrEqual(lifted.x + lifted.width);
+  }
+  expect(
+    await wheel.evaluate((element) =>
+      element.style.getPropertyValue("--wheel-turn"),
+    ),
+  ).toBe(turnBefore);
+});
+
 test("a sideways drag turns the wheel on a narrow table", async ({
   page,
   isMobile,
