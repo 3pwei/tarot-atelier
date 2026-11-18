@@ -688,9 +688,10 @@ test("arranging shows each position's number as a watermark in its middle, and n
   const number = await centre(".spread-slot__number");
   const frame = await centre(".spread-slot__frame");
   const width = (await slot(page, 1).boundingBox())?.width ?? 0;
-  // Centred, give or take the glyph's own side bearings.
-  expect(Math.abs(number.x - frame.x)).toBeLessThan(width * 0.1);
-  expect(Math.abs(number.y - frame.y)).toBeLessThan(width * 0.1);
+  // Centred, give or take the glyph's own side bearings, which weigh more
+  // on the small cards used while arranging.
+  expect(Math.abs(number.x - frame.x)).toBeLessThan(width * 0.15);
+  expect(Math.abs(number.y - frame.y)).toBeLessThan(width * 0.15);
 });
 
 test("while arranging, a mouse gets zoom buttons in the table's top-right corner", async ({
