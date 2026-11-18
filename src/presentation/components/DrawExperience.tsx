@@ -105,6 +105,7 @@ export function DrawExperience({
 }: DrawExperienceProps = {}) {
   const root = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
   const registry = useMemo(
     () => registerBuiltInDecks(new InMemoryDeckRegistry()),
@@ -141,7 +142,7 @@ export function DrawExperience({
   const { spread, revealedInstanceIds, selectedId } = state;
 
   const loading = session.status === "loading";
-  const viewport = useBoardViewport(viewportRef);
+  const viewport = useBoardViewport(viewportRef, canvasRef);
   const motionMode = useMotionMode();
   const [tableMode, setTableMode] = useState<TableMode>("play");
   // The positions' card size. In play it is as large as the layout allows;
@@ -413,6 +414,7 @@ export function DrawExperience({
             view={viewport.view}
             gestures={boardGestures}
             viewportRef={viewportRef}
+            canvasRef={canvasRef}
             fieldRef={fieldRef}
             renderCards={renderCards}
             onSelect={handleSelect}
