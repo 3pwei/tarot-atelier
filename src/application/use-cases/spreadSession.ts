@@ -7,6 +7,7 @@ import {
   verifySessionDeck,
   type SpreadSession,
 } from "@/domain/spread/spreadSnapshot";
+import { returnUnfinishedRound } from "@/domain/spread/unfinishedRound";
 
 export type RestoreResult =
   | { readonly status: "empty" }
@@ -14,6 +15,11 @@ export type RestoreResult =
       readonly status: "restored";
       readonly session: SpreadSession;
       readonly migratedFrom?: number;
+      /**
+       * Positions emptied because the reload came in the middle of choosing:
+       * that round's cards went back to the deck.
+       */
+      readonly returnedCount: number;
     }
   /** Stored data existed but was unusable; it has been removed. */
   | { readonly status: "discarded" };
@@ -33,7 +39,8 @@ function discard(storage: SpreadSessionStorage): RestoreResult {
 
 /**
  * Loads the saved spread for `deck`. Any unreadable, newer, tampered or
- * mismatched data is discarded so that the table always renders.
+ * mismatched data is discarded so that the table always renders, and a round
+ * left half chosen goes back to the deck (see `returnUnfinishedRound`).
  */
 export function restoreSpreadSession(
   storage: SpreadSessionStorage,
@@ -59,9 +66,11 @@ export function restoreSpreadSession(
   if (verifySessionDeck(parsed.session, deck).length > 0) {
     return discard(storage);
   }
+  const { session, returnedCount } = returnUnfinishedRound(parsed.session);
   return {
     status: "restored",
-    session: parsed.session,
+    session,
+    returnedCount,
     ...(parsed.migratedFrom ? { migratedFrom: parsed.migratedFrom } : {}),
   };
 }

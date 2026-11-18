@@ -33,11 +33,12 @@ The draw machine draws the card the person chose with `drawAt(index)`; the jumpe
 
 Templates store a layout: each position's question, coordinates and rotation. They never store cards or the main question.
 
-| Built-in | Positions | Layout                                   |
-| -------- | --------- | ---------------------------------------- |
-| 經典三張 | 3         | Past, present, future in a row           |
-| 五張十字 | 5         | Centre, then left, right, top and bottom |
-| 圓環     | 8         | Clockwise from twelve o'clock            |
+| Built-in | Positions | Layout                                                                                                                           |
+| -------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 經典三張 | 3         | Past, present, future in a row                                                                                                   |
+| 單張指引 | 1         | One card in the middle that answers the main question itself (「這個問題的答案是什麼？」); every position still has its question |
+| 五張十字 | 5         | Centre, then left, right, top and bottom                                                                                         |
+| 圓環     | 8         | Clockwise from twelve o'clock                                                                                                    |
 
 - During play, every spread in the library, built-in or saved, is a choice above the table (「選擇牌陣」); one tap lays it out, until cards are dealt. Saving, deleting and the blank table stay in 「編輯牌陣」.
 - 「儲存目前牌陣」 saves the table under a 1–30 character name. Saving again under the same name updates that template. The library holds up to 30.
@@ -86,9 +87,10 @@ The current reading lives under `tarot-atelier:spread-session` (`application/use
 - **Writes** are serialised by the domain and parsed back before they are stored, so an invalid session is never written. Saves are coalesced (250 ms) and flushed on `pagehide`.
 - **Reads** validate every field, the `1..n` numbering, coordinate ranges, question lengths, duplicate cards and instance IDs, and then cross-check card IDs and orientations against the deck.
 - **Migration**: `parseSpreadSnapshot` upgrades older versions one step at a time through `SPREAD_SNAPSHOT_MIGRATIONS`. v1 → v2 turns the fixed `presetId` into `templateId` (`"custom"` becomes no template). Newer, unversioned or broken data is discarded and removed.
+- **An unfinished round does not survive a reload.** The shuffle and the wheel are not stored, so a reload while choosing cannot pick up where it stopped. A stored session with an empty position next to a card still face down is a round left half chosen (a new round needs every card turned over, and a round fills every empty position). `returnUnfinishedRound` (`domain/spread/unfinishedRound.ts`) puts that round's face-down cards back in the deck, keeps cards already turned over, and the table starts over from the shuffle with the notice 「上次沒抽完的 N 張牌已放回牌堆，請重新洗牌。」. A finished round whose cards are not yet turned over is kept.
 - **Failure**: the table always renders. Unreadable data leads to a fresh three-card spread and the notice 「本機儲存的牌陣無法讀取，已重新開始。」. A blocked or full storage is reported once.
 - 「清除本次牌陣」, the ↺ button, removes the stored session at once and starts a fresh spread with a full pile. It works at any moment of play, the laid-out wheel included, except while cards are washing or flying.
 
-The template library lives under `tarot-atelier:spread-templates` (`application/use-cases/templateLibrary.ts`) as `{ "schemaVersion": 1, "templates": [...] }`. Nothing stored means the built-ins. It is written only after the person changes the library, so an emptied library stays empty. Unreadable data is removed and the built-ins return with a notice.
+The template library lives under `tarot-atelier:spread-templates` (`application/use-cases/templateLibrary.ts`) as `{ "schemaVersion": 2, "templates": [...] }`. Nothing stored means the built-ins. It is written only after the person changes the library, so an emptied library stays empty. v1 → v2 adds the single-card spread, which v1 libraries never had: after 經典三張 if that is still there, otherwise first, and not when a template already has its id or name or the library is full. A v2 library without it had it deleted and stays so. Unreadable data is removed and the built-ins return with a notice.
 
 Each browser keeps its own reading and library, so people sharing a link never see each other's data. Questions are stored only in that browser's `localStorage`. Nothing is sent to a server or logged.

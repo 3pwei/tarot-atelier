@@ -72,6 +72,9 @@ export function useSpreadSession(
     const restored = restoreSpreadSession(storage, deck);
     const notices = [
       restored.status === "restored" ? "已載入上次的牌陣。" : undefined,
+      restored.status === "restored" && restored.returnedCount > 0
+        ? `上次沒抽完的 ${restored.returnedCount} 張牌已放回牌堆，請重新洗牌。`
+        : undefined,
       restored.status === "discarded"
         ? "本機儲存的牌陣無法讀取，已重新開始。"
         : undefined,
