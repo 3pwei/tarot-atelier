@@ -672,6 +672,55 @@ test("spreads are chosen straight from play, and there are no zoom buttons", asy
   await expect(page.getByRole("group", { name: "牌桌縮放" })).toHaveCount(0);
 });
 
+test("the single-card spread lays one position that answers the main question", async ({
+  page,
+}) => {
+  const picker = page.getByRole("region", { name: "選擇牌陣" });
+  await expect(picker.getByRole("button")).toHaveText([
+    /經典三張/u,
+    /單張指引/u,
+    /五張十字/u,
+    /圓環/u,
+  ]);
+  await picker.getByRole("button", { name: "單張指引", exact: true }).click();
+  await expect(page.locator("[data-slot]")).toHaveCount(1);
+  await expect(page.getByText("這個問題的答案是什麼？")).toBeVisible();
+
+  await deckPile(page).click();
+  await expect(page.getByText(/^請選第 1 張（共 1 張）/u)).toBeVisible();
+  await chooseFirstCard(page);
+  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(slot(page, 1).locator("[data-draw-card]")).not.toHaveCount(0);
+});
+
+test("a library saved before the single-card spread gets it after a reload", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const template = (id: string, name: string, x: number) => ({
+      id,
+      name,
+      builtIn: false,
+      positions: [{ question: "我的問題", x, y: 0.5, rotation: 0 }],
+    });
+    window.localStorage.setItem(
+      "tarot-atelier:spread-templates",
+      JSON.stringify({
+        schemaVersion: 1,
+        templates: [template("mine", "我的牌陣", 0.3)],
+      }),
+    );
+  });
+  await page.reload();
+  const picker = page.getByRole("region", { name: "選擇牌陣" });
+  await expect(picker.getByRole("button")).toHaveText([
+    /單張指引/u,
+    /我的牌陣/u,
+  ]);
+});
+
 test("in play the table steps back and hides frames and numbers; arranging shows them", async ({
   page,
 }) => {

@@ -77,6 +77,9 @@ function circlePositions(): readonly TemplatePosition[] {
   });
 }
 
+/** The built-in single-card spread, added to libraries saved before it. */
+const SINGLE_CARD_ID = "single-card";
+
 export const BUILT_IN_TEMPLATES: TemplateLibrary = Object.freeze([
   {
     id: "three-card",
@@ -86,6 +89,14 @@ export const BUILT_IN_TEMPLATES: TemplateLibrary = Object.freeze([
       { question: "這件事的過去與起因是什麼？", x: 0.16, y: 0.5, rotation: 0 },
       { question: "現在的狀態是什麼？", x: 0.5, y: 0.5, rotation: 0 },
       { question: "接下來可能的走向是什麼？", x: 0.84, y: 0.5, rotation: 0 },
+    ],
+  },
+  {
+    id: SINGLE_CARD_ID,
+    name: "單張指引",
+    builtIn: true,
+    positions: [
+      { question: "這個問題的答案是什麼？", x: 0.5, y: 0.5, rotation: 0 },
     ],
   },
   {
@@ -286,7 +297,11 @@ export function restoreBuiltIns(library: TemplateLibrary): TemplateLibrary {
 
 /* ── Persistence ────────────────────────────────────────── */
 
-export const TEMPLATE_LIBRARY_VERSION = 1;
+/**
+ * Version of the stored template library. Bump it whenever the stored shape
+ * or the built-ins people should be given change, and register a migration.
+ */
+export const TEMPLATE_LIBRARY_VERSION = 2;
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
 
@@ -356,10 +371,47 @@ function readTemplate(value: unknown): SpreadTemplate | undefined {
 export function parseTemplateLibrary(
   raw: unknown,
 ): TemplateLibrary | undefined {
-  if (!isRecord(raw) || raw.schemaVersion !== TEMPLATE_LIBRARY_VERSION) {
+  if (!isRecord(raw)) return undefined;
+  const version = raw.schemaVersion;
+  const migrate =
+    typeof version === "number" ? LIBRARY_MIGRATIONS[version] : undefined;
+  if (version !== TEMPLATE_LIBRARY_VERSION && !migrate) {
     return undefined;
   }
-  const { templates } = raw;
+  const library = readLibrary(raw.templates);
+  return library && migrate ? migrate(library) : library;
+}
+
+/**
+ * v1 → v2: the single-card spread became a built-in. Libraries saved before
+ * it existed get it, after the three-card spread when that is still there
+ * (otherwise first), unless a template already uses its id or name or the
+ * library is full. A v2 library without it means it was deleted, and stays so.
+ */
+function addSingleCard(library: TemplateLibrary): TemplateLibrary {
+  const single = BUILT_IN_TEMPLATES.find(
+    (template) => template.id === SINGLE_CARD_ID,
+  );
+  if (
+    !single ||
+    library.length >= MAX_SAVED_TEMPLATES ||
+    library.some(
+      (template) => template.id === single.id || template.name === single.name,
+    )
+  ) {
+    return library;
+  }
+  const after = library.findIndex((template) => template.id === "three-card");
+  const at = after + 1;
+  return Object.freeze([...library.slice(0, at), single, ...library.slice(at)]);
+}
+
+/** Upgrades a library read at version `n` (the key) to the current one. */
+const LIBRARY_MIGRATIONS: Readonly<
+  Record<number, (library: TemplateLibrary) => TemplateLibrary>
+> = Object.freeze({ 1: addSingleCard });
+
+function readLibrary(templates: unknown): TemplateLibrary | undefined {
   if (!Array.isArray(templates) || templates.length > MAX_SAVED_TEMPLATES) {
     return undefined;
   }
