@@ -390,6 +390,29 @@ describe("DrawExperience spread table", () => {
     expect(slot(2).style.getPropertyValue("--rot")).toBe("345deg");
   });
 
+  it("offers zoom buttons only while arranging, and stops at the table's limits", async () => {
+    renderTable();
+    await ready();
+    expect(
+      screen.queryByRole("group", { name: "牌桌縮放" }),
+    ).not.toBeInTheDocument();
+    arrange();
+    const zoom = screen.getByRole("group", { name: "牌桌縮放" });
+    const zoomIn = within(zoom).getByRole("button", { name: "放大牌桌" });
+    const zoomOut = within(zoom).getByRole("button", { name: "縮小牌桌" });
+    expect(zoomOut).toBeDisabled();
+
+    // Five steps of 1.25 pass the 2.5× limit.
+    for (let step = 0; step < 5; step += 1) fireEvent.click(zoomIn);
+    expect(zoomIn).toBeDisabled();
+    expect(zoomOut).toBeEnabled();
+
+    finishArranging();
+    expect(
+      screen.queryByRole("group", { name: "牌桌縮放" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("rotates a selected position with its turning-arrow button", async () => {
     renderTable();
     await ready();

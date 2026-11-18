@@ -672,6 +672,38 @@ test("arranging shows each position's number as a watermark in its middle, and n
   expect(Math.abs(number.y - frame.y)).toBeLessThan(width * 0.1);
 });
 
+test("while arranging, a mouse gets zoom buttons in the table's top-right corner", async ({
+  page,
+  isMobile,
+}) => {
+  const zoom = page.getByRole("group", { name: "牌桌縮放" });
+  await expect(zoom).toHaveCount(0);
+  await arrange(page);
+  if (isMobile) {
+    // Touch screens pinch instead.
+    await expect(zoom).toBeHidden();
+    return;
+  }
+  const board = page.locator(".spread-board");
+  const zoomIn = zoom.getByRole("button", { name: "放大牌桌" });
+  const zoomOut = zoom.getByRole("button", { name: "縮小牌桌" });
+  await expect(zoomOut).toBeDisabled();
+  const boardBox = await board.boundingBox();
+  const zoomBox = await zoom.boundingBox();
+  if (!boardBox || !zoomBox) throw new Error("the table is not visible");
+  expect(zoomBox.x + zoomBox.width).toBeGreaterThan(
+    boardBox.x + boardBox.width * 0.9,
+  );
+  expect(zoomBox.y).toBeLessThan(boardBox.y + boardBox.height * 0.2);
+
+  await zoomIn.click();
+  await expect(board).toHaveAttribute("data-zoomed", "true");
+  await expect(zoomOut).toBeEnabled();
+  await zoomOut.click();
+  await expect(board).not.toHaveAttribute("data-zoomed");
+  await expect(zoomOut).toBeDisabled();
+});
+
 test("in play the table steps back and hides frames and numbers; arranging shows them", async ({
   page,
 }) => {
