@@ -37,7 +37,7 @@ export function SpreadToolbar({
           disabled={!canToggleArrange}
           onClick={onToggleArrange}
         >
-          {arranging ? "完成編輯" : "編輯牌陣"}
+          {arranging ? "結束編輯" : "編輯牌陣"}
         </button>
         {arranging && (
           <>

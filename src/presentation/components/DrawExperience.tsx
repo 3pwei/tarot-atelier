@@ -24,7 +24,10 @@ import {
 import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { TableDeck } from "@/presentation/components/draw/TableDeck";
-import { slotWidthFor } from "@/presentation/components/spread/boardGeometry";
+import {
+  ARRANGING_SLOT_WIDTH_CQW,
+  slotWidthFor,
+} from "@/presentation/components/spread/boardGeometry";
 import { BoardZoomControls } from "@/presentation/components/spread/BoardZoomControls";
 import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
 import { useTableHold } from "@/presentation/components/draw/useTableHold";
@@ -135,15 +138,20 @@ export function DrawExperience({
   const session = useSpreadSession(deck, storage, templateStorage, createId);
   const { state, dispatch, generation } = session;
   const { spread, revealedInstanceIds, selectedId } = state;
-  // One card size for the whole deck: positions, pile, vortex and wheel.
-  const slotWidth = useMemo(
-    () => slotWidthFor(spread.positions),
-    [spread.positions],
-  );
+
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef);
   const motionMode = useMotionMode();
   const [tableMode, setTableMode] = useState<TableMode>("play");
+  // One card size for the whole deck: positions, pile, vortex and wheel. In
+  // play it is as large as the layout allows; while arranging it holds still
+  // at the smallest size, so cards never grow or shrink under a drag.
+  const fittedSlotWidth = useMemo(
+    () => slotWidthFor(spread.positions),
+    [spread.positions],
+  );
+  const slotWidth =
+    tableMode === "arrange" ? ARRANGING_SLOT_WIDTH_CQW : fittedSlotWidth;
   const dealer = useSpreadDealer({
     deck,
     spread,
@@ -467,7 +475,7 @@ export function DrawExperience({
           ) : (
             <p className="spread-details__hint">
               {arranging
-                ? "編輯牌陣中：點選牌位可改問題、排序或刪除；拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦號碼後用方向鍵、數字鍵盤操作。完成後按「完成編輯」。"
+                ? "編輯牌陣中：點選牌位可改問題、排序或刪除；拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦牌位後用方向鍵、數字鍵盤操作。完成後按「結束編輯」。"
                 : "翻開的牌點一下可放大。要換牌陣範本、改牌位問題、新增或移動牌位，請按「編輯牌陣」。"}
             </p>
           )}

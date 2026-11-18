@@ -122,7 +122,7 @@ async function arrange(page: Page) {
 }
 
 async function finishArranging(page: Page) {
-  await page.getByRole("button", { name: "完成編輯" }).click();
+  await page.getByRole("button", { name: "結束編輯" }).click();
 }
 
 /** Layout changes are kept only once saved to the library. */
