@@ -25,6 +25,7 @@ import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { TableDeck } from "@/presentation/components/draw/TableDeck";
 import { slotWidthFor } from "@/presentation/components/spread/boardGeometry";
+import { BoardZoomControls } from "@/presentation/components/spread/BoardZoomControls";
 import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
 import { useTableHold } from "@/presentation/components/draw/useTableHold";
 import {
@@ -410,7 +411,14 @@ export function DrawExperience({
             onNudge={handleNudge}
             onRotate={handleRotate}
             overlay={
-              arranging ? undefined : (
+              arranging ? (
+                <BoardZoomControls
+                  canZoomIn={viewport.canZoomIn}
+                  canZoomOut={viewport.canZoomOut}
+                  onZoomIn={viewport.zoomIn}
+                  onZoomOut={viewport.zoomOut}
+                />
+              ) : (
                 <TableDeck
                   cardWidth={slotWidth * dealer.zoom}
                   shuffling={dealer.phase === "shuffling"}

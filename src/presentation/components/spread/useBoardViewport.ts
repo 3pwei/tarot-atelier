@@ -12,6 +12,10 @@ import { createFrameCoalescer } from "@/presentation/components/spread/frameCoal
 
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 2.5;
+/** One press of a zoom button scales the table by this factor. */
+export const ZOOM_STEP = 1.25;
+/** Below this difference two scales count as the same. */
+const SCALE_EPSILON = 1e-3;
 const WHEEL_ZOOM_SENSITIVITY = 0.0025;
 
 export interface BoardView {
@@ -227,8 +231,26 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
     current.startCenter = centerOf(points);
   };
 
+  /** Zooms around the middle of what is in view, as the zoom buttons do. */
+  const zoomBy = (factor: number) => {
+    const { width, height } = size();
+    setView((current) =>
+      zoomAround(
+        current,
+        current.scale * factor,
+        { x: width / 2, y: height / 2 },
+        width,
+        height,
+      ),
+    );
+  };
+
   return {
     view,
+    zoomIn: () => zoomBy(ZOOM_STEP),
+    zoomOut: () => zoomBy(1 / ZOOM_STEP),
+    canZoomIn: view.scale < MAX_ZOOM - SCALE_EPSILON,
+    canZoomOut: view.scale > MIN_ZOOM + SCALE_EPSILON,
     /** Handlers for the table's background, under the given options. */
     gestureHandlers: (options: GestureOptions) => ({
       onPointerDown,
