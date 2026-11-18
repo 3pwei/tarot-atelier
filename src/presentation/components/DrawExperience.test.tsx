@@ -126,7 +126,7 @@ function slot(index: number): HTMLElement {
   return element;
 }
 
-/** The numbered handle on the table (the reading list has a twin button). */
+/** The position's handle on the table (the reading list has a twin button). */
 function handle(index: number): HTMLElement {
   return within(slot(index)).getByRole("button", {
     name: new RegExp(`^牌位 ${index}：`, "u"),

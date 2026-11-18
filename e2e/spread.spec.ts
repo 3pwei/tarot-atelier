@@ -512,12 +512,11 @@ test("during play, dragging or holding a position never moves or rotates it", as
 test("position numbers stay out of the way of dealt cards during play", async ({
   page,
 }) => {
-  await expect(handle(page, 1)).toBeVisible();
-  const empty = await handle(page, 1).boundingBox();
-  const card = await slot(page, 1).boundingBox();
-  if (!empty || !card) throw new Error("position 1 is not visible");
-  // A small numeral below the empty position, not a badge over it.
-  expect(empty.y).toBeGreaterThanOrEqual(card.y + card.height - 1);
+  // In play the numbers live only in the hidden frames.
+  await expect(slot(page, 1).locator(".spread-slot__frame")).toHaveCSS(
+    "opacity",
+    "0",
+  );
 
   await deckPile(page).click();
   await pickAll(page, 3);
@@ -583,31 +582,20 @@ test("the table looks the same while shuffling and dealing, except for the cards
   await chooseFirstCard(page);
   await chooseFirstCard(page);
   await expectStill();
-  // Read in one step: while the last card is still flying, its position
-  // keeps both its frame and its number.
-  const lastPosition = await slot(page, 3).evaluate((element) => {
-    const card = element.querySelector("[data-draw-card='primary']");
-    const number = element.querySelector(".spread-slot__handle");
-    return {
-      flying: card?.getAttribute("data-flight") === "pending",
-      frame: element.querySelector(".spread-slot__frame") !== null,
-      numberShown:
-        number !== null && getComputedStyle(number).display !== "none",
-    };
-  });
-  expect(lastPosition.frame).toBe(true);
-  if (lastPosition.flying) expect(lastPosition.numberShown).toBe(true);
+  // While the last card is still flying, its position keeps its frame.
+  await expect(slot(page, 3).locator(".spread-slot__frame")).toHaveCount(1);
 
   await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
     timeout: 15_000,
   });
   expect(await sizeOf()).toEqual(before);
-  // Once landed, the cards cover their frames and the numbers step aside.
+  // Once landed, the cards cover their frames and the positions leave the
+  // tab order.
   await expect(board.locator(".spread-slot__frame")).toHaveCount(3);
   for (const index of [1, 2, 3]) await expect(handle(page, index)).toBeHidden();
 });
 
-test("chosen cards fly in, land visible and numbers leave as each lands", async ({
+test("chosen cards fly in, land visible and each position leaves the tab order as its card lands", async ({
   page,
 }) => {
   await expect(page.locator(".draw-experience")).toHaveAttribute(
@@ -619,14 +607,15 @@ test("chosen cards fly in, land visible and numbers leave as each lands", async 
   await deckPile(page).click();
   await expect(fannedDeck(page)).toBeVisible();
   for (let picked = 0; picked < 3; picked += 1) await chooseFirstCard(page);
-  // While the last card is still on its way, its position keeps its number.
+  // While the last card is still on its way, its position can still be
+  // reached from the keyboard.
   const last = await slot(page, 3).evaluate((element) => ({
     waiting: !element.hasAttribute("data-settled"),
-    numberShown:
+    reachable:
       getComputedStyle(element.querySelector(".spread-slot__handle")!)
         .display !== "none",
   }));
-  if (last.waiting) expect(last.numberShown).toBe(true);
+  if (last.waiting) expect(last.reachable).toBe(true);
 
   await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible({
     timeout: 15_000,
@@ -649,6 +638,38 @@ test("spreads are chosen straight from play, and there are no zoom buttons", asy
   await expect(page.locator("[data-slot]")).toHaveCount(5);
   await expect(page.getByRole("button", { name: "放大牌桌" })).toHaveCount(0);
   await expect(page.getByRole("group", { name: "牌桌縮放" })).toHaveCount(0);
+});
+
+test("arranging shows each position's number as a watermark in its middle, and nothing else on it", async ({
+  page,
+}) => {
+  await arrange(page);
+  for (const index of [1, 2, 3]) {
+    const position = slot(page, index);
+    await expect(position.locator(".spread-slot__number")).toHaveText(
+      String(index),
+    );
+    // No badge, star or question mark: the handle is an empty, invisible
+    // control that names the position for screen readers.
+    await expect(handle(page, index)).toHaveText("");
+    await expect(handle(page, index)).toHaveAccessibleName(
+      new RegExp(`^牌位 ${index}：`, "u"),
+    );
+    await expect(position.locator(".spread-slot__frame")).toHaveText(
+      String(index),
+    );
+  }
+  const centre = async (selector: string) => {
+    const box = await slot(page, 1).locator(selector).boundingBox();
+    if (!box) throw new Error(`${selector} is not visible`);
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  };
+  const number = await centre(".spread-slot__number");
+  const frame = await centre(".spread-slot__frame");
+  const width = (await slot(page, 1).boundingBox())?.width ?? 0;
+  // Centred, give or take the glyph's own side bearings.
+  expect(Math.abs(number.x - frame.x)).toBeLessThan(width * 0.1);
+  expect(Math.abs(number.y - frame.y)).toBeLessThan(width * 0.1);
 });
 
 test("in play the table steps back and hides frames and numbers; arranging shows them", async ({
