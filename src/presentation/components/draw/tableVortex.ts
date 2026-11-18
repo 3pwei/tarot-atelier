@@ -140,7 +140,7 @@ export interface VortexCard {
   readonly launchMs: number;
   /**
    * How much the card shrinks in the air: its look on the ring over its size
-   * on the table, where it is as large as the positions.
+   * on the table, the deck's size.
    */
   readonly airScale: number;
   /** How it is drawn out of the pack: rightwards per step towards the viewer. */

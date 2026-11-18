@@ -54,11 +54,18 @@ test("the deck lies in the middle of the table, with no separate shuffle button"
   ).toHaveCount(0);
 });
 
-test("holding the deck lifts its cards into a vortex of cards as large as the positions", async ({
+/** The width of the pack's top card, as laid out (before any transform). */
+function topCardWidth(page: Page): Promise<number> {
+  return deckPile(page)
+    .locator("[data-deck-top]")
+    .evaluate((node) => (node as HTMLElement).offsetWidth);
+}
+
+test("holding the deck lifts its cards into a vortex of cards the pack's size", async ({
   page,
 }) => {
   const at = await centreOf(deckPile(page));
-  const slotWidth = (await slot(page, 1).boundingBox())?.width ?? 0;
+  const packWidth = await topCardWidth(page);
   await page.mouse.move(at.x, at.y);
   await page.mouse.down();
   const card = page.locator(".table-vortex__card").first();
@@ -75,14 +82,33 @@ test("holding the deck lifts its cards into a vortex of cards as large as the po
     .locator(".table-vortex__card")
     .first()
     .evaluate((node) => (node as HTMLElement).offsetWidth);
-  expect(Math.abs(cardWidth - slotWidth)).toBeLessThanOrEqual(2);
+  expect(Math.abs(cardWidth - packWidth)).toBeLessThanOrEqual(2);
   await page.mouse.up();
   await expect(fannedDeck(page)).toBeVisible();
   const wheelCardWidth = await fannedDeck(page)
     .locator("[data-fan-slot]")
     .first()
     .evaluate((node) => (node as HTMLElement).offsetWidth);
-  expect(Math.abs(wheelCardWidth - slotWidth)).toBeLessThanOrEqual(2);
+  expect(Math.abs(wheelCardWidth - packWidth)).toBeLessThanOrEqual(2);
+});
+
+test("the pack is the same size whichever spread is laid out", async ({
+  page,
+}) => {
+  const picker = page.getByRole("region", { name: "選擇牌陣" });
+  const widths: number[] = [];
+  for (const name of ["經典三張", "單張指引", "五張十字", "圓環"]) {
+    await picker.getByRole("button", { name, exact: true }).click();
+    await expect(
+      page.getByText(`已套用「${name}」`, { exact: false }),
+    ).toBeVisible();
+    widths.push(await topCardWidth(page));
+  }
+  for (const width of widths)
+    expect(Math.abs(width - widths[0]!)).toBeLessThanOrEqual(1);
+  // The circle's positions are smaller than its pack.
+  const slotWidth = (await slot(page, 1).boundingBox())?.width ?? 0;
+  expect(slotWidth).toBeLessThan(widths[0]!);
 });
 
 test("a touch on the pack does not lift or enlarge its top card", async ({

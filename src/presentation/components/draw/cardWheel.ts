@@ -15,8 +15,8 @@ export const CARD_SPACING_SHARE = 0.12;
  */
 export const NUDGE_SHARE = 0.2;
 /**
- * The wheel's cards are as large as the positions, so the wheel lies along
- * the table's bottom edge with only this much of its top card showing.
+ * The wheel's cards are the deck's size, so the wheel lies along the table's
+ * bottom edge with only this much of its top card showing.
  */
 export const VISIBLE_SHARE = 0.55;
 /** How far a chosen card must be pulled forward to leave the wheel. */

@@ -17,6 +17,12 @@ export const LARGEST_SLOT_WIDTH_CQW = STANDARD_SLOT_WIDTH_CQW * 1.5;
  * or shrink, and the layout shows its most crowded look.
  */
 export const ARRANGING_SLOT_WIDTH_CQW = STANDARD_SLOT_WIDTH_CQW;
+/**
+ * The deck's cards on the table (the pack, the vortex and the wheel) are the
+ * same size for every spread: the largest position size. A chosen card
+ * changes to its position's size as it flies there.
+ */
+export const DECK_CARD_WIDTH_CQW = LARGEST_SLOT_WIDTH_CQW;
 /** The card width the built-in layouts were drawn for (before 2026-11-08). */
 export const LAYOUT_SLOT_WIDTH_CQW = 11;
 /** How finely the width shrinks to make room. */
