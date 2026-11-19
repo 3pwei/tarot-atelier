@@ -65,11 +65,16 @@ export function useHoldToShuffle({
     latest.current.onHold();
   }
 
-  /** Starts a hold that ends when any pointer is let go. */
-  function press() {
+  /**
+   * Starts a hold that ends when the pointer that pressed is let go or taken
+   * over by the browser. Other fingers touching and lifting leave it held.
+   */
+  function press(pointerId: number) {
     hold();
     if (heldSince.current === undefined) return;
-    const end = () => release();
+    const end = (event: PointerEvent) => {
+      if (event.pointerId === pointerId) release();
+    };
     window.addEventListener("pointerup", end);
     window.addEventListener("pointercancel", end);
     detach.current = () => {

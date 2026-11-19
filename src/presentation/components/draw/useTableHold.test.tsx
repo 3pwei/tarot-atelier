@@ -4,7 +4,7 @@ import { useTableHold } from "@/presentation/components/draw/useTableHold";
 
 function Table(props: {
   readonly enabled: boolean;
-  readonly press: () => void;
+  readonly press: (pointerId: number) => void;
   readonly tap: () => void;
   readonly onSelect: () => void;
   readonly schedule: (run: () => void, ms: number) => () => void;
@@ -72,17 +72,17 @@ describe("useTableHold", () => {
 
     fireEvent.pointerDown(table, { button: 0, pointerId: 1 });
 
-    expect(press).toHaveBeenCalledTimes(1);
+    expect(press).toHaveBeenCalledExactlyOnceWith(1);
   });
 
   it("holds a finger a moment for a second one, then shuffles", () => {
     const { table, press, graceEnds } = setup();
 
-    fireEvent.pointerDown(table, finger(1));
+    fireEvent.pointerDown(table, finger(7));
     expect(press).not.toHaveBeenCalled();
     graceEnds();
 
-    expect(press).toHaveBeenCalledTimes(1);
+    expect(press).toHaveBeenCalledExactlyOnceWith(7);
   });
 
   it("leaves a two-finger pinch to zoom", () => {

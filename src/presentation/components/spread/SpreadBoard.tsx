@@ -27,6 +27,11 @@ interface SpreadBoardProps {
   readonly selectedId?: string;
   /** Positions may be moved and rotated. */
   readonly arrangeable: boolean;
+  /**
+   * A press anywhere on the table shuffles, so the browser must not take a
+   * drifting finger for a scroll and cancel the press.
+   */
+  readonly pressToShuffle: boolean;
   /** Positions whose dealt card has not landed yet. */
   readonly awaitingIds: readonly string[];
   readonly view: BoardView;
@@ -64,6 +69,7 @@ export function SpreadBoard({
   zoom,
   selectedId,
   arrangeable,
+  pressToShuffle,
   awaitingIds,
   view,
   gestures,
@@ -88,6 +94,7 @@ export function SpreadBoard({
       className="spread-board"
       data-zoomed={view.scale > 1 || undefined}
       data-arranging={arrangeable || undefined}
+      data-press-to-shuffle={pressToShuffle || undefined}
       {...gestures}
     >
       <div

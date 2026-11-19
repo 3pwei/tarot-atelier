@@ -385,6 +385,12 @@
   touch-action: none;
 }
 
+/* Holding the table shuffles: a finger drifting up or down while it holds
+   must not turn into a scroll, which would cancel the press and end it. */
+.spread-board[data-press-to-shuffle] {
+  touch-action: none;
+}
+
 /* --slot-w and --field-margin come from boardGeometry.ts. */
 .spread-board__canvas {
   --slot-h: calc(var(--slot-w) * 1.5);
