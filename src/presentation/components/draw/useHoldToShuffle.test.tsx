@@ -15,7 +15,11 @@ function Deck(props: {
     now: props.now,
   });
   return (
-    <button type="button" {...hold.handlers} onPointerDown={hold.press}>
+    <button
+      type="button"
+      {...hold.handlers}
+      onPointerDown={(event) => hold.press(event.pointerId)}
+    >
       洗牌
     </button>
   );
@@ -61,6 +65,18 @@ describe("useHoldToShuffle", () => {
     fireEvent.pointerDown(button, { button: 0, pointerId: 1 });
     fireEvent.pointerCancel(window, { pointerId: 1 });
 
+    expect(onRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps shuffling when another finger touches and lifts", () => {
+    const { button, onRelease } = setup();
+
+    fireEvent.pointerDown(button, { button: 0, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 2 });
+    fireEvent.pointerCancel(window, { pointerId: 2 });
+    expect(onRelease).not.toHaveBeenCalled();
+
+    fireEvent.pointerUp(window, { pointerId: 1 });
     expect(onRelease).toHaveBeenCalledTimes(1);
   });
 

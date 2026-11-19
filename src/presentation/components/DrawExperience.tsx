@@ -409,6 +409,7 @@ export function DrawExperience({
             zoom={dealer.zoom}
             selectedId={selectedId}
             arrangeable={abilities.canArrange}
+            pressToShuffle={shuffleReady}
             awaitingIds={dealer.awaitingIds}
             view={viewport.view}
             gestures={boardGestures}
