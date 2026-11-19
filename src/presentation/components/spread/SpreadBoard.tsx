@@ -5,7 +5,10 @@ import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { TableOrnament } from "@/presentation/components/draw/TableOrnament";
 import { FIELD_MARGIN_CQW } from "@/presentation/components/spread/boardGeometry";
 import { PositionSlot } from "@/presentation/components/spread/PositionSlot";
-import type { BoardView } from "@/presentation/components/spread/useBoardViewport";
+import {
+  viewTransform,
+  type BoardView,
+} from "@/presentation/components/spread/useBoardViewport";
 
 /** Pointer handlers for the table's background and anything pressed on it. */
 export type BoardGestures = Pick<
@@ -37,6 +40,8 @@ interface SpreadBoardProps {
   readonly view: BoardView;
   readonly gestures: BoardGestures;
   readonly viewportRef: RefObject<HTMLDivElement | null>;
+  /** What zooms and pans inside the frame (see useBoardViewport). */
+  readonly canvasRef: RefObject<HTMLDivElement | null>;
   readonly fieldRef: RefObject<HTMLDivElement | null>;
   readonly renderCards: (position: SpreadPosition) => ReactNode;
   readonly onSelect: (positionId?: string) => void;
@@ -74,6 +79,7 @@ export function SpreadBoard({
   view,
   gestures,
   viewportRef,
+  canvasRef,
   fieldRef,
   renderCards,
   onSelect,
@@ -83,7 +89,7 @@ export function SpreadBoard({
   overlay,
 }: SpreadBoardProps) {
   const canvasStyle = {
-    transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+    transform: viewTransform(view),
     "--slot-w": `${slotWidth}cqw`,
     "--field-margin": `${FIELD_MARGIN_CQW}cqw`,
   } as CSSProperties;
@@ -98,6 +104,7 @@ export function SpreadBoard({
       {...gestures}
     >
       <div
+        ref={canvasRef}
         className="spread-board__canvas"
         style={canvasStyle}
         onClick={(event) => {

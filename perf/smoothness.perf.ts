@@ -110,7 +110,7 @@ test("drag a position and pan a zoomed table", async ({ page }, testInfo) => {
   await measure(page, testInfo, "table-drag", () =>
     dragFrom(page, slot(page, 3), -60, -50),
   );
-  await page.getByRole("button", { name: "完成編輯" }).click();
+  await page.getByRole("button", { name: "結束編輯" }).click();
   // The drag is not saved; leaving restores the layout.
   await page
     .getByRole("alertdialog", { name: "牌陣還沒儲存" })
