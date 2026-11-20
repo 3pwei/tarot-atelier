@@ -257,7 +257,9 @@ test("keyboard and numeric keypad move a position", async ({ page }) => {
   await expect(slot(page, 1)).toHaveAttribute("style", /--rot: 15deg/u);
 });
 
-test("the spread survives a page reload", async ({ page }) => {
+test("a reload starts from the default spread, even in the middle of a round", async ({
+  page,
+}) => {
   await page.getByRole("textbox", { name: /^主問題/u }).fill("下個月的方向");
   await arrange(page);
   await page.getByRole("button", { name: "五張十字", exact: true }).click();
@@ -265,62 +267,33 @@ test("the spread survives a page reload", async ({ page }) => {
   await deckPile(page).click();
   await pickAll(page, 5);
   await reveal(page, 1);
-  await page.waitForTimeout(400);
 
   await page.reload();
-  await expect(page.getByText("已載入上次的牌陣。")).toBeVisible();
-  await expect(page.getByRole("textbox", { name: /^主問題/u })).toHaveValue(
-    "下個月的方向",
-  );
-  await expect(page.locator("[data-slot]")).toHaveCount(5);
-  await expect(
-    slot(page, 1).locator("[data-reveal-state='revealed']").first(),
-  ).toBeVisible();
-  await expect(
-    slot(page, 2).locator("[data-reveal-state='sealed']").first(),
-  ).toBeVisible();
-  await expect(page.getByText("點擊卡牌，以火焰逐一揭示牌面")).toBeVisible();
-
-  await page.getByRole("button", { name: "清除本次牌陣" }).click();
+  await expect(page.getByText("請先輸入這次想問的主問題")).toBeVisible();
+  await expect(page.getByText(/已載入上次/u)).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: /^主問題/u })).toHaveValue("");
   await expect(page.locator("[data-slot]")).toHaveCount(3);
   await expect(page.locator("[data-draw-card]")).toHaveCount(0);
 });
 
-test("a reload in the middle of choosing puts that round back in the deck", async ({
+test("a table stored by an earlier version is removed, not restored", async ({
   page,
 }) => {
-  await deckPile(page).click();
-  await expect(page.getByText(/^請選第 1 張（共 3 張）/u)).toBeVisible();
-  await chooseFirstCard(page);
-  await expect(page.getByText(/^請選第 2 張（共 3 張）/u)).toBeVisible();
-  await expect(slot(page, 1).locator("[data-draw-card]")).not.toHaveCount(0);
-  await page.waitForTimeout(400);
-
-  await page.reload();
-  await expect(
-    page.getByText("上次沒抽完的 1 張牌已放回牌堆，請重新洗牌。"),
-  ).toBeVisible();
-  await expect(page.locator("[data-draw-card]")).toHaveCount(0);
-  await expect(page.getByText("準備好了，按住牌桌洗牌")).toBeVisible();
-  // Starting over: the shuffle gives a round for all three positions.
-  await deckPile(page).click();
-  await expect(page.getByText(/^請選第 1 張（共 3 張）/u)).toBeVisible();
-});
-
-test("corrupted saved data falls back to a working table", async ({ page }) => {
-  // Written as the page reloads: a save still pending from the question
-  // typed before could otherwise overwrite it first.
   await page.addInitScript(() =>
     window.localStorage.setItem(
       "tarot-atelier:spread-session",
-      '{"schemaVersion":1,"session":{"deckId":"atelier-standard-tarot","spread":{"positions":"x"}}}',
+      '{"schemaVersion":2,"session":{"deckId":"atelier-standard-tarot"}}',
     ),
   );
   await page.reload();
-  await expect(
-    page.getByText("本機儲存的牌陣無法讀取，已重新開始。"),
-  ).toBeVisible();
   await expect(page.locator("[data-slot]")).toHaveCount(3);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.localStorage.getItem("tarot-atelier:spread-session"),
+      ),
+    )
+    .toBeNull();
 });
 
 test("the table fits the viewport without horizontal scrolling", async ({
@@ -371,7 +344,6 @@ test("named templates are saved, deleted and restored across reloads", async ({
   await page.waitForTimeout(400);
 
   await page.reload();
-  await expect(page.getByText("已載入上次的牌陣。")).toBeVisible();
   await arrange(page);
   await expect(
     page.getByRole("button", { name: "經典三張", exact: true }),

@@ -16,7 +16,7 @@ import {
   type RandomSource,
 } from "@/domain/deck/draw";
 import { dealingIssues } from "@/domain/spread/spread";
-import { collectDrawnInstances } from "@/domain/spread/spreadSnapshot";
+import { collectDrawnInstances } from "@/domain/spread/round";
 import type { Spread } from "@/domain/spread/types";
 import {
   jumperSlot,

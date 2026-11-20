@@ -65,10 +65,6 @@ export type SpreadAction =
   | {
       readonly type: "hydrate";
       readonly library: TemplateLibrary;
-      readonly restored?: {
-        readonly spread: Spread;
-        readonly revealedInstanceIds: readonly string[];
-      };
       readonly notice?: string;
     }
   | { readonly type: "apply-template"; readonly templateId: string }
@@ -340,11 +336,8 @@ export function createSpreadReducer(createId: CreateId) {
         const next: SpreadUiState = {
           ...state,
           library: action.library,
-          spread:
-            action.restored?.spread ?? freshSpread(action.library, createId),
-          revealedInstanceIds: new Set(
-            action.restored?.revealedInstanceIds ?? [],
-          ),
+          spread: freshSpread(action.library, createId),
+          revealedInstanceIds: new Set<string>(),
           selectedId: undefined,
           hydrated: true,
           generation: state.generation + 1,

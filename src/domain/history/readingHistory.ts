@@ -1,6 +1,6 @@
 import type { CardInstance, Orientation } from "@/domain/deck/types";
 import type { ReadingResult } from "@/domain/reading/types";
-import { roundKeyOf } from "@/domain/spread/round";
+import { collectDrawnInstances, roundKeyOf } from "@/domain/spread/round";
 import type { Spread } from "@/domain/spread/types";
 
 /** The device keeps the newest readings; a new one replaces the oldest. */
@@ -46,14 +46,6 @@ export type ReadingHistory = readonly ReadingRecord[];
 
 export const EMPTY_HISTORY: ReadingHistory = Object.freeze([]);
 
-function instancesOf(spread: Spread): readonly CardInstance[] {
-  return spread.positions.flatMap((position) => {
-    const result = position.drawResult;
-    if (!result) return [];
-    return result.jumper ? [result.primary, result.jumper] : [result.primary];
-  });
-}
-
 /** Every position is drawn and every card on the table has been revealed. */
 export function isRoundRevealed(
   spread: Spread,
@@ -61,7 +53,7 @@ export function isRoundRevealed(
 ): boolean {
   return (
     roundKeyOf(spread) !== undefined &&
-    instancesOf(spread).every((card) =>
+    collectDrawnInstances(spread).every((card) =>
       revealedInstanceIds.has(card.instanceId),
     )
   );

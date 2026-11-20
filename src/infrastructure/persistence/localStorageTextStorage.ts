@@ -1,7 +1,8 @@
 import type { TextStorage } from "@/application/ports/textStorage";
 
 /** Schema versions live inside each value; the keys stay stable. */
-export const SPREAD_SESSION_STORAGE_KEY = "tarot-atelier:spread-session";
+/** Retired: earlier versions kept the table here. Only ever cleared now. */
+export const RETIRED_TABLE_STORAGE_KEY = "tarot-atelier:spread-session";
 export const SPREAD_TEMPLATE_STORAGE_KEY = "tarot-atelier:spread-templates";
 export const READING_HISTORY_STORAGE_KEY = "tarot-atelier:reading-history";
 

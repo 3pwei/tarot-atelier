@@ -2,19 +2,13 @@
 
 import { useEffect, useMemo, useReducer, useRef, type Dispatch } from "react";
 import type {
-  SpreadSessionStorage,
+  RetiredTableStorage,
   SpreadTemplateStorage,
 } from "@/application/ports/textStorage";
-import {
-  clearSpreadSession,
-  restoreSpreadSession,
-  saveSpreadSession,
-} from "@/application/use-cases/spreadSession";
 import {
   loadTemplateLibrary,
   saveTemplateLibrary,
 } from "@/application/use-cases/templateLibrary";
-import type { Deck } from "@/domain/deck/deck";
 import {
   createHydrationIds,
   createInitialState,
@@ -22,9 +16,6 @@ import {
   type SpreadAction,
   type SpreadUiState,
 } from "@/presentation/components/spread/spreadState";
-
-/** Coalesces drag and typing bursts into one write. */
-const SAVE_DELAY_MS = 250;
 
 let fallbackCounter = 0;
 
@@ -45,15 +36,19 @@ export interface SpreadSessionHandle {
   readonly state: SpreadUiState;
   readonly dispatch: Dispatch<SpreadAction>;
   readonly status: SessionStatus;
-  /** Bumps whenever the spread is restored or cleared, so the pile resets. */
+  /** Bumps whenever the table is set up or cleared, so the pile resets. */
   readonly generation: number;
   readonly clear: () => void;
 }
 
+/**
+ * The table for this visit. Every visit, a reload included, starts from the
+ * default template: finished rounds live in the reading history, and saved
+ * layouts in the template library, so the table itself is never stored.
+ */
 export function useSpreadSession(
-  deck: Deck,
-  storage: SpreadSessionStorage,
   templateStorage: SpreadTemplateStorage,
+  retiredTableStorage: RetiredTableStorage,
   createId: () => string = createClientId,
 ): SpreadSessionHandle {
   const reducer = useMemo(() => createSpreadReducer(createId), [createId]);
@@ -61,34 +56,27 @@ export function useSpreadSession(
     createInitialState(createHydrationIds()),
   );
   const status: SessionStatus = state.hydrated ? "ready" : "loading";
-  const warnedAboutStorage = useRef(false);
   /** The library as loaded; it is only written once the person changes it. */
   const loadedLibrary = useRef<unknown>(null);
 
-  // Storage only exists in the browser, so restore after hydration.
+  // Storage only exists in the browser, so load the library after hydration.
   useEffect(() => {
     const templates = loadTemplateLibrary(templateStorage);
     loadedLibrary.current = templates.library;
-    const restored = restoreSpreadSession(storage, deck);
-    const notices = [
-      restored.status === "restored" ? "已載入上次的牌陣。" : undefined,
-      restored.status === "restored" && restored.returnedCount > 0
-        ? `上次沒抽完的 ${restored.returnedCount} 張牌已放回牌堆，請重新洗牌。`
-        : undefined,
-      restored.status === "discarded"
-        ? "本機儲存的牌陣無法讀取，已重新開始。"
-        : undefined,
-      templates.status === "discarded"
-        ? "本機的牌陣庫無法讀取，已換回預設範例。"
-        : undefined,
-    ].filter(Boolean);
+    try {
+      // Earlier versions kept the table here; a reload no longer restores it.
+      retiredTableStorage.clear();
+    } catch {
+      // Unreadable storage holds nothing to remove.
+    }
     dispatch({
       type: "hydrate",
       library: templates.library,
-      ...(restored.status === "restored" ? { restored: restored.session } : {}),
-      ...(notices.length > 0 ? { notice: notices.join("") } : {}),
+      ...(templates.status === "discarded"
+        ? { notice: "本機的牌陣庫無法讀取，已換回預設範例。" }
+        : {}),
     });
-  }, [deck, storage, templateStorage]);
+  }, [templateStorage, retiredTableStorage]);
 
   useEffect(() => {
     if (status !== "ready" || state.library === loadedLibrary.current) return;
@@ -101,39 +89,7 @@ export function useSpreadSession(
     }
   }, [state.library, status, templateStorage]);
 
-  useEffect(() => {
-    if (status !== "ready") return;
-    const save = () =>
-      saveSpreadSession(storage, {
-        deckId: deck.id,
-        spread: state.spread,
-        revealedInstanceIds: [...state.revealedInstanceIds],
-      });
-    // A reload right after an edit must not lose it.
-    window.addEventListener("pagehide", save);
-    const timer = setTimeout(() => {
-      window.removeEventListener("pagehide", save);
-      const saved = save();
-      if (saved.ok) {
-        warnedAboutStorage.current = false;
-      } else if (saved.reason === "storage" && !warnedAboutStorage.current) {
-        warnedAboutStorage.current = true;
-        dispatch({
-          type: "announce",
-          text: "瀏覽器無法儲存牌陣，重新整理後將不會保留。",
-        });
-      }
-    }, SAVE_DELAY_MS);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("pagehide", save);
-    };
-  }, [deck.id, state.spread, state.revealedInstanceIds, status, storage]);
-
-  const clear = () => {
-    clearSpreadSession(storage);
-    dispatch({ type: "clear" });
-  };
+  const clear = () => dispatch({ type: "clear" });
 
   return { state, dispatch, status, generation: state.generation, clear };
 }

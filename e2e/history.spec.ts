@@ -29,9 +29,9 @@ test("keeps a finished round with its reading, and deletes it on request", async
     .click();
   await expect(page.getByText("AI 解讀", { exact: true })).toBeVisible();
 
-  // It survives a reload, and the restored table does not add it again.
+  // It survives a reload, which starts the table afresh.
   await page.reload();
-  await expect(page.getByText("已載入上次的牌陣。")).toBeVisible();
+  await expect(page.locator("[data-draw-card]")).toHaveCount(0);
   await page.getByRole("button", { name: "歷史紀錄" }).click();
   const panel = page.getByRole("dialog", { name: /歷史紀錄/u });
   const entries = panel.getByRole("listitem");
@@ -64,7 +64,6 @@ test("keeps a finished round with its reading, and deletes it on request", async
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
   await page.reload();
-  await expect(page.getByText("已載入上次的牌陣。")).toBeVisible();
   await page.getByRole("button", { name: "歷史紀錄" }).click();
   await expect(page.getByText(/還沒有紀錄/u)).toBeVisible();
 });
