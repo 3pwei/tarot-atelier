@@ -3,6 +3,7 @@ import type { TextStorage } from "@/application/ports/textStorage";
 /** Schema versions live inside each value; the keys stay stable. */
 export const SPREAD_SESSION_STORAGE_KEY = "tarot-atelier:spread-session";
 export const SPREAD_TEMPLATE_STORAGE_KEY = "tarot-atelier:spread-templates";
+export const READING_HISTORY_STORAGE_KEY = "tarot-atelier:reading-history";
 
 /**
  * Browser `localStorage` adapter. Access can throw in private windows or when

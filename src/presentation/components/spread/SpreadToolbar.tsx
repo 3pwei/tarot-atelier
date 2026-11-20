@@ -1,6 +1,7 @@
 "use client";
 
 import { MAX_SPREAD_POSITIONS } from "@/domain/spread/types";
+import { HISTORY_COPY } from "@/presentation/components/history/historyLabels";
 
 interface SpreadToolbarProps {
   readonly positionCount: number;
@@ -13,6 +14,7 @@ interface SpreadToolbarProps {
   /** Starting over is allowed except while cards are washing or flying. */
   readonly canClear: boolean;
   readonly onClear: () => void;
+  readonly onOpenHistory: () => void;
 }
 
 export function SpreadToolbar({
@@ -24,6 +26,7 @@ export function SpreadToolbar({
   onAdd,
   canClear,
   onClear,
+  onOpenHistory,
 }: SpreadToolbarProps) {
   const atLimit = positionCount >= MAX_SPREAD_POSITIONS;
 
@@ -59,7 +62,16 @@ export function SpreadToolbar({
           </>
         )}
 
-        {/* Starting over is part of play, not of editing the layout. */}
+        {/* History and starting over are part of play, not of editing. */}
+        {!arranging && (
+          <button
+            type="button"
+            className="ghost-action ghost-action--gold spread-toolbar__history"
+            onClick={onOpenHistory}
+          >
+            {HISTORY_COPY.open}
+          </button>
+        )}
         {!arranging && (
           <button
             type="button"

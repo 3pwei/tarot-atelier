@@ -16,3 +16,6 @@ export type SpreadSessionStorage = TextStorage;
 
 /** The person's named spread templates. */
 export type SpreadTemplateStorage = TextStorage;
+
+/** The finished rounds kept on this device. */
+export type ReadingHistoryStorage = TextStorage;
