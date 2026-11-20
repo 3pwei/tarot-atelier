@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
+  ReadingHistoryStorage,
   SpreadSessionStorage,
   SpreadTemplateStorage,
 } from "@/application/ports/textStorage";
@@ -13,11 +14,17 @@ import {
 } from "@/application/use-cases/requestReading";
 import type { RandomSource } from "@/domain/deck/draw";
 import type { CardInstance } from "@/domain/deck/types";
+import {
+  isRoundRevealed,
+  recordRound,
+  roundKeyOf,
+} from "@/domain/history/readingHistory";
 import { hasDraws } from "@/domain/spread/spread";
 import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
 import {
   LocalStorageTextStorage,
+  READING_HISTORY_STORAGE_KEY,
   SPREAD_SESSION_STORAGE_KEY,
   SPREAD_TEMPLATE_STORAGE_KEY,
 } from "@/infrastructure/persistence/localStorageTextStorage";
@@ -37,15 +44,15 @@ import {
   cardBackUrl,
 } from "@/presentation/components/library/prerenderedArt";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
+import { HistoryDialog } from "@/presentation/components/history/HistoryDialog";
+import { useReadingHistory } from "@/presentation/components/history/useReadingHistory";
 import {
   hasUnsavedLayout,
   revertTarget,
 } from "@/presentation/components/spread/editBaseline";
 import { CardViewer } from "@/presentation/components/draw/CardViewer";
-import {
-  DrawnCard,
-  type CardRole,
-} from "@/presentation/components/draw/DrawnCard";
+import type { CardRole } from "@/presentation/components/cards/cardLabels";
+import { DrawnCard } from "@/presentation/components/draw/DrawnCard";
 import { motionTimingStyle } from "@/presentation/components/draw/dealMotion";
 import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
 import { ReadingPanel } from "@/presentation/components/reading/ReadingPanel";
@@ -81,7 +88,10 @@ interface DrawExperienceProps {
   readonly randomSource?: RandomSource;
   readonly storage?: SpreadSessionStorage;
   readonly templateStorage?: SpreadTemplateStorage;
+  readonly historyStorage?: ReadingHistoryStorage;
   readonly createId?: () => string;
+  /** The clock for recording rounds, e.g. fixed in tests. */
+  readonly now?: () => Date;
   /** Replaces the configured reading provider, e.g. in tests. */
   readonly readingProvider?: ReadingProvider;
   /** Replaces the requester around the provider, e.g. in tests. */
@@ -98,7 +108,9 @@ export function DrawExperience({
   randomSource,
   storage: storageOverride,
   templateStorage: templateStorageOverride,
+  historyStorage: historyStorageOverride,
   createId = createClientId,
+  now = currentTime,
   readingProvider: readingProviderOverride,
   readingRequester: readingRequesterOverride,
   createRequestId = createReadingRequestId,
@@ -136,9 +148,21 @@ export function DrawExperience({
       new LocalStorageTextStorage(SPREAD_TEMPLATE_STORAGE_KEY),
     [templateStorageOverride],
   );
+  const historyStorage = useMemo(
+    () =>
+      historyStorageOverride ??
+      new LocalStorageTextStorage(READING_HISTORY_STORAGE_KEY),
+    [historyStorageOverride],
+  );
   const session = useSpreadSession(deck, storage, templateStorage, createId);
   const { state, dispatch, generation } = session;
   const { spread, revealedInstanceIds, selectedId } = state;
+  const announce = useCallback(
+    (text: string) => dispatch({ type: "announce", text }),
+    [dispatch],
+  );
+  const history = useReadingHistory(historyStorage, announce);
+  const [showingHistory, setShowingHistory] = useState(false);
 
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef);
@@ -216,6 +240,56 @@ export function DrawExperience({
     (instanceId: string) => dispatch({ type: "revealed", instanceId }),
     [dispatch],
   );
+  const spreadName = state.library.find(
+    (template) => template.id === spread.templateId,
+  )?.name;
+  const { add: addRecord, attach: attachReading } = history;
+  const roundKey = roundKeyOf(spread);
+  const roundRevealed = isRoundRevealed(spread, revealedInstanceIds);
+  // A round is recorded when its last card is opened on this table. A table
+  // restored already finished arrives with a new round key, so it is not
+  // recorded again and a deleted record stays deleted.
+  const previousRound = useRef({ roundKey, roundRevealed });
+  useEffect(() => {
+    const previous = previousRound.current;
+    previousRound.current = { roundKey, roundRevealed };
+    const justFinished =
+      roundRevealed &&
+      !previous.roundRevealed &&
+      previous.roundKey === roundKey;
+    if (!justFinished) return;
+    const record = recordRound({
+      id: createId(),
+      spread,
+      deckId: deck.id,
+      ...(spreadName ? { spreadName } : {}),
+      recordedAt: now(),
+    });
+    if (record) addRecord(record);
+  }, [
+    roundKey,
+    roundRevealed,
+    spread,
+    deck.id,
+    spreadName,
+    createId,
+    now,
+    addRecord,
+  ]);
+
+  useEffect(() => {
+    if (reading.state.status !== "ready" || reading.stale || !roundKey) return;
+    attachReading(roundKey, {
+      mainQuestion: spread.mainQuestion,
+      reading: reading.state.result,
+    });
+  }, [
+    reading.state,
+    reading.stale,
+    roundKey,
+    spread.mainQuestion,
+    attachReading,
+  ]);
   const drawn = drawnCardOf(spread, inspected);
   const viewedCard = drawn ? deck.getCard(drawn.instance.cardId) : undefined;
   const viewed =
@@ -399,6 +473,7 @@ export function DrawExperience({
             }
             canClear={dealer.canClear}
             onClear={session.clear}
+            onOpenHistory={() => setShowingHistory(true)}
           />
         </div>
 
@@ -526,6 +601,16 @@ export function DrawExperience({
           onCancel={() => setConfirmingLeave(false)}
         />
       )}
+      {showingHistory && (
+        <HistoryDialog
+          history={history.history}
+          registry={registry}
+          now={now}
+          onRemove={history.remove}
+          onClearAll={history.clearAll}
+          onClose={() => setShowingHistory(false)}
+        />
+      )}
       {viewed && (
         <CardViewer
           card={viewed.card}
@@ -538,6 +623,10 @@ export function DrawExperience({
       )}
     </div>
   );
+}
+
+function currentTime(): Date {
+  return new Date();
 }
 
 /** The drawn card with `instanceId`, if it is still on the table. */

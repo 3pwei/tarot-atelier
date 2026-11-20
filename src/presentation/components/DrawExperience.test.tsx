@@ -53,19 +53,23 @@ function renderTable(
     readonly random?: () => number;
     readonly storage?: MemoryStorage;
     readonly templateStorage?: MemoryStorage;
+    readonly historyStorage?: MemoryStorage;
   } = {},
 ) {
   const storage = options.storage ?? new MemoryStorage();
   const templateStorage = options.templateStorage ?? new MemoryStorage();
+  const historyStorage = options.historyStorage ?? new MemoryStorage();
   const view = render(
     <DrawExperience
       randomSource={options.random ?? (() => 0.9)}
       storage={storage}
       templateStorage={templateStorage}
+      historyStorage={historyStorage}
       createId={idFactory()}
+      now={() => new Date(2026, 10, 20, 2, 10)}
     />,
   );
-  return { ...view, storage, templateStorage };
+  return { ...view, storage, templateStorage, historyStorage };
 }
 
 /** Asks a main question, which dealing needs, and waits until play can start. */
@@ -301,6 +305,59 @@ describe("DrawExperience spread table", () => {
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
     expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
     expect(screen.getAllByText("單牌象徵").length).toBeGreaterThan(0);
+  });
+
+  it("records a finished round once, and adds its reading when generated", async () => {
+    const { historyStorage } = renderTable();
+    await ready("這份新工作適合我嗎？");
+    await shuffleAndPick();
+    reveal(1);
+    reveal(2);
+    expect(historyStorage.value).toBeNull();
+    reveal(3);
+    await screen.findByText("牌陣已完成");
+
+    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
+    const panel = screen.getByRole("dialog", { name: /歷史紀錄/u });
+    const entries = within(panel).getAllByRole("listitem");
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toHaveTextContent("這份新工作適合我嗎？");
+    expect(entries[0]).toHaveTextContent("今天 02:10");
+    expect(entries[0]).toHaveTextContent("未解讀");
+    fireEvent.click(within(panel).getByRole("button", { name: "關閉" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
+    await screen.findByText("全局關聯");
+    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
+    const reopened = screen.getByRole("dialog", { name: /歷史紀錄/u });
+    expect(within(reopened).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(reopened).getByText("已解讀")).toBeInTheDocument();
+    expect(JSON.parse(historyStorage.value ?? "{}").records).toHaveLength(1);
+  });
+
+  it("keeps a deleted record deleted when the finished table is reloaded", async () => {
+    const storage = new MemoryStorage();
+    const historyStorage = new MemoryStorage();
+    const first = renderTable({ storage, historyStorage });
+    await ready();
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+    await waitFor(() =>
+      expect(storage.value).toContain('revealedInstanceIds":["'),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
+    fireEvent.click(screen.getByRole("button", { name: /這段時間的方向？/u }));
+    fireEvent.click(screen.getByRole("button", { name: "刪除這筆" }));
+    fireEvent.click(screen.getByRole("button", { name: "刪除" }));
+    expect(historyStorage.value).toBeNull();
+    first.unmount();
+
+    renderTable({ storage, historyStorage });
+    await screen.findByText("已載入上次的牌陣。");
+    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
+    expect(screen.getByText(/還沒有紀錄/u)).toBeInTheDocument();
   });
 
   it("never shows players the jumper probability", async () => {

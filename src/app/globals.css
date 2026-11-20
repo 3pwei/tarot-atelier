@@ -3,6 +3,7 @@
 @import "./draw-experience.css";
 @import "./spread-table.css";
 @import "./reading-panel.css";
+@import "./history.css";
 
 :root {
   --color-midnight: #080914;
