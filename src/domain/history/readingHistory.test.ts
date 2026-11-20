@@ -5,6 +5,7 @@ import {
   EMPTY_HISTORY,
   isRoundRevealed,
   MAX_HISTORY_RECORDS,
+  recordedSpread,
   recordRound,
   removeRecord,
   type ReadingRecord,
@@ -197,5 +198,59 @@ describe("history", () => {
     expect(removeRecord(history, "record-1").map((r) => r.id)).toEqual([
       "record-2",
     ]);
+  });
+});
+
+describe("laying a record out again", () => {
+  it("rebuilds the same questions, places and cards, jumpers included", () => {
+    const record = recordRound({
+      id: "r1",
+      spread: threeCards,
+      deckId: FIXTURE_DECK_ID,
+      recordedAt: RECORDED_AT,
+    });
+    if (!record) throw new Error("Expected a record");
+    const spread = recordedSpread(record);
+    expect(spread?.mainQuestion).toBe("這份新工作適合我嗎？");
+    expect(
+      spread?.positions.map((position) => ({
+        index: position.index,
+        question: position.question,
+        x: position.x,
+        rotation: position.rotation,
+        primary: position.drawResult?.primary.cardId,
+        orientation: position.drawResult?.primary.orientation,
+        jumper: position.drawResult?.jumper?.cardId,
+      })),
+    ).toEqual([
+      {
+        index: 1,
+        question: "現在的我",
+        x: 0.2,
+        rotation: 0,
+        primary: "atelier-standard.major.17",
+        orientation: "upright",
+        jumper: undefined,
+      },
+      {
+        index: 2,
+        question: "阻礙",
+        x: 0.5,
+        rotation: 0,
+        primary: "atelier-standard.swords.seven",
+        orientation: "reversed",
+        jumper: "atelier-standard.cups.two",
+      },
+      {
+        index: 3,
+        question: "可能的方向",
+        x: 0.8,
+        rotation: 0,
+        primary: "atelier-standard.wands.ace",
+        orientation: "upright",
+        jumper: undefined,
+      },
+    ]);
+    expect(spread && roundKeyOf(spread)).toBeDefined();
   });
 });

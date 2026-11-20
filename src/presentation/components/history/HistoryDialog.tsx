@@ -1,22 +1,41 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { DeckRegistry } from "@/domain/deck/deckRegistry";
-import type { ReadingHistory } from "@/domain/history/readingHistory";
+import type {
+  ReadingHistory,
+  ReadingRecord,
+} from "@/domain/history/readingHistory";
+import type { ReadingResult } from "@/domain/reading/types";
 import { useModalDialog } from "@/presentation/components/dialog/useModalDialog";
 import { HistoryDetail } from "@/presentation/components/history/HistoryDetail";
 import { HistoryList } from "@/presentation/components/history/HistoryList";
 import { HISTORY_COPY } from "@/presentation/components/history/historyLabels";
+import { RecordReadingStatus } from "@/presentation/components/history/RecordReadingStatus";
+import {
+  useRecordReading,
+  type RecordReadingServices,
+} from "@/presentation/components/history/useRecordReading";
 import {
   SharePanel,
   type ShareServices,
 } from "@/presentation/components/share/SharePanel";
+import { READING_COPY } from "@/presentation/components/reading/readingLabels";
 import { SHARE_COPY } from "@/presentation/components/share/shareLabels";
 
 interface HistoryDialogProps {
   readonly history: ReadingHistory;
   readonly registry: DeckRegistry;
   readonly shareServices: ShareServices;
+  readonly readingServices: RecordReadingServices;
+  /** Replaces a record's reading with one just generated. */
+  readonly onReading: (
+    roundKey: string,
+    answered: {
+      readonly mainQuestion: string;
+      readonly reading: ReadingResult;
+    },
+  ) => void;
   readonly now: () => Date;
   readonly onRemove: (id: string) => void;
   readonly onClearAll: () => void;
@@ -39,6 +58,8 @@ export function HistoryDialog({
   history,
   registry,
   shareServices,
+  readingServices,
+  onReading,
   now,
   onRemove,
   onClearAll,
@@ -53,6 +74,30 @@ export function HistoryDialog({
   const [deletion, setDeletion] = useState<Deletion>();
   const [sharing, setSharing] = useState(false);
   const record = history.find((entry) => entry.id === openId);
+  // The last record opened keeps its reading going while the list is shown;
+  // opening another record drops it.
+  const [readingId, setReadingId] = useState<string>();
+  const readingRecord = history.find((entry) => entry.id === readingId);
+  const storeReading = useCallback(
+    (target: ReadingRecord, reading: ReadingResult) =>
+      onReading(target.roundKey, {
+        mainQuestion: target.mainQuestion,
+        reading,
+      }),
+    [onReading],
+  );
+  const recordReading = useRecordReading({
+    record: readingRecord,
+    registry,
+    services: readingServices,
+    onReading: storeReading,
+  });
+  const readingThis = record !== undefined && record.id === readingId;
+  const generating = readingThis && recordReading.state.status === "loading";
+  const openRecord = (id: string) => {
+    setOpenId(id);
+    setReadingId(id);
+  };
   // One clock reading per opening, so 今天/昨天 stay consistent in the list.
   const [listedAt] = useState(() => now());
 
@@ -134,6 +179,14 @@ export function HistoryDialog({
               record={record}
               registry={registry}
               headingId={recordHeadingId}
+              readingStatus={
+                readingThis ? (
+                  <RecordReadingStatus
+                    session={recordReading}
+                    source={readingServices.source}
+                  />
+                ) : null
+              }
             />
           ) : (
             <>
@@ -141,7 +194,7 @@ export function HistoryDialog({
                 history={history}
                 registry={registry}
                 now={listedAt}
-                onOpen={setOpenId}
+                onOpen={openRecord}
               />
               <p className="history-panel__note">{HISTORY_COPY.deviceOnly}</p>
             </>
@@ -174,6 +227,19 @@ export function HistoryDialog({
             <button
               type="button"
               className="reading-generate"
+              disabled={generating || !recordReading.build.ok}
+              onClick={recordReading.generate}
+            >
+              {generating
+                ? HISTORY_COPY.generating
+                : record.reading
+                  ? HISTORY_COPY.reread
+                  : READING_COPY.generate}
+            </button>
+            <button
+              type="button"
+              className="ghost-action ghost-action--gold"
+              disabled={generating}
               onClick={() => setSharing(true)}
             >
               {SHARE_COPY.open}
@@ -181,6 +247,7 @@ export function HistoryDialog({
             <button
               type="button"
               className="danger-action"
+              disabled={generating}
               onClick={() => setDeletion("record")}
             >
               {HISTORY_COPY.deleteOne}

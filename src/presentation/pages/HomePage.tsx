@@ -31,6 +31,7 @@ export function HomePage() {
             alt=""
             width={38}
             height={38}
+            loading="eager"
           />
           <span className="brand-name">Tarot Atelier</span>
         </a>
@@ -46,7 +47,7 @@ export function HomePage() {
               alt="Tarot Atelier 原創占位標誌"
               width={136}
               height={136}
-              priority
+              preload
               data-reveal
             />
             <p className="eyebrow" data-reveal>

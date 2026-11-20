@@ -12,7 +12,7 @@
 - 長按牌位後拖曳即可旋轉（靠近 45° 倍數時自動吸附），點選牌位後也可拖曳右下角的迴轉箭頭；輕點箭頭轉 45°，也可輸入精確角度。
 - 按住牌桌任何地方（含牌位上）洗牌，放開後從牌輪逐張選牌放入空牌位，再由玩家逐張點開。兩指仍可縮放牌桌。飛行落點就是牌位座標，牌桌縮放（兩指或觸控板捏合，沒有縮放按鈕）、平移或牌位旋轉都不影響。跳牌與主牌同屬一個牌位，不另占編號。已有抽牌結果的牌位可移動，但不會重抽。
 - 每次開啟或重新整理都從預設牌陣重新開始，不還原上一輪；牌陣庫與歷史紀錄以版本化 JSON 存在本機 `localStorage`，讀取時完整驗證，壞資料會被丟棄而不會白屏；提供「清除本次牌陣」（↺）。見 [`docs/decisions/0008-fresh-table-on-every-visit.md`](docs/decisions/0008-fresh-table-on-every-visit.md)。
-- 歷史紀錄：牌全部翻開時自動存一筆，產生解讀後補進同一筆；只存在這台裝置、最多 10 筆（超過蓋掉最舊一筆），可唯讀檢視、刪除單筆或全部清除。見 [`docs/decisions/0006-reading-history-on-the-device.md`](docs/decisions/0006-reading-history-on-the-device.md)。
+- 歷史紀錄：牌全部翻開時自動存一筆，產生解讀後補進同一筆；只存在這台裝置、最多 10 筆（超過蓋掉最舊一筆），可唯讀檢視、用當時的牌和問題「產生解讀／重新解讀」（覆蓋舊解讀）、刪除單筆或全部清除。見 [`docs/decisions/0006-reading-history-on-the-device.md`](docs/decisions/0006-reading-history-on-the-device.md)。
 - 分享：翻完牌的牌桌或歷史紀錄裡的一筆都能分享。在裝置上產生 1080×1350 圖卡與文字，用系統分享面板送出（不支援就下載圖片），也可只複製文字；預設帶問題，可勾選「隱藏我寫的問題」。見 [`docs/decisions/0007-share-from-the-device.md`](docs/decisions/0007-share-from-the-device.md)。
 
 抽牌不放回，每次抽牌有固定的跳牌機率（使用者不可調整、也不對外顯示），逆位機率預設 50%。domain 可注入 `RandomSource`；固定種子只供測試與可重現 demo，不是安全亂數。
