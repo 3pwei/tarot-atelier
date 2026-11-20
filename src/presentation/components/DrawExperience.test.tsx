@@ -11,22 +11,9 @@ import {
   STANDARD_SLOT_WIDTH_CQW,
 } from "@/presentation/components/spread/boardGeometry";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SpreadSessionStorage } from "@/application/ports/textStorage";
+import { MemoryTextStorage as MemoryStorage } from "@/application/testing/memoryTextStorage";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
 import { fakeShareServices } from "@/presentation/components/share/testing/fakeShareServices";
-
-class MemoryStorage implements SpreadSessionStorage {
-  value: string | null = null;
-  read() {
-    return this.value;
-  }
-  write(value: string) {
-    this.value = value;
-  }
-  clear() {
-    this.value = null;
-  }
-}
 
 function idFactory() {
   let next = 0;
@@ -52,20 +39,21 @@ beforeEach(() => {
 function renderTable(
   options: {
     readonly random?: () => number;
-    readonly storage?: MemoryStorage;
+    readonly retiredTableStorage?: MemoryStorage;
     readonly templateStorage?: MemoryStorage;
     readonly historyStorage?: MemoryStorage;
     readonly share?: ReturnType<typeof fakeShareServices>;
   } = {},
 ) {
-  const storage = options.storage ?? new MemoryStorage();
+  const retiredTableStorage =
+    options.retiredTableStorage ?? new MemoryStorage();
   const templateStorage = options.templateStorage ?? new MemoryStorage();
   const historyStorage = options.historyStorage ?? new MemoryStorage();
   const share = options.share ?? fakeShareServices();
   const view = render(
     <DrawExperience
       randomSource={options.random ?? (() => 0.9)}
-      storage={storage}
+      retiredTableStorage={retiredTableStorage}
       templateStorage={templateStorage}
       historyStorage={historyStorage}
       createId={idFactory()}
@@ -73,7 +61,13 @@ function renderTable(
       shareServices={share.services}
     />,
   );
-  return { ...view, storage, templateStorage, historyStorage, share };
+  return {
+    ...view,
+    retiredTableStorage,
+    templateStorage,
+    historyStorage,
+    share,
+  };
 }
 
 /** Asks a main question, which dealing needs, and waits until play can start. */
@@ -385,17 +379,13 @@ describe("DrawExperience spread table", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps a deleted record deleted when the finished table is reloaded", async () => {
-    const storage = new MemoryStorage();
+  it("keeps a deleted record deleted after a reload", async () => {
     const historyStorage = new MemoryStorage();
-    const first = renderTable({ storage, historyStorage });
+    const first = renderTable({ historyStorage });
     await ready();
     await shuffleAndPick();
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
-    await waitFor(() =>
-      expect(storage.value).toContain('revealedInstanceIds":["'),
-    );
 
     fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
     fireEvent.click(screen.getByRole("button", { name: /這段時間的方向？/u }));
@@ -404,8 +394,8 @@ describe("DrawExperience spread table", () => {
     expect(historyStorage.value).toBeNull();
     first.unmount();
 
-    renderTable({ storage, historyStorage });
-    await screen.findByText("已載入上次的牌陣。");
+    renderTable({ historyStorage });
+    await screen.findByText("請先輸入這次想問的主問題");
     fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
     expect(screen.getByText(/還沒有紀錄/u)).toBeInTheDocument();
   });
@@ -761,51 +751,40 @@ describe("DrawExperience spread table", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("restores the spread, draws and reveals after a reload", async () => {
-    const storage = new MemoryStorage();
-    const first = renderTable({ storage });
-    await ready();
-    fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
-      target: { value: "今年的重心？" },
-    });
-    await shuffleAndPick();
-    reveal(1);
-    await waitFor(() => expect(storage.value).toContain("今年的重心？"));
-    await waitFor(() =>
-      expect(storage.value).toContain('revealedInstanceIds":["'),
+  it("starts from the default spread after a reload, keeping the round in the history", async () => {
+    const historyStorage = new MemoryStorage();
+    const retiredTableStorage = new MemoryStorage(
+      '{"schemaVersion":2,"session":{"deckId":"atelier-standard-tarot"}}',
     );
+    const first = renderTable({ historyStorage, retiredTableStorage });
+    await ready("今年的重心？");
+    expect(retiredTableStorage.value).toBeNull();
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
     first.unmount();
 
-    renderTable({ storage });
-    expect(await screen.findByText("已載入上次的牌陣。")).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /^主問題/u })).toHaveValue(
+    renderTable({ historyStorage });
+    await screen.findByText("請先輸入這次想問的主問題");
+    expect(screen.queryByText(/已載入上次/u)).toBeNull();
+    expect(screen.getByRole("textbox", { name: /^主問題/u })).toHaveValue("");
+    expect(document.querySelectorAll("[data-draw-card]")).toHaveLength(0);
+    expect(document.querySelectorAll("[data-slot]")).toHaveLength(3);
+    expect(screen.getByText("剩餘 78 張")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
+    const panel = screen.getByRole("dialog", { name: /歷史紀錄/u });
+    expect(within(panel).getAllByRole("listitem")[0]).toHaveTextContent(
       "今年的重心？",
     );
-    expect(slot(1).querySelector("[data-draw-card='primary']")).toHaveAttribute(
-      "data-reveal-state",
-      "revealed",
-    );
-    expect(slot(2).querySelector("[data-draw-card='primary']")).toHaveAttribute(
-      "data-reveal-state",
-      "sealed",
-    );
-    expect(screen.getByText("剩餘 75 張")).toBeInTheDocument();
-    reveal(2);
-    reveal(3);
-    await screen.findByText("牌陣已完成");
   });
 
-  it("recovers from corrupted saved data without a blank screen", async () => {
-    const storage = new MemoryStorage();
-    const templateStorage = new MemoryStorage();
-    storage.value = '{"schemaVersion":2,"session":{"spread":42}}';
-    templateStorage.value = "not json";
-    renderTable({ storage, templateStorage });
+  it("starts from the default spread at once when the library is unreadable", async () => {
+    const templateStorage = new MemoryStorage("not json");
+    renderTable({ templateStorage });
 
     expect(
-      await screen.findByText(
-        "本機儲存的牌陣無法讀取，已重新開始。本機的牌陣庫無法讀取，已換回預設範例。",
-      ),
+      await screen.findByText("本機的牌陣庫無法讀取，已換回預設範例。"),
     ).toBeInTheDocument();
     expect(document.querySelectorAll("[data-slot]")).toHaveLength(3);
   });
@@ -937,7 +916,7 @@ describe("DrawExperience spread table", () => {
   });
 
   it("clears the current spread at once, without asking", async () => {
-    const { storage } = renderTable();
+    renderTable();
     await ready();
     await shuffleAndPick();
 
@@ -948,7 +927,6 @@ describe("DrawExperience spread table", () => {
     ).toBeInTheDocument();
     expect(document.querySelectorAll("[data-draw-card]")).toHaveLength(0);
     expect(screen.getByText("剩餘 78 張")).toBeInTheDocument();
-    await waitFor(() => expect(storage.value).not.toContain("drawResult"));
   });
 });
 

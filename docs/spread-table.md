@@ -27,7 +27,7 @@ Character counts use code points (`Array.from`), so CJK characters and emoji cou
 | Moving a drawn position | Allowed. The cards travel with it; nothing is redrawn.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Applying a template     | Only before the first draw. Afterwards use 「清除本次牌陣」 (the ↺ button). Saving and deleting templates is always allowed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
-The draw machine draws the card the person chose with `drawAt(index)`; the jumper is the card next to it (`jumperNeighbourIndex`). `continueDrawing()` (`revealed → ready`) readies the next choice from the same shuffle. The order is decided in `completeShuffle()`, when the person lets go of the deck. `alreadyDrawnCardIds` and `previousDrawCount` rebuild the pile after a reload without the cards already on the table and without reusing instance IDs.
+The draw machine draws the card the person chose with `drawAt(index)`; the jumper is the card next to it (`jumperNeighbourIndex`). `continueDrawing()` (`revealed → ready`) readies the next choice from the same shuffle. The order is decided in `completeShuffle()`, when the person lets go of the deck. `alreadyDrawnCardIds` and `previousDrawCount` rebuild the pile without the cards already on the table and without reusing instance IDs.
 
 ## Template library
 
@@ -63,33 +63,13 @@ The circle uses eight positions because twelve cards on a 3:2 table overlap at r
 
 ## Persistence
 
-Both stores go through the `TextStorage` port (`SpreadSessionStorage`, `SpreadTemplateStorage`), implemented by `infrastructure/persistence/LocalStorageTextStorage`.
+The table itself is not stored. Every visit, a reload included, starts from the library's first template with no main question and a full pile, so an earlier round never reappears ([ADR 0008](./decisions/0008-fresh-table-on-every-visit.md)). A finished round is kept in the reading history instead ([ADR 0006](./decisions/0006-reading-history-on-the-device.md)), and a layout worth keeping is saved to the library.
 
-The current reading lives under `tarot-atelier:spread-session` (`application/use-cases/spreadSession.ts`):
+Earlier versions kept the table under `tarot-atelier:spread-session`. That key is only cleared now (`RetiredTableStorage`), so an old copy does not linger on the device.
 
-```json
-{
-  "schemaVersion": 2,
-  "savedAt": "2026-11-02T08:00:00.000Z",
-  "session": {
-    "deckId": "atelier-standard-tarot",
-    "spread": {
-      "id": "…",
-      "templateId": "three-card",
-      "mainQuestion": "",
-      "positions": ["…"]
-    },
-    "revealedInstanceIds": ["…"]
-  }
-}
-```
+- 「清除本次牌陣」, the ↺ button, starts a fresh spread with a full pile. It works at any moment of play, the laid-out wheel included, except while cards are washing or flying.
 
-- **Writes** are serialised by the domain and parsed back before they are stored, so an invalid session is never written. Saves are coalesced (250 ms) and flushed on `pagehide`.
-- **Reads** validate every field, the `1..n` numbering, coordinate ranges, question lengths, duplicate cards and instance IDs, and then cross-check card IDs and orientations against the deck.
-- **Migration**: `parseSpreadSnapshot` upgrades older versions one step at a time through `SPREAD_SNAPSHOT_MIGRATIONS`. v1 → v2 turns the fixed `presetId` into `templateId` (`"custom"` becomes no template). Newer, unversioned or broken data is discarded and removed.
-- **An unfinished round does not survive a reload.** The shuffle and the wheel are not stored, so a reload while choosing cannot pick up where it stopped. A stored session with an empty position next to a card still face down is a round left half chosen (a new round needs every card turned over, and a round fills every empty position). `returnUnfinishedRound` (`domain/spread/unfinishedRound.ts`) puts that round's face-down cards back in the deck, keeps cards already turned over, and the table starts over from the shuffle with the notice 「上次沒抽完的 N 張牌已放回牌堆，請重新洗牌。」. A finished round whose cards are not yet turned over is kept.
-- **Failure**: the table always renders. Unreadable data leads to a fresh three-card spread and the notice 「本機儲存的牌陣無法讀取，已重新開始。」. A blocked or full storage is reported once.
-- 「清除本次牌陣」, the ↺ button, removes the stored session at once and starts a fresh spread with a full pile. It works at any moment of play, the laid-out wheel included, except while cards are washing or flying.
+The library goes through the `TextStorage` port (`SpreadTemplateStorage`), implemented by `infrastructure/persistence/LocalStorageTextStorage`.
 
 The template library lives under `tarot-atelier:spread-templates` (`application/use-cases/templateLibrary.ts`) as `{ "schemaVersion": 2, "templates": [...] }`. Nothing stored means the built-ins. It is written only after the person changes the library, so an emptied library stays empty. v1 → v2 adds the single-card spread, which v1 libraries never had: after 經典三張 if that is still there, otherwise first, and not when a template already has its id or name or the library is full. A v2 library without it had it deleted and stays so. Unreadable data is removed and the built-ins return with a notice.
 

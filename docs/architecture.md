@@ -38,10 +38,10 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 
 ## Spread table
 
-- `domain/spread` owns the `Spread` and `SpreadPosition` model, numbering, the 1–12 limit, required questions, presets and the versioned snapshot parser. It is framework-free; see [`spread-table.md`](./spread-table.md).
-- Persistence goes through the `SpreadSessionStorage` port (`application/ports`). `LocalStorageSpreadSessionStorage` only moves strings; validation and migration live in `application/use-cases/spreadSession.ts`, so no backend can bypass them.
+- `domain/spread` owns the `Spread` and `SpreadPosition` model, numbering, the 1–12 limit, required questions, presets and round identity (`round.ts`). It is framework-free; see [`spread-table.md`](./spread-table.md).
+- Persistence goes through `TextStorage` ports (`application/ports`): the template library and the reading history. `LocalStorageTextStorage` only moves strings; validation and migration live in the use cases (`templateLibrary.ts`, `readingHistory.ts`), so no backend can bypass them. The table itself is not stored.
 - The table keeps positions in relative coordinates. Zoom and pan are presentation-only view state (`useBoardViewport`), and the draw flight converts its screen path into the landing slot's rotated, zoomed frame.
-- `useSpreadDealer` mirrors the draw machine for a spread: hold to lift one pile into the vortex, lay it on the wheel, and draw each chosen card into the next empty position with `drawAt()` and `continueDrawing()`. The pile is rebuilt without table cards after a reload or clear.
+- `useSpreadDealer` mirrors the draw machine for a spread: hold to lift one pile into the vortex, lay it on the wheel, and draw each chosen card into the next empty position with `drawAt()` and `continueDrawing()`. The pile is rebuilt after the table is cleared.
 
 ## Readings
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ReadingHistoryStorage,
-  SpreadSessionStorage,
+  RetiredTableStorage,
   SpreadTemplateStorage,
 } from "@/application/ports/textStorage";
 import type { ReadingProvider } from "@/application/ports/readingProvider";
@@ -27,7 +27,7 @@ import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistr
 import {
   LocalStorageTextStorage,
   READING_HISTORY_STORAGE_KEY,
-  SPREAD_SESSION_STORAGE_KEY,
+  RETIRED_TABLE_STORAGE_KEY,
   SPREAD_TEMPLATE_STORAGE_KEY,
 } from "@/infrastructure/persistence/localStorageTextStorage";
 import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
@@ -93,7 +93,8 @@ const STANDARD_DECK_ID = "atelier-standard-tarot";
 
 interface DrawExperienceProps {
   readonly randomSource?: RandomSource;
-  readonly storage?: SpreadSessionStorage;
+  /** Where earlier versions kept the table; cleared on load. */
+  readonly retiredTableStorage?: RetiredTableStorage;
   readonly templateStorage?: SpreadTemplateStorage;
   readonly historyStorage?: ReadingHistoryStorage;
   readonly createId?: () => string;
@@ -115,7 +116,7 @@ interface DrawExperienceProps {
  */
 export function DrawExperience({
   randomSource,
-  storage: storageOverride,
+  retiredTableStorage: retiredTableStorageOverride,
   templateStorage: templateStorageOverride,
   historyStorage: historyStorageOverride,
   createId = createClientId,
@@ -146,11 +147,11 @@ export function DrawExperience({
     () => readingRequesterOverride ?? createReadingRequester(readingProvider),
     [readingRequesterOverride, readingProvider],
   );
-  const storage = useMemo(
+  const retiredTableStorage = useMemo(
     () =>
-      storageOverride ??
-      new LocalStorageTextStorage(SPREAD_SESSION_STORAGE_KEY),
-    [storageOverride],
+      retiredTableStorageOverride ??
+      new LocalStorageTextStorage(RETIRED_TABLE_STORAGE_KEY),
+    [retiredTableStorageOverride],
   );
   const templateStorage = useMemo(
     () =>
@@ -164,7 +165,11 @@ export function DrawExperience({
       new LocalStorageTextStorage(READING_HISTORY_STORAGE_KEY),
     [historyStorageOverride],
   );
-  const session = useSpreadSession(deck, storage, templateStorage, createId);
+  const session = useSpreadSession(
+    templateStorage,
+    retiredTableStorage,
+    createId,
+  );
   const { state, dispatch, generation } = session;
   const { spread, revealedInstanceIds, selectedId } = state;
   const announce = useCallback(
