@@ -188,6 +188,14 @@ export function DrawExperience({
     [shareServicesOverride],
   );
   const [sharing, setSharing] = useState<ReadingRecord>();
+  const recordReadingServices = useMemo(
+    () => ({
+      requester: readingRequester,
+      source: readingProvider.source,
+      createRequestId,
+    }),
+    [readingRequester, readingProvider.source, createRequestId],
+  );
 
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef);
@@ -656,6 +664,8 @@ export function DrawExperience({
           history={history.history}
           registry={registry}
           shareServices={shareServices}
+          readingServices={recordReadingServices}
+          onReading={history.attach}
           now={now}
           onRemove={history.remove}
           onClearAll={history.clearAll}

@@ -1,6 +1,7 @@
 import type { CardInstance, Orientation } from "@/domain/deck/types";
 import type { ReadingResult } from "@/domain/reading/types";
 import { collectDrawnInstances, roundKeyOf } from "@/domain/spread/round";
+import { assignDraw, createSpread } from "@/domain/spread/spread";
 import type { Spread } from "@/domain/spread/types";
 
 /** The device keeps the newest readings; a new one replaces the oldest. */
@@ -140,4 +141,43 @@ export function removeRecord(
   id: string,
 ): ReadingHistory {
   return history.filter((entry) => entry.id !== id);
+}
+
+/**
+ * The record laid out as a spread again, so it can be read with the same
+ * questions and cards. Instances are named after the record, since the
+ * original draws' instance IDs are not kept. A record that no longer
+ * forms a valid spread gives `undefined`.
+ */
+export function recordedSpread(record: ReadingRecord): Spread | undefined {
+  const instance = (index: number, role: string, card: RecordedCard) => ({
+    instanceId: `${record.deckId}:record-${record.id}-${index}:${role}`,
+    deckId: record.deckId,
+    cardId: card.cardId,
+    orientation: card.orientation,
+  });
+  let spread = createSpread({
+    id: `record-${record.id}`,
+    mainQuestion: record.mainQuestion,
+    positions: record.positions.map((position) => ({
+      id: `position-${position.index}`,
+      question: position.question,
+      x: position.x,
+      y: position.y,
+      rotation: position.rotation,
+    })),
+  });
+  for (const position of record.positions) {
+    const draw = {
+      primary: instance(position.index, "primary", position.primary),
+      ...(position.jumper
+        ? { jumper: instance(position.index, "jumper", position.jumper) }
+        : {}),
+      drawnAt: record.recordedAt,
+    };
+    const placed = assignDraw(spread, `position-${position.index}`, draw);
+    if (!placed.ok) return undefined;
+    spread = placed.spread;
+  }
+  return spread;
 }

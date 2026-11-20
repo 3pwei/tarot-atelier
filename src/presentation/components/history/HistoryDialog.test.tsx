@@ -1,6 +1,17 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary";
+import {
+  createReadingRequester,
+  type ReadingOutcome,
+  type ReadingRequester,
+} from "@/application/use-cases/requestReading";
 import {
   attachReading,
   recordRound,
@@ -14,6 +25,7 @@ import {
   fixtureSpread,
 } from "@/domain/history/testing/historyFixtures";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
+import { PrewrittenReadingProvider } from "@/infrastructure/reading/prewrittenReadingProvider";
 import { HistoryDialog } from "@/presentation/components/history/HistoryDialog";
 import { fakeShareServices } from "@/presentation/components/share/testing/fakeShareServices";
 
@@ -69,17 +81,47 @@ const history: ReadingHistory = [
   unread,
 ];
 
-function renderDialog(entries: ReadingHistory = history) {
+const prewritten = () =>
+  createReadingRequester(new PrewrittenReadingProvider(registry));
+
+let nextRequest = 0;
+const createRequestId = () =>
+  `00000000-0000-4000-8000-${(nextRequest += 1).toString().padStart(12, "0")}`;
+
+/** A pre-written requester that answers only when the test releases it. */
+function heldRequester() {
+  const pending: (() => void)[] = [];
+  const inner = prewritten();
+  const requester: ReadingRequester = {
+    request: (requestId, request, signal) =>
+      new Promise<ReadingOutcome>((resolve) => {
+        pending.push(
+          () => void inner.request(requestId, request).then(resolve),
+        );
+        signal?.addEventListener("abort", () =>
+          resolve({ ok: false, failure: "cancelled" }),
+        );
+      }),
+  };
+  return { requester, release: () => pending.shift()?.() };
+}
+
+function renderDialog(
+  entries: ReadingHistory = history,
+  requester: ReadingRequester = prewritten(),
+) {
   const handlers = {
     onRemove: vi.fn(),
     onClearAll: vi.fn(),
     onClose: vi.fn(),
+    onReading: vi.fn(),
   };
   render(
     <HistoryDialog
       history={entries}
       registry={registry}
       shareServices={fakeShareServices().services}
+      readingServices={{ requester, source: "prewritten", createRequestId }}
       now={() => new Date(2026, 10, 20, 9, 0)}
       {...handlers}
     />,
@@ -149,6 +191,45 @@ describe("HistoryDialog", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "刪除" }));
     expect(onClearAll).toHaveBeenCalledOnce();
+  });
+
+  it("reads a round again with its own questions, replacing the reading", async () => {
+    const { onReading } = renderDialog();
+    fireEvent.click(
+      screen.getByRole("button", { name: /這份新工作適合我嗎/u }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "重新解讀" }));
+    await waitFor(() => expect(onReading).toHaveBeenCalledOnce());
+    const [roundKey, answered] = onReading.mock.calls[0] ?? [];
+    expect(roundKey).toBe(read.roundKey);
+    expect(answered.mainQuestion).toBe("這份新工作適合我嗎？");
+    expect(answered.reading.source).toBe("prewritten");
+    expect(answered.reading.positions[0].question).toBe("現在的我");
+    expect(answered.reading.positions[0].primary.orientation).toBe("reversed");
+  });
+
+  it("explains why a round can no longer be read", () => {
+    renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: /未填主問題/u }));
+    expect(screen.getByRole("button", { name: "產生解讀" })).toBeDisabled();
+    expect(screen.getAllByRole("alert").length).toBeGreaterThan(0);
+  });
+
+  it("pauses the record's buttons while reading, and keeps reading behind the list", async () => {
+    const held = heldRequester();
+    const { onReading } = renderDialog(history, held.requester);
+    fireEvent.click(
+      screen.getByRole("button", { name: /這份新工作適合我嗎/u }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "重新解讀" }));
+    expect(screen.getByRole("button", { name: "產生中…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "分享" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "刪除這筆" })).toBeDisabled();
+    expect(screen.getByText(/正在/u)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "‹ 返回" }));
+    held.release();
+    await waitFor(() => expect(onReading).toHaveBeenCalledOnce());
   });
 
   it("closes with Escape", () => {

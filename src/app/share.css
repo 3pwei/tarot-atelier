@@ -121,5 +121,13 @@
 }
 
 .history-panel__foot--record {
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+/* Three buttons share a phone's width; none may break its label. */
+.history-panel__foot--record button {
+  width: auto;
+  min-width: 0;
+  padding-inline: 1rem;
+  white-space: nowrap;
 }

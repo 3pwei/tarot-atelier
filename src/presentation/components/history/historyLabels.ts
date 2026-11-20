@@ -20,7 +20,8 @@ export const HISTORY_COPY = {
   confirmDeleteAll: "確定清除全部歷史紀錄？刪除後無法復原。",
   cancel: "取消",
   confirmDelete: "刪除",
-  jumper: "跳牌",
+  reread: "重新解讀",
+  generating: "產生中…",
 } as const;
 
 const pad = (value: number) => String(value).padStart(2, "0");

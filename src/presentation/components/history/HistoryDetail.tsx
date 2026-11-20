@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { DeckRegistry } from "@/domain/deck/deckRegistry";
 import type {
   ReadingRecord,
@@ -28,6 +29,8 @@ interface HistoryDetailProps {
   readonly record: ReadingRecord;
   readonly registry: DeckRegistry;
   readonly headingId: string;
+  /** How reading this round again is going, shown above its reading. */
+  readonly readingStatus?: ReactNode;
 }
 
 function cardCaption(name: string, card: RecordedCard): string {
@@ -41,6 +44,7 @@ export function HistoryDetail({
   record,
   registry,
   headingId,
+  readingStatus,
 }: HistoryDetailProps) {
   const deck = registry.get(record.deckId);
   const { reading } = record;
@@ -95,6 +99,7 @@ export function HistoryDetail({
         })}
       </ol>
 
+      {readingStatus}
       {reading ? (
         <section className="history-detail__reading" aria-label="解讀">
           <p className="history-detail__reading-head">
