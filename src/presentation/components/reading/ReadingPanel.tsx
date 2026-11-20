@@ -14,6 +14,7 @@ import {
   ReadingSections,
 } from "@/presentation/components/reading/ReadingSections";
 import type { ReadingSession } from "@/presentation/components/reading/useReadingSession";
+import { SHARE_COPY } from "@/presentation/components/share/shareLabels";
 
 interface ReadingPanelProps {
   readonly session: ReadingSession;
@@ -21,6 +22,8 @@ interface ReadingPanelProps {
   readonly revealed: boolean;
   /** Where readings come from when generated: AI first, or pre-written. */
   readonly source: ReadingSource;
+  /** Shares the finished round, with its reading if there is one. */
+  readonly onShare: () => void;
 }
 
 /**
@@ -28,7 +31,12 @@ interface ReadingPanelProps {
  * reads, labels pre-written readings as such and always carries the
  * entertainment disclaimer.
  */
-export function ReadingPanel({ session, revealed, source }: ReadingPanelProps) {
+export function ReadingPanel({
+  session,
+  revealed,
+  source,
+  onShare,
+}: ReadingPanelProps) {
   const titleId = useId();
   const { state, build, stale } = session;
   const loading = state.status === "loading";
@@ -92,6 +100,14 @@ export function ReadingPanel({ session, revealed, source }: ReadingPanelProps) {
                   : READING_COPY.regenerate}
               </button>
             )}
+            <button
+              type="button"
+              className="ghost-action ghost-action--gold"
+              disabled={loading}
+              onClick={onShare}
+            >
+              {SHARE_COPY.open}
+            </button>
             {state.status === "failed" && !stale ? (
               <>
                 <span className="reading-status" role="status">

@@ -4,6 +4,7 @@
 @import "./spread-table.css";
 @import "./reading-panel.css";
 @import "./history.css";
+@import "./share.css";
 
 :root {
   --color-midnight: #080914;

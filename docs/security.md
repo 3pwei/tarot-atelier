@@ -3,6 +3,7 @@
 - AI readings (Phase 05) go through this site's own Pages Function to Cloudflare Workers AI, on the free allocation only. No analytics, upload or paid service is connected.
 - What leaves the device for an AI reading: the deck, the drawn cards and the main and position questions. The panel no longer says so: the owner removed that line on 2026-11-09 to keep the panel to the disclaimer and one button. The disclosure therefore needs a home elsewhere (for example a privacy page) before a public launch. The endpoint stores none of it; D1 keeps only daily counters keyed by a salted hash of the visitor's address and the day, deleted after two days.
 - The reading history (Phase 07) stays in this browser's local storage: the last ten finished rounds, with their questions and readings. Nothing about it is sent anywhere. People can delete one record or all of them.
+- Sharing (Phase 08) paints the image and writes the text on the device; nothing is sent to this site. The person chooses where it goes through the system share sheet, a download or the clipboard, and can hide their questions first.
 - Server logs carry outcomes, configuration problems and token counts, never questions or reading text. Tests assert this.
 - The endpoint refuses other origins, bodies over 16 KB, unknown decks and cards, and every answer that fails the result schema, does not answer the request or states certainty.
 - The prompt keeps player text out of the instructions and passes it as JSON data, so a question cannot change the model's rules or the output format.
