@@ -410,6 +410,27 @@ describe("DrawExperience spread table", () => {
     expect(screen.getByText(/還沒有紀錄/u)).toBeInTheDocument();
   });
 
+  it("clears the reading when the table starts over, so it never sits under new cards", async () => {
+    renderTable();
+    await ready();
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
+    await screen.findByText("全局關聯");
+
+    fireEvent.click(screen.getByRole("button", { name: "清除本次牌陣" }));
+    expect(screen.queryByText("全局關聯")).toBeNull();
+    expect(screen.queryByText(/牌陣已改變/u)).toBeNull();
+
+    await ready();
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+    expect(screen.queryByText("全局關聯")).toBeNull();
+    expect(screen.getByRole("button", { name: "產生解讀" })).toBeEnabled();
+  });
+
   it("never shows players the jumper probability", async () => {
     const { container } = renderTable();
     await ready();
