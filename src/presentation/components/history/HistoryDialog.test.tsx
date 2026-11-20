@@ -15,6 +15,7 @@ import {
 } from "@/domain/history/testing/historyFixtures";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
 import { HistoryDialog } from "@/presentation/components/history/HistoryDialog";
+import { fakeShareServices } from "@/presentation/components/share/testing/fakeShareServices";
 
 const registry = registerBuiltInDecks(new InMemoryDeckRegistry());
 
@@ -78,6 +79,7 @@ function renderDialog(entries: ReadingHistory = history) {
     <HistoryDialog
       history={entries}
       registry={registry}
+      shareServices={fakeShareServices().services}
       now={() => new Date(2026, 10, 20, 9, 0)}
       {...handlers}
     />,

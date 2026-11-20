@@ -57,6 +57,7 @@ function Harness(props: {
       session={session}
       revealed={props.revealed ?? true}
       source={props.source ?? "prewritten"}
+      onShare={() => undefined}
     />
   );
 }

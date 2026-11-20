@@ -15,9 +15,11 @@ import {
 import type { RandomSource } from "@/domain/deck/draw";
 import type { CardInstance } from "@/domain/deck/types";
 import {
+  attachReading as attachReadingTo,
   isRoundRevealed,
   recordRound,
   roundKeyOf,
+  type ReadingRecord,
 } from "@/domain/history/readingHistory";
 import { hasDraws } from "@/domain/spread/spread";
 import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
@@ -46,6 +48,11 @@ import {
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
 import { HistoryDialog } from "@/presentation/components/history/HistoryDialog";
 import { useReadingHistory } from "@/presentation/components/history/useReadingHistory";
+import { BrowserSharer } from "@/infrastructure/share/browserSharer";
+import { renderShareImage } from "@/presentation/components/share/renderShareImage";
+import { ShareDialog } from "@/presentation/components/share/ShareDialog";
+import type { ShareServices } from "@/presentation/components/share/SharePanel";
+import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
 import {
   hasUnsavedLayout,
   revertTarget,
@@ -92,6 +99,8 @@ interface DrawExperienceProps {
   readonly createId?: () => string;
   /** The clock for recording rounds, e.g. fixed in tests. */
   readonly now?: () => Date;
+  /** Replaces the browser's share sheet and the image painter, e.g. in tests. */
+  readonly shareServices?: ShareServices;
   /** Replaces the configured reading provider, e.g. in tests. */
   readonly readingProvider?: ReadingProvider;
   /** Replaces the requester around the provider, e.g. in tests. */
@@ -111,6 +120,7 @@ export function DrawExperience({
   historyStorage: historyStorageOverride,
   createId = createClientId,
   now = currentTime,
+  shareServices: shareServicesOverride,
   readingProvider: readingProviderOverride,
   readingRequester: readingRequesterOverride,
   createRequestId = createReadingRequestId,
@@ -163,6 +173,16 @@ export function DrawExperience({
   );
   const history = useReadingHistory(historyStorage, announce);
   const [showingHistory, setShowingHistory] = useState(false);
+  const shareServices = useMemo(
+    () =>
+      shareServicesOverride ?? {
+        sharer: new BrowserSharer(),
+        renderImage: renderShareImage,
+        siteUrl: currentSiteUrl,
+      },
+    [shareServicesOverride],
+  );
+  const [sharing, setSharing] = useState<ReadingRecord>();
 
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef);
@@ -290,6 +310,30 @@ export function DrawExperience({
     spread.mainQuestion,
     attachReading,
   ]);
+
+  // The table is shared as it is now, with the reading only if it still
+  // answers these cards and questions.
+  const shareRound = () => {
+    const record = recordRound({
+      id: createId(),
+      spread,
+      deckId: deck.id,
+      ...(spreadName ? { spreadName } : {}),
+      recordedAt: now(),
+    });
+    if (!record) return;
+    const current =
+      reading.state.status === "ready" && !reading.stale
+        ? reading.state.result
+        : undefined;
+    const [withReading] = current
+      ? attachReadingTo([record], record.roundKey, {
+          mainQuestion: spread.mainQuestion,
+          reading: current,
+        })
+      : [record];
+    setSharing(withReading);
+  };
   const drawn = drawnCardOf(spread, inspected);
   const viewedCard = drawn ? deck.getCard(drawn.instance.cardId) : undefined;
   const viewed =
@@ -570,6 +614,7 @@ export function DrawExperience({
           session={reading}
           revealed={spreadRevealed}
           source={readingProvider.source}
+          onShare={shareRound}
         />
 
         <div className="draw-table__foot">
@@ -605,10 +650,19 @@ export function DrawExperience({
         <HistoryDialog
           history={history.history}
           registry={registry}
+          shareServices={shareServices}
           now={now}
           onRemove={history.remove}
           onClearAll={history.clearAll}
           onClose={() => setShowingHistory(false)}
+        />
+      )}
+      {sharing && (
+        <ShareDialog
+          record={sharing}
+          registry={registry}
+          services={shareServices}
+          onClose={() => setSharing(undefined)}
         />
       )}
       {viewed && (
@@ -627,6 +681,11 @@ export function DrawExperience({
 
 function currentTime(): Date {
   return new Date();
+}
+
+/** This site's address, so previews and production each point to themselves. */
+function currentSiteUrl(): string {
+  return `${window.location.origin}${PUBLIC_BASE_PATH}/`;
 }
 
 /** The drawn card with `instanceId`, if it is still on the table. */

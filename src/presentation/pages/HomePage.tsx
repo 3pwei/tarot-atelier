@@ -1,8 +1,7 @@
 import Image from "next/image";
 import { DeckLibrary } from "@/presentation/components/DeckLibrary";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
-
-const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
 
 const foundationItems = [
   {
@@ -28,7 +27,7 @@ export function HomePage() {
       <header className="site-header content-wrap">
         <a className="brand" href="#top" aria-label="Tarot Atelier 首頁">
           <Image
-            src={`${publicBasePath}/brand/tarot-atelier-mark.svg`}
+            src={`${PUBLIC_BASE_PATH}/brand/tarot-atelier-mark.svg`}
             alt=""
             width={38}
             height={38}
@@ -43,7 +42,7 @@ export function HomePage() {
           <div className="hero-copy">
             <Image
               className="hero-logo"
-              src={`${publicBasePath}/brand/tarot-atelier-mark.svg`}
+              src={`${PUBLIC_BASE_PATH}/brand/tarot-atelier-mark.svg`}
               alt="Tarot Atelier 原創占位標誌"
               width={136}
               height={136}

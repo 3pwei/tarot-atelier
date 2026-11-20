@@ -1,10 +1,10 @@
 import manifest from "./catalogThumbnails.json";
+import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
 
 /**
  * Where the images made by `pnpm thumbnails` are served. Only the standard
  * deck has them; any other deck draws its own art.
  */
-const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 interface Manifest {
   readonly deckId: string;
@@ -19,7 +19,7 @@ interface Manifest {
 const prerendered: Manifest = manifest;
 
 function urlOf(file: string): string {
-  return `${publicBasePath}/${prerendered.directory}/${file}`;
+  return `${PUBLIC_BASE_PATH}/${prerendered.directory}/${file}`;
 }
 
 /** Pixel size of a pre-rendered face, for the image's intrinsic size. */

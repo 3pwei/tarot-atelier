@@ -13,6 +13,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpreadSessionStorage } from "@/application/ports/textStorage";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
+import { fakeShareServices } from "@/presentation/components/share/testing/fakeShareServices";
 
 class MemoryStorage implements SpreadSessionStorage {
   value: string | null = null;
@@ -54,11 +55,13 @@ function renderTable(
     readonly storage?: MemoryStorage;
     readonly templateStorage?: MemoryStorage;
     readonly historyStorage?: MemoryStorage;
+    readonly share?: ReturnType<typeof fakeShareServices>;
   } = {},
 ) {
   const storage = options.storage ?? new MemoryStorage();
   const templateStorage = options.templateStorage ?? new MemoryStorage();
   const historyStorage = options.historyStorage ?? new MemoryStorage();
+  const share = options.share ?? fakeShareServices();
   const view = render(
     <DrawExperience
       randomSource={options.random ?? (() => 0.9)}
@@ -67,9 +70,10 @@ function renderTable(
       historyStorage={historyStorage}
       createId={idFactory()}
       now={() => new Date(2026, 10, 20, 2, 10)}
+      shareServices={share.services}
     />,
   );
-  return { ...view, storage, templateStorage, historyStorage };
+  return { ...view, storage, templateStorage, historyStorage, share };
 }
 
 /** Asks a main question, which dealing needs, and waits until play can start. */
@@ -333,6 +337,52 @@ describe("DrawExperience spread table", () => {
     expect(within(reopened).getAllByRole("listitem")).toHaveLength(1);
     expect(within(reopened).getByText("已解讀")).toBeInTheDocument();
     expect(JSON.parse(historyStorage.value ?? "{}").records).toHaveLength(1);
+  });
+
+  it("shares the finished table with its current reading", async () => {
+    const { share } = renderTable();
+    await ready("這份新工作適合我嗎？");
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
+    await screen.findByText("全局關聯");
+
+    fireEvent.click(screen.getByRole("button", { name: "分享" }));
+    const dialog = screen.getByRole("dialog", { name: "分享這次的牌" });
+    await within(dialog).findByAltText("要分享的圖卡預覽");
+    const card = share.rendered.at(-1);
+    expect(card?.mainQuestion).toBe("這份新工作適合我嗎？");
+    expect(card?.positions).toHaveLength(3);
+    expect(card?.summary).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "關閉" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("shares a round from the history, inside the same panel", async () => {
+    const { share } = renderTable();
+    await ready("這份新工作適合我嗎？");
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+
+    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
+    const panel = screen.getByRole("dialog", { name: /歷史紀錄/u });
+    fireEvent.click(
+      within(panel).getByRole("button", { name: /這份新工作適合我嗎/u }),
+    );
+    fireEvent.click(within(panel).getByRole("button", { name: "分享" }));
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    await screen.findByAltText("要分享的圖卡預覽");
+    fireEvent.click(screen.getByRole("button", { name: "複製文字" }));
+    await screen.findByText("已複製文字。");
+    expect(share.sharer.copyText.mock.calls[0]?.[0]).toContain(
+      "主問題：這份新工作適合我嗎？",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "‹ 返回" }));
+    expect(
+      screen.getByRole("button", { name: "刪除這筆" }),
+    ).toBeInTheDocument();
   });
 
   it("keeps a deleted record deleted when the finished table is reloaded", async () => {
