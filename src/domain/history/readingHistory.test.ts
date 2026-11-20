@@ -7,7 +7,6 @@ import {
   MAX_HISTORY_RECORDS,
   recordRound,
   removeRecord,
-  roundKeyOf,
   type ReadingRecord,
 } from "@/domain/history/readingHistory";
 import {
@@ -16,6 +15,7 @@ import {
   fixtureReading,
   fixtureSpread,
 } from "@/domain/history/testing/historyFixtures";
+import { roundKeyOf } from "@/domain/spread/round";
 
 const RECORDED_AT = new Date("2026-11-20T02:10:00.000Z");
 

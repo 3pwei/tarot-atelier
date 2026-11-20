@@ -18,9 +18,9 @@ import {
   attachReading as attachReadingTo,
   isRoundRevealed,
   recordRound,
-  roundKeyOf,
   type ReadingRecord,
 } from "@/domain/history/readingHistory";
+import { roundKeyOf } from "@/domain/spread/round";
 import { hasDraws } from "@/domain/spread/spread";
 import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
