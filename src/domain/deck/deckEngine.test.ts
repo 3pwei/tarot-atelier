@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  atelierStandardManifest,
-  phaseOneTestDeck,
-} from "@/domain/deck/builtinDecks";
+import { atelierStandardManifest } from "@/domain/deck/builtinDecks";
+import { phaseOneTestDeck } from "@/domain/deck/testing/testDeck";
 import { parseDeckManifest } from "@/domain/deck/deckManifestParser";
 import { createCardInstance, shuffleCardIds } from "@/domain/deck/draw";
 

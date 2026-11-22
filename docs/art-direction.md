@@ -25,7 +25,8 @@ Neither asset is final card art. No third-party tarot illustration is included.
 The 78 built-in card definitions render with repository-authored CSS frames,
 geometric orbits, typographic symbols, and suit marks. This system is a
 recognizable engineering and interaction placeholder, not a claim of 78
-finished card illustrations. The test deck also contains one intentional
+finished card illustrations. The test deck (`src/domain/deck/testing`, used
+by tests only and never shown on the site) contains one intentional
 `missing://` reference to verify the explicit artwork fallback.
 
 ## Phase 02 procedural SVG card art

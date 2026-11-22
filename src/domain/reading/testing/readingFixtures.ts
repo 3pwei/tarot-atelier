@@ -1,7 +1,5 @@
-import {
-  atelierStandardDeck,
-  phaseOneTestDeck,
-} from "@/domain/deck/builtinDecks";
+import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
+import { phaseOneTestDeck } from "@/domain/deck/testing/testDeck";
 import type { Deck } from "@/domain/deck/deck";
 import type { DeckRegistry } from "@/domain/deck/deckRegistry";
 import type { DrawResult } from "@/domain/deck/draw";

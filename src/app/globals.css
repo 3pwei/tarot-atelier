@@ -124,20 +124,12 @@ button:focus-visible {
   letter-spacing: 0.08em;
 }
 
-.phase-chip,
 .eyebrow {
   color: var(--color-gold);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-}
-
-.phase-chip {
-  padding: 0.35rem 0.65rem;
-  border: 1px solid var(--border-gold);
-  border-radius: 999px;
-  background: rgba(8, 9, 20, 0.6);
 }
 
 .hero {
@@ -265,86 +257,6 @@ button:focus-visible {
   color: var(--color-ink-soft);
 }
 
-.tarot-table-frame {
-  position: relative;
-  padding: clamp(0.55rem, 2vw, 1.2rem);
-  border: 1px solid var(--border-gold);
-  border-radius: clamp(1.2rem, 4vw, 2.8rem);
-  background: linear-gradient(
-    145deg,
-    rgba(230, 197, 122, 0.16),
-    rgba(15, 12, 27, 0.7) 23%,
-    rgba(114, 84, 163, 0.14)
-  );
-  box-shadow:
-    var(--glow-purple),
-    inset 0 0 0 1px rgba(244, 237, 224, 0.05);
-}
-
-.tarot-table {
-  position: relative;
-  display: grid;
-  min-height: clamp(24rem, 64vw, 42rem);
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid rgba(230, 197, 122, 0.22);
-  border-radius: clamp(0.9rem, 3vw, 2rem);
-  background:
-    radial-gradient(
-      circle at center,
-      rgba(114, 84, 163, 0.31),
-      transparent 34%
-    ),
-    repeating-radial-gradient(
-      circle at center,
-      transparent 0 5.5rem,
-      rgba(230, 197, 122, 0.07) 5.6rem 5.65rem
-    ),
-    linear-gradient(135deg, #161128, #0b0b19 54%, #17102a);
-}
-
-.tarot-table::before,
-.tarot-table::after {
-  position: absolute;
-  width: min(72%, 28rem);
-  aspect-ratio: 1;
-  border: 1px solid rgba(230, 197, 122, 0.14);
-  content: "";
-  transform: rotate(45deg);
-}
-
-.tarot-table::after {
-  width: min(43%, 17rem);
-  border-color: rgba(230, 197, 122, 0.22);
-}
-
-.table-empty-state {
-  position: relative;
-  z-index: 1;
-  width: min(calc(100% - 2rem), 25rem);
-  padding: 1.3rem;
-  border: 1px solid rgba(230, 197, 122, 0.28);
-  border-radius: var(--radius-md);
-  background: var(--surface-glass);
-  box-shadow: 0 1rem 4rem rgba(0, 0, 0, 0.34);
-  text-align: center;
-  backdrop-filter: blur(12px);
-}
-
-.table-empty-state strong {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: var(--color-gold);
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-}
-
-.table-empty-state p {
-  margin: 0;
-  color: var(--color-ink-soft);
-  font-size: 0.94rem;
-}
-
 .deck-library {
   overflow: hidden;
   border: 1px solid var(--border-gold);
@@ -373,6 +285,21 @@ button:focus-visible {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+p.deck-select-label {
+  margin: 0;
+}
+
+/* With a single deck there is nothing to choose; its name stands alone. */
+.deck-select-label strong {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color-moon);
+  font-size: 0.9rem;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .deck-select-label select {
@@ -616,33 +543,6 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  padding-block: 1rem 6rem;
-}
-
-.feature-card {
-  padding: 1.4rem;
-  border: 1px solid rgba(230, 197, 122, 0.18);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-}
-
-.feature-card h3 {
-  margin: 0 0 0.45rem;
-  color: var(--color-gold);
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-}
-
-.feature-card p {
-  margin: 0;
-  color: var(--color-ink-soft);
-  font-size: 0.94rem;
-}
-
 .site-footer {
   padding-block: 1.5rem 2.5rem;
   border-top: 1px solid rgba(230, 197, 122, 0.14);
@@ -671,19 +571,8 @@ button:focus-visible {
     width: min(calc(100% - 1.25rem), var(--content-width));
   }
 
-  .phase-chip {
-    max-width: 9.5rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .hero {
     min-height: auto;
-  }
-
-  .feature-grid {
-    grid-template-columns: 1fr;
   }
 
   .deck-toolbar {

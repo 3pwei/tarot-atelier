@@ -13,10 +13,9 @@ test("deck library exposes 78 definitions and has no horizontal overflow", async
   await expect(page.getByText("78 張定義")).toBeVisible();
   await expect(page.getByTestId("catalog-card")).toHaveCount(78);
 
-  await page.getByLabel("目前牌組").selectOption("phase-one-test-deck");
-  await expect(page.getByText("3 張定義")).toBeVisible();
-  await expect(page.getByLabel("卡圖素材缺失").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "逆位" })).toBeDisabled();
+  // Test decks stay out of the site: the only deck is named, not offered.
+  await expect(page.getByLabel("目前牌組")).toHaveCount(0);
+  await expect(page.getByText("工坊標準塔羅")).toBeVisible();
 
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,

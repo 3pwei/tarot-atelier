@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  atelierStandardManifest,
-  phaseOneTestManifest,
-} from "@/domain/deck/builtinDecks";
+import { atelierStandardManifest } from "@/domain/deck/builtinDecks";
+import { phaseOneTestManifest } from "@/domain/deck/testing/testDeck";
 import {
   DeckManifestError,
   parseDeckManifest,

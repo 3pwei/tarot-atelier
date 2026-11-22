@@ -41,6 +41,7 @@ export default defineConfig([
                   "application",
                   "infrastructure",
                   "presentation",
+                  "composition",
                   "server",
                 ]),
                 "next/**",
@@ -64,6 +65,7 @@ export default defineConfig([
               group: outerLayerPatterns([
                 "infrastructure",
                 "presentation",
+                "composition",
                 "server",
               ]),
               message:
@@ -82,9 +84,13 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: outerLayerPatterns(["presentation", "server"]),
+              group: outerLayerPatterns([
+                "presentation",
+                "composition",
+                "server",
+              ]),
               message:
-                "Infrastructure must not depend on presentation or server.",
+                "Infrastructure must not depend on presentation, composition or server.",
             },
           ],
         },
@@ -102,6 +108,50 @@ export default defineConfig([
               group: outerLayerPatterns(["server"]),
               message:
                 "Presentation runs in the browser and must not import server code.",
+            },
+            {
+              group: outerLayerPatterns(["infrastructure", "composition"]),
+              message:
+                "Presentation reaches adapters only through ports: read them with useAtelierServices(); src/composition wires the concrete ones.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Tests are their own composition roots and may build real adapters.
+    files: [
+      "src/presentation/**/*.test.{ts,tsx}",
+      "src/presentation/**/testing/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: outerLayerPatterns(["server"]),
+              message:
+                "Presentation runs in the browser and must not import server code.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The composition root wires every browser layer together, never the server.
+    files: ["src/composition/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: outerLayerPatterns(["server"]),
+              message:
+                "The browser composition root must not import server code.",
             },
           ],
         },

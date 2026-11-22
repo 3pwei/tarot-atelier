@@ -1,9 +1,10 @@
+import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type { DrawResult } from "@/domain/deck/draw";
 import type { ReadingResult } from "@/domain/reading/types";
 import { assignDraw, createSpread } from "@/domain/spread/spread";
 import type { Spread } from "@/domain/spread/types";
 
-export const FIXTURE_DECK_ID = "atelier-standard-tarot";
+export const FIXTURE_DECK_ID = STANDARD_DECK_ID;
 
 /** A draw whose `round` makes it a different round from the same cards. */
 export function fixtureDraw(options: {

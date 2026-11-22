@@ -9,8 +9,7 @@ const bodyStyle = {
 
 export const metadata: Metadata = {
   title: "Tarot Atelier｜塔羅工坊",
-  description:
-    "一座為自由牌陣與沉浸式解牌而生的數位塔羅工坊。Phase 01 可擴充牌組引擎。",
+  description: "一座為自由牌陣與沉浸式解牌而生的數位塔羅工坊。",
 };
 
 export const viewport: Viewport = {

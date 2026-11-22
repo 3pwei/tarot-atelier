@@ -12,8 +12,10 @@ import {
 } from "@/presentation/components/spread/boardGeometry";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryTextStorage as MemoryStorage } from "@/application/testing/memoryTextStorage";
+import { createTestServices } from "@/composition/testing/createTestServices";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
 import { fakeShareServices } from "@/presentation/components/share/testing/fakeShareServices";
+import { AtelierServicesProvider } from "@/presentation/services/atelierServices";
 
 function idFactory() {
   let next = 0;
@@ -50,16 +52,20 @@ function renderTable(
   const templateStorage = options.templateStorage ?? new MemoryStorage();
   const historyStorage = options.historyStorage ?? new MemoryStorage();
   const share = options.share ?? fakeShareServices();
+  const services = createTestServices({
+    retiredTableStorage,
+    templateStorage,
+    historyStorage,
+    share: share.services,
+  });
   const view = render(
-    <DrawExperience
-      randomSource={options.random ?? (() => 0.9)}
-      retiredTableStorage={retiredTableStorage}
-      templateStorage={templateStorage}
-      historyStorage={historyStorage}
-      createId={idFactory()}
-      now={() => new Date(2026, 10, 20, 2, 10)}
-      shareServices={share.services}
-    />,
+    <AtelierServicesProvider services={services}>
+      <DrawExperience
+        randomSource={options.random ?? (() => 0.9)}
+        createId={idFactory()}
+        now={() => new Date(2026, 10, 20, 2, 10)}
+      />
+    </AtelierServicesProvider>,
   );
   return {
     ...view,

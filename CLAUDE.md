@@ -49,8 +49,8 @@ Every change, including scripts, CI and tests, is designed to be **maintainable,
 ## Architecture
 
 - Dependencies point inward: `presentation` and `infrastructure` may depend on `application` and `domain`; `application` may depend on `domain`; `domain` stays framework-free. ESLint enforces this.
-- External APIs, persistence, scene registries, deck registries and interpretation providers sit behind application ports.
-- Zustand is only for client interaction state. Domain state and business rules stay in pure TypeScript.
+- External APIs, persistence, scene registries, deck registries and interpretation providers sit behind application ports. `src/composition` is the only browser code that picks concrete adapters; presentation reads them through `useAtelierServices()`. ESLint enforces this.
+- Client interaction state lives in React state and reducers. Domain state and business rules stay in pure TypeScript.
 - Use React DOM and CSS 3D transforms for accessible interaction. Motion is CSS keyframes and transitions on `transform` and `opacity`, the same on every device; script only computes geometry and timing. A heavier effect needs measured numbers on a throttled CPU (`pnpm perf`) before it ships.
 - The site is a static export (`output: "export"`). Anything that needs a server is a deployment decision, not a code-only change.
 
