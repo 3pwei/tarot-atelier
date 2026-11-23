@@ -1,0 +1,11 @@
+/* A recorded card whose face is no longer in the deck. */
+
+.history-card-missing {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  padding: 0.3rem;
+  border: 1px dashed var(--border-gold);
+  color: var(--color-ink-soft);
+  font-size: 0.6rem;
+}

@@ -1,0 +1,129 @@
+/* The reading panel under the spread details: its status, notices and the generate button. */
+
+.reading-panel {
+  display: grid;
+  gap: 1rem;
+  margin: 0 clamp(1rem, 3vw, 2rem) clamp(1rem, 2.6vw, 1.5rem);
+  padding: clamp(1rem, 2.6vw, 1.5rem);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  background: var(--surface-glass);
+  box-shadow: var(--glow-purple);
+}
+
+.reading-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.reading-panel__head h2 {
+  margin: 0;
+  color: var(--color-moon);
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.4vw, 1.6rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.reading-badge {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--color-gold);
+  border-radius: 999px;
+  color: var(--color-gold);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.reading-panel__note,
+.reading-panel__waiting,
+.reading-disclaimer {
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.reading-disclaimer {
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(230, 197, 122, 0.16);
+  font-size: 0.78rem;
+}
+
+.reading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.reading-status {
+  color: var(--color-ink-soft);
+  font-size: 0.85rem;
+}
+
+.reading-issues {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.75rem 1rem 0.75rem 2rem;
+  border: 1px solid rgba(255, 140, 110, 0.45);
+  border-radius: var(--radius-sm);
+  color: #ffc6b4;
+  font-size: 0.85rem;
+}
+
+.reading-stale,
+.reading-fallback,
+.reading-professional {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.reading-stale {
+  border: 1px dashed rgba(230, 197, 122, 0.4);
+  color: var(--color-gold);
+}
+
+.reading-fallback {
+  border: 1px solid rgba(230, 197, 122, 0.4);
+  color: var(--color-moon);
+  background: rgba(230, 197, 122, 0.08);
+}
+
+/* The one prominent call to action of the panel. */
+.reading-generate {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.85rem 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f2d48c, #c9973e);
+  color: #1a1206;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow: 0 0.4rem 1.2rem rgba(201, 151, 62, 0.28);
+}
+
+.reading-generate:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.reading-generate:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.reading-generate:disabled {
+  background: rgba(230, 197, 122, 0.14);
+  color: var(--color-ink-soft);
+  box-shadow: none;
+  cursor: not-allowed;
+}
