@@ -11,8 +11,14 @@ export interface TextStorage {
   clear(): void;
 }
 
-/** The current reading: layout, questions, draws and reveals. */
-export type SpreadSessionStorage = TextStorage;
+/**
+ * Where earlier versions kept the table between visits. Nothing is written
+ * there any more; it is only cleared, so the old copy does not linger.
+ */
+export type RetiredTableStorage = TextStorage;
 
 /** The person's named spread templates. */
 export type SpreadTemplateStorage = TextStorage;
+
+/** The finished rounds kept on this device. */
+export type ReadingHistoryStorage = TextStorage;

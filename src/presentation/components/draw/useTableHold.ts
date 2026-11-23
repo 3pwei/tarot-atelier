@@ -14,8 +14,8 @@ const OWN_GESTURE = "[data-own-gesture]";
 interface TableHoldOptions {
   /** True while a press on the table should shuffle. */
   readonly enabled: boolean;
-  /** Starts holding the deck; letting go of the pointer ends it. */
-  readonly press: () => void;
+  /** Starts holding the deck; letting go of this pointer ends it. */
+  readonly press: (pointerId: number) => void;
   /** One quick round. */
   readonly tap: () => void;
   readonly pinchGraceMs?: number;
@@ -93,9 +93,9 @@ export function useTableHold({
     window.addEventListener("pointercancel", end);
   }
 
-  function start() {
+  function start(pointerId: number) {
     state.current = { kind: "shuffling" };
-    latest.current.press();
+    latest.current.press(pointerId);
   }
 
   return {
@@ -112,13 +112,14 @@ export function useTableHold({
       }
       if (!enabled || current.kind !== "idle" || event.button !== 0) return;
       track(event.pointerId);
+      const pointerId = event.pointerId;
       if (event.pointerType !== "touch") {
-        start();
+        start(pointerId);
         return;
       }
       state.current = {
         kind: "waiting",
-        cancel: schedule(start, pinchGraceMs),
+        cancel: schedule(() => start(pointerId), pinchGraceMs),
       };
     },
     onClickCapture(event: MouseEvent<HTMLElement>) {

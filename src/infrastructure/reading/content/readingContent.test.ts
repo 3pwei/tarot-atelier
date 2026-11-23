@@ -1,13 +1,15 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
+import {
+  atelierStandardDeck,
+  STANDARD_DECK_ID,
+} from "@/domain/deck/builtinDecks";
 import { POSITION_ROLES } from "@/domain/reading/positionRole";
 import { QUESTION_TOPICS } from "@/domain/reading/questionTopic";
 import { findCertaintyPhrases } from "@/domain/reading/readingSafety";
 import {
   loadDeckReadingContent,
   loadReadingPhrases,
-  STANDARD_DECK_ID,
 } from "@/infrastructure/reading/content/contentLibrary";
 import {
   fillTemplate,

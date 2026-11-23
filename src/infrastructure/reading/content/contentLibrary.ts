@@ -1,3 +1,4 @@
+import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import {
   cardContentMapSchema,
   READING_CONTENT_SCHEMA_VERSION,
@@ -5,8 +6,6 @@ import {
   type DeckReadingContent,
   type ReadingPhrases,
 } from "@/infrastructure/reading/content/readingContent";
-
-export const STANDARD_DECK_ID = "atelier-standard-tarot";
 
 /**
  * Loads the standard deck's content. Each file is a separate chunk, fetched

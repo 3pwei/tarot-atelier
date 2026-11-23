@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  atelierStandardDeck,
-  phaseOneTestDeck,
-} from "@/domain/deck/builtinDecks";
+import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
+import { phaseOneTestDeck } from "@/domain/deck/testing/testDeck";
 import { Deck } from "@/domain/deck/deck";
 import {
   deckMeaningText,

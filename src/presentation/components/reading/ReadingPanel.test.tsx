@@ -57,6 +57,7 @@ function Harness(props: {
       session={session}
       revealed={props.revealed ?? true}
       source={props.source ?? "prewritten"}
+      onShare={() => undefined}
     />
   );
 }
@@ -169,17 +170,43 @@ describe("ReadingPanel", () => {
     expect(calls[1]?.requestId).toBe(calls[0]?.requestId);
   });
 
-  it("marks a reading as stale when the spread changes", async () => {
+  it("marks a reading as stale when a question changes on the same cards", async () => {
     const view = render(<Harness requester={realRequester()} />);
     generate();
     await screen.findByText("全局關聯");
 
-    const edited = spreadOf(
-      [{ question: "現況是什麼？", draw: { card: MAJOR(17) } }],
-      "換了主問題",
-    );
+    const edited = { ...spread, mainQuestion: "換了主問題" };
     view.rerender(<Harness requester={realRequester()} spread={edited} />);
     expect(screen.getByText(/牌陣已改變/u)).toBeInTheDocument();
+    expect(screen.getByText("全局關聯")).toBeInTheDocument();
+  });
+
+  it("drops the reading once the cards change, so it never sits under new ones", async () => {
+    const view = render(<Harness requester={realRequester()} />);
+    generate();
+    await screen.findByText("全局關聯");
+
+    const redrawn = spreadOf(
+      [{ question: "現況是什麼？", draw: { card: MAJOR(3) } }],
+      "我的工作方向",
+    );
+    view.rerender(<Harness requester={realRequester()} spread={redrawn} />);
+    expect(screen.queryByText("全局關聯")).toBeNull();
+    expect(screen.queryByText(/牌陣已改變/u)).toBeNull();
+    expect(screen.getByRole("button", { name: "產生解讀" })).toBeEnabled();
+  });
+
+  it("drops a reading still being generated when the cards change", async () => {
+    const { requester, calls } = manualRequester();
+    const view = render(<Harness requester={requester} />);
+    generate();
+    const redrawn = spreadOf(
+      [{ question: "現況是什麼？", draw: { card: MAJOR(3) } }],
+      "我的工作方向",
+    );
+    view.rerender(<Harness requester={requester} spread={redrawn} />);
+    expect(calls.at(-1)?.signal?.aborted).toBe(true);
+    expect(screen.getByRole("button", { name: "產生解讀" })).toBeEnabled();
   });
 
   it("points health, legal and financial questions to a professional", async () => {

@@ -333,7 +333,8 @@
 .draw-experience[data-motion="animated"]
   .table-deck[data-washing]
   .table-deck__pack {
-  animation: pile-emptied 1ms linear var(--vortex-lift-span) both;
+  animation: pile-emptied 1ms linear
+    calc(var(--vortex-ritual) + var(--vortex-lift-span)) both;
 }
 
 /* Letting go sends the cards to a loose heap below, not back to the pack. */
@@ -350,7 +351,11 @@
   .table-deck[data-washing]
   .deck-stack__slice {
   animation: pile-emptied 1ms linear
-    calc(var(--vortex-lift-span) * (1 - var(--slice) / var(--slices))) both;
+    calc(
+      var(--vortex-ritual) + var(--vortex-lift-span) *
+        (1 - var(--slice) / var(--slices))
+    )
+    both;
 }
 
 /* Its glow stays still while washing: a glow growing under the moving cards
@@ -370,7 +375,8 @@
 
 /* ── Vortex ──
    Holding the pack sends its cards one after another off the top and up into
-   a whirl: each climbs to the near side of its ring, then circles on a path
+   a whirl: each is drawn out up and to the right and carried on into its
+   ring at the ring's right side, then circles on a path
    of its own, the widest past the table's edges. Every motion is a transform
    or opacity of something painted once: cards flip flat (a squeeze across,
    not a 3D turn), fronts are painted once, and no card carries a
@@ -381,6 +387,63 @@
   --sine-in: cubic-bezier(0.12, 0, 0.39, 0);
   position: absolute;
   inset: 0;
+}
+
+/* The opening ritual, all centred on the pack. */
+.table-vortex__dim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at calc(var(--table-pile-x) * 1%) calc(var(--table-pile-y) * 1%),
+    transparent calc(var(--slot-w) * 0.9),
+    rgba(4, 3, 10, 0.62) calc(var(--slot-w) * 3.2)
+  );
+  transition: opacity 600ms ease;
+}
+
+.table-vortex__breath,
+.table-vortex__ritual-ring {
+  position: absolute;
+  top: calc(var(--table-pile-y) * 1%);
+  left: calc(var(--table-pile-x) * 1%);
+  width: calc(var(--slot-w) * 2.4);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  translate: -50% -50%;
+  opacity: 0;
+}
+
+.table-vortex__breath {
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 226, 150, 0.55),
+    rgba(230, 197, 122, 0.18) 55%,
+    transparent
+  );
+}
+
+.table-vortex__ritual-ring {
+  border: 2px solid rgba(255, 226, 150, 0.85);
+  box-shadow: 0 0 12px rgba(255, 214, 140, 0.55);
+}
+
+.table-vortex[data-gathering] .table-vortex__dim,
+.table-vortex[data-gathering] .table-vortex__breath {
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__dim {
+  animation: ritual-dim calc(var(--ritual-duration) * 0.8) ease-out backwards;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__breath {
+  animation: ritual-breath var(--ritual-duration) ease-in-out forwards;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__ritual-ring {
+  animation: ritual-ring calc(var(--ritual-duration) * 1.3) ease-out
+    calc(var(--ritual-duration) * 0.3) both;
 }
 
 .table-vortex__whirl {
@@ -413,6 +476,11 @@
 .table-vortex__lift {
   --orbit-x: calc(var(--tier-radius) * var(--radius-scale) * 1cqw);
   --orbit-y: calc(var(--orbit-x) * var(--vortex-tilt));
+  /* A card joins the outer ring at its right side, where the ring shows it
+     at this share of its size, turned to point up its path; keep in step
+     with the first stops of vortex-bob and vortex-heading. */
+  --join-scale: calc(var(--outer-air-scale) * 0.86);
+  --join-unturn: 90deg;
 
   position: absolute;
   top: 0;
@@ -423,8 +491,32 @@
   );
 }
 
+/* Its own ring, blown up to the outer ring's place and size until the card
+   is drawn in; it scales the card too, which unshrink undoes. */
+.table-vortex__draw-in {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.table-vortex__unshrink {
+  position: absolute;
+  inset: 0;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__draw-in {
+  animation: vortex-draw-in var(--draw-in-duration) linear var(--draw-in-delay)
+    both;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__unshrink {
+  animation: vortex-unshrink var(--draw-in-duration) linear var(--draw-in-delay)
+    both;
+}
+
 /* Across the path; the card inside swings up and down, a quarter turn apart.
-   Both start at the near side, where the card joins its path. */
+   Both start at the right side, where the card joins its path
+   (VORTEX_JOIN_PHASE). */
 .table-vortex__orbit {
   position: absolute;
   top: 0;
@@ -541,7 +633,7 @@
   height: 18%;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 16'%3E%3Ccircle cx='87' cy='8' r='2.38' fill='%23ffe7a8' fill-opacity='0.456'/%3E%3Ccircle cx='78' cy='8' r='2.16' fill='%23ffe7a8' fill-opacity='0.368'/%3E%3Ccircle cx='69' cy='8' r='1.94' fill='%23ffe7a8' fill-opacity='0.287'/%3E%3Ccircle cx='60' cy='8' r='1.72' fill='%23ffe7a8' fill-opacity='0.215'/%3E%3Ccircle cx='51' cy='8' r='1.50' fill='%23ffe7a8' fill-opacity='0.150'/%3E%3Ccircle cx='42' cy='8' r='1.28' fill='%23ffe7a8' fill-opacity='0.095'/%3E%3Ccircle cx='33' cy='8' r='1.06' fill='%23ffe7a8' fill-opacity='0.050'/%3E%3Ccircle cx='24' cy='8' r='0.84' fill='%23ffe7a8' fill-opacity='0.016'/%3E%3Ccircle cx='15' cy='8' r='0.62' fill='%23ffe7a8' fill-opacity='0.000'/%3E%3C/svg%3E")
     center / 100% 100% no-repeat;
-  transform: translateY(-50%);
+  translate: 0 -50%;
   transform-origin: 100% 50%;
 }
 
@@ -560,7 +652,20 @@
 }
 
 .draw-experience[data-motion="animated"] .table-vortex__firefly-tail {
-  animation: firefly-heading var(--tier-turn) linear var(--orbit-delay) infinite;
+  animation: vortex-heading var(--tier-turn) linear var(--orbit-delay) infinite;
+}
+
+/* Once circling, a card turns with its path, a full turn a lap, so it is
+   carried round the whirl rather than slid along it. Its own scattered roll
+   and tip sit inside this turn. */
+.table-vortex__heading {
+  position: absolute;
+  inset: 0;
+}
+
+.draw-experience[data-motion="animated"] .table-vortex__heading {
+  animation: vortex-heading var(--tier-turn) linear var(--orbit-delay) infinite
+    backwards;
 }
 
 /* The light comes up as the first cards leave; the cards bring themselves. */
@@ -581,7 +686,7 @@
 
 /* Two swings a quarter turn apart trace the ellipse; sine easing between the
    quarter points keeps the speed round it even. Until a card is drawn out
-   of the pack they hold it at the near side. */
+   of the pack they hold it at the right side, where it joins its ring. */
 .draw-experience[data-motion="animated"] .table-vortex__orbit {
   animation: vortex-across var(--tier-turn) linear var(--orbit-delay) infinite
     backwards;
@@ -1195,17 +1300,27 @@
   }
 }
 
-/* Drawn out of the front of the pack at full size and square with it, to
-   the front right at about 45° (--draw-out-slope), fast then slowing; from
-   there it already circles with its ring (the orbit starts then, see
-   VORTEX_DRAW_OUT_SHARE) and spirals straight out into it, shrinking.
-   Positions are the card's, less where the near side puts it (--orbit-y). */
+/* Drawn out of the pack at full size and square with it, up and to the
+   right at about 45° (--draw-out-slope), gathering speed; carried on from
+   there without a pause, it already circles on the outer ring (the orbit
+   starts then, see VORTEX_DRAW_OUT_SHARE) and spirals out into it.
+   Positions are the card's, less where the outer ring holds it until then:
+   its right side (--hold-x, --hold-y), smaller (--join-scale). A scale here
+   also scales that hold. */
+.table-vortex__lift {
+  --hold-x: calc(var(--orbit-x) * var(--draw-in-from) / var(--join-scale));
+  --hold-y: calc(var(--draw-in-rise) * 1cqh / var(--join-scale));
+}
+
 @keyframes vortex-climb {
   0% {
     opacity: 0;
-    animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1);
-    transform: translateY(calc(var(--climb-from) * 1cqh - var(--orbit-y)))
-      scale(calc(1 / var(--air-scale)));
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+    transform: translate(
+        calc(var(--hold-x) * -1),
+        calc(var(--climb-from) * 1cqh - var(--hold-y))
+      )
+      scale(calc(1 / var(--join-scale)));
   }
 
   4% {
@@ -1214,15 +1329,18 @@
 
   /* Drawn out: keep in step with VORTEX_DRAW_OUT_SHARE. */
   25% {
-    animation-timing-function: cubic-bezier(0.35, 0, 0.55, 1);
+    animation-timing-function: cubic-bezier(0.2, 0.45, 0.55, 1);
     transform: translate(
-        calc(var(--draw-out-slope) * var(--draw-out) * var(--slot-w)),
         calc(
-          var(--climb-from) * 1cqh + var(--draw-out) * var(--slot-w) -
-            var(--orbit-y)
+          var(--draw-out-slope) * var(--draw-out) * var(--slot-w) -
+            var(--hold-x)
+        ),
+        calc(
+          var(--climb-from) * 1cqh - var(--draw-out) * var(--slot-w) -
+            var(--hold-y)
         )
       )
-      scale(calc(1 / var(--air-scale)));
+      scale(calc(1 / var(--join-scale)));
   }
 }
 
@@ -1231,12 +1349,159 @@
 @keyframes vortex-straight {
   0%,
   25% {
-    transform: none;
+    transform: rotate(var(--join-unturn));
     animation-timing-function: ease-in-out;
   }
 
   55% {
     transform: rotate(var(--roll)) scaleY(var(--tip));
+  }
+}
+
+/* Drawn in from the outer ring to its own, easing in and out: the stops
+   are a smoothstep, so the ring and the card's size move together. The
+   card keeps the outer ring's look until it is in, then its own ring's. */
+@keyframes vortex-draw-in {
+  0% {
+    transform: translateY(calc(var(--draw-in-rise) * 1 * 1cqh))
+      scale(calc(var(--draw-in-from) + (1 - var(--draw-in-from)) * 0));
+  }
+
+  25% {
+    transform: translateY(calc(var(--draw-in-rise) * 0.844 * 1cqh))
+      scale(calc(var(--draw-in-from) + (1 - var(--draw-in-from)) * 0.156));
+  }
+
+  50% {
+    transform: translateY(calc(var(--draw-in-rise) * 0.5 * 1cqh))
+      scale(calc(var(--draw-in-from) + (1 - var(--draw-in-from)) * 0.5));
+  }
+
+  75% {
+    transform: translateY(calc(var(--draw-in-rise) * 0.156 * 1cqh))
+      scale(calc(var(--draw-in-from) + (1 - var(--draw-in-from)) * 0.844));
+  }
+
+  100% {
+    transform: translateY(calc(var(--draw-in-rise) * 0 * 1cqh))
+      scale(calc(var(--draw-in-from) + (1 - var(--draw-in-from)) * 1));
+  }
+}
+
+@keyframes vortex-unshrink {
+  0% {
+    transform: scale(
+      calc(
+        (
+            var(--outer-air-scale) +
+              (var(--air-scale) - var(--outer-air-scale)) * 0
+          ) /
+          (
+            var(--air-scale) *
+              (var(--draw-in-from) + (1 - var(--draw-in-from)) * 0)
+          )
+      )
+    );
+  }
+
+  25% {
+    transform: scale(
+      calc(
+        (
+            var(--outer-air-scale) +
+              (var(--air-scale) - var(--outer-air-scale)) * 0.156
+          ) /
+          (
+            var(--air-scale) *
+              (var(--draw-in-from) + (1 - var(--draw-in-from)) * 0.156)
+          )
+      )
+    );
+  }
+
+  50% {
+    transform: scale(
+      calc(
+        (
+            var(--outer-air-scale) +
+              (var(--air-scale) - var(--outer-air-scale)) * 0.5
+          ) /
+          (
+            var(--air-scale) *
+              (var(--draw-in-from) + (1 - var(--draw-in-from)) * 0.5)
+          )
+      )
+    );
+  }
+
+  75% {
+    transform: scale(
+      calc(
+        (
+            var(--outer-air-scale) +
+              (var(--air-scale) - var(--outer-air-scale)) * 0.844
+          ) /
+          (
+            var(--air-scale) *
+              (var(--draw-in-from) + (1 - var(--draw-in-from)) * 0.844)
+          )
+      )
+    );
+  }
+
+  100% {
+    transform: scale(
+      calc(
+        (
+            var(--outer-air-scale) +
+              (var(--air-scale) - var(--outer-air-scale)) * 1
+          ) /
+          (
+            var(--air-scale) *
+              (var(--draw-in-from) + (1 - var(--draw-in-from)) * 1)
+          )
+      )
+    );
+  }
+}
+
+@keyframes ritual-dim {
+  from {
+    opacity: 0;
+  }
+}
+
+/* One breath: the light swells, then settles to a glow under the stream. */
+@keyframes ritual-breath {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+}
+
+@keyframes ritual-ring {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+
+  15% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(4.5);
   }
 }
 
@@ -1284,7 +1549,7 @@
 @keyframes settle-land {
   from {
     transform: translate(calc(var(--from-x) * 1cqw), calc(var(--from-y) * 1cqw))
-      scale(var(--from-scale, 1));
+      scale(var(--from-scale, 1)) rotate(var(--from-turn, 0deg));
   }
 }
 
@@ -1304,47 +1569,46 @@
 /* x = r·sin θ: from the middle out to one edge, back, to the other edge. */
 @keyframes vortex-across {
   0%,
-  50% {
-    transform: translateX(0);
-    animation-timing-function: var(--sine-out);
-  }
-
-  25% {
+  100% {
     transform: translateX(var(--orbit-x));
-    animation-timing-function: var(--sine-in);
-  }
-
-  75% {
-    transform: translateX(calc(var(--orbit-x) * -1));
-    animation-timing-function: var(--sine-in);
-  }
-
-  100% {
-    transform: translateX(0);
-  }
-}
-
-/* y = r·cos θ: near side (low, large, bright) to far side (high, small, dim). */
-@keyframes vortex-bob {
-  0%,
-  100% {
-    opacity: 1;
-    transform: translate(-50%, calc(-50% + var(--orbit-y)))
-      scale(var(--air-scale, 1));
     animation-timing-function: var(--sine-in);
   }
 
   25%,
   75% {
-    opacity: 0.8;
-    transform: translate(-50%, -50%) scale(calc(var(--air-scale, 1) * 0.86));
+    transform: translateX(0);
     animation-timing-function: var(--sine-out);
   }
 
   50% {
+    transform: translateX(calc(var(--orbit-x) * -1));
+    animation-timing-function: var(--sine-in);
+  }
+}
+
+/* y = r·cos θ, from the right side where cards join: near side low and
+   large, far side high, small and dim. A card is solid at the sides, where
+   it is drawn out of the pack. */
+@keyframes vortex-bob {
+  0%,
+  50%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(calc(var(--air-scale, 1) * 0.86));
+    animation-timing-function: var(--sine-out);
+  }
+
+  25% {
     opacity: 0.55;
     transform: translate(-50%, calc(-50% - var(--orbit-y)))
       scale(calc(var(--air-scale, 1) * 0.72));
+    animation-timing-function: var(--sine-in);
+  }
+
+  75% {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% + var(--orbit-y)))
+      scale(var(--air-scale, 1));
     animation-timing-function: var(--sine-in);
   }
 }
@@ -1352,95 +1616,96 @@
 /* Like the cards' bob: near side low and bright, far side high and faint. */
 @keyframes firefly-bob {
   0%,
+  50%,
   100% {
-    opacity: 1;
-    transform: translate(-50%, calc(-50% + var(--orbit-y)));
-    animation-timing-function: var(--sine-in);
-  }
-
-  25%,
-  75% {
     opacity: 0.75;
     transform: translate(-50%, -50%) scale(0.85);
     animation-timing-function: var(--sine-out);
   }
 
-  50% {
+  25% {
     opacity: 0.45;
     transform: translate(-50%, calc(-50% - var(--orbit-y))) scale(0.7);
     animation-timing-function: var(--sine-in);
   }
+
+  75% {
+    opacity: 1;
+    transform: translate(-50%, calc(-50% + var(--orbit-y)));
+    animation-timing-function: var(--sine-in);
+  }
 }
 
-/* The tail points back along the ellipse: its slope at each sixteenth of the
-   lap, for a path 0.3 times as tall as it is wide (VORTEX_TILT). */
-@keyframes firefly-heading {
+/* Turning with the path: the slope of the ellipse at each sixteenth of the
+   lap, for a path 0.45 times as tall as it is wide (VORTEX_TILT). A light's
+   tail points back along it, and a card turns with it. */
+@keyframes vortex-heading {
   0% {
-    transform: translateY(-50%) rotate(0deg);
+    transform: rotate(-90deg);
   }
 
   6.25% {
-    transform: translateY(-50%) rotate(-7.1deg);
+    transform: rotate(-132.6deg);
   }
 
   12.5% {
-    transform: translateY(-50%) rotate(-16.7deg);
+    transform: rotate(-155.8deg);
   }
 
   18.75% {
-    transform: translateY(-50%) rotate(-35.9deg);
+    transform: rotate(-169.4deg);
   }
 
   25% {
-    transform: translateY(-50%) rotate(-90deg);
+    transform: rotate(-180deg);
   }
 
   31.25% {
-    transform: translateY(-50%) rotate(-144.1deg);
+    transform: rotate(-190.6deg);
   }
 
   37.5% {
-    transform: translateY(-50%) rotate(-163.3deg);
+    transform: rotate(-204.2deg);
   }
 
   43.75% {
-    transform: translateY(-50%) rotate(-172.9deg);
+    transform: rotate(-227.4deg);
   }
 
   50% {
-    transform: translateY(-50%) rotate(-180deg);
+    transform: rotate(-270deg);
   }
 
   56.25% {
-    transform: translateY(-50%) rotate(-187.1deg);
+    transform: rotate(-312.6deg);
   }
 
   62.5% {
-    transform: translateY(-50%) rotate(-196.7deg);
+    transform: rotate(-335.8deg);
   }
 
   68.75% {
-    transform: translateY(-50%) rotate(-215.9deg);
+    transform: rotate(-349.4deg);
   }
 
   75% {
-    transform: translateY(-50%) rotate(-270deg);
+    transform: rotate(-360deg);
   }
 
   81.25% {
-    transform: translateY(-50%) rotate(-324.1deg);
+    transform: rotate(-370.6deg);
   }
 
   87.5% {
-    transform: translateY(-50%) rotate(-343.3deg);
+    transform: rotate(-384.2deg);
   }
 
   93.75% {
-    transform: translateY(-50%) rotate(-352.9deg);
+    transform: rotate(-407.4deg);
   }
 
   100% {
-    transform: translateY(-50%) rotate(-360deg);
+    transform: rotate(-450deg);
   }
 }
 

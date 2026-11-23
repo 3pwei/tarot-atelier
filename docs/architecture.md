@@ -4,7 +4,9 @@
 
 ```mermaid
 flowchart TD
-  P[Presentation] --> A[Application]
+  C[Composition] --> P[Presentation]
+  C --> I
+  P --> A[Application]
   I[Infrastructure] --> A
   A --> D[Domain]
   P --> D
@@ -17,14 +19,14 @@ flowchart TD
   A --> S
 ```
 
-Dependencies only point inward. `domain` is pure TypeScript and has no React, Next.js, Zustand, animation, persistence, or network dependency. `server` composes the reading endpoint for Cloudflare Pages Functions; nothing else may import it, and it may not import presentation. ESLint encodes these restrictions.
+Dependencies only point inward. `domain` is pure TypeScript and has no React, Next.js, animation, persistence, or network dependency. `server` composes the reading endpoint for Cloudflare Pages Functions; nothing else may import it, and it may not import presentation. `composition` is the browser's composition root: `createBrowserServices()` picks the concrete adapters (deck registry, `localStorage`, reading provider, share sheet) and `<BrowserServices>` provides them; presentation reads them as ports with `useAtelierServices()` and never imports infrastructure. Tests build their own with `createTestServices()`. ESLint encodes these restrictions.
 
 ## Rendering decisions
 
 - Accessible controls remain React DOM.
 - CSS handles layout, gold-foil surfaces, and lightweight ambient presentation.
 - Motion is CSS keyframes on `transform` and `opacity`, the same on every device; see [ADR 0004](decisions/0004-css-motion-on-every-device.md).
-- `src/app` is a thin Next.js composition layer; product UI lives in `presentation`.
+- `src/app` is a thin Next.js routing layer that wraps the page in `<BrowserServices>`; product UI lives in `presentation`.
 
 ## Draw experience
 
@@ -38,10 +40,10 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 
 ## Spread table
 
-- `domain/spread` owns the `Spread` and `SpreadPosition` model, numbering, the 1–12 limit, required questions, presets and the versioned snapshot parser. It is framework-free; see [`spread-table.md`](./spread-table.md).
-- Persistence goes through the `SpreadSessionStorage` port (`application/ports`). `LocalStorageSpreadSessionStorage` only moves strings; validation and migration live in `application/use-cases/spreadSession.ts`, so no backend can bypass them.
+- `domain/spread` owns the `Spread` and `SpreadPosition` model, numbering, the 1–12 limit, required questions, presets and round identity (`round.ts`). It is framework-free; see [`spread-table.md`](./spread-table.md).
+- Persistence goes through `TextStorage` ports (`application/ports`): the template library and the reading history. `LocalStorageTextStorage` only moves strings; validation and migration live in the use cases (`templateLibrary.ts`, `readingHistory.ts`), so no backend can bypass them. The table itself is not stored.
 - The table keeps positions in relative coordinates. Zoom and pan are presentation-only view state (`useBoardViewport`), and the draw flight converts its screen path into the landing slot's rotated, zoomed frame.
-- `useSpreadDealer` mirrors the draw machine for a spread: hold to lift one pile into the vortex, lay it on the wheel, and draw each chosen card into the next empty position with `drawAt()` and `continueDrawing()`. The pile is rebuilt without table cards after a reload or clear.
+- `useSpreadDealer` mirrors the draw machine for a spread: hold to lift one pile into the vortex, lay it on the wheel, and draw each chosen card into the next empty position with `drawAt()` and `continueDrawing()`. The pile is rebuilt after the table is cleared.
 
 ## Readings
 

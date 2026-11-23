@@ -9,7 +9,11 @@ import { createHash } from "node:crypto";
 
 export const THUMBNAIL_MANIFEST_VERSION = 1;
 
-/** The deck whose procedural faces are pre-rendered. */
+/**
+ * The deck whose procedural faces are pre-rendered. Scripts run under plain
+ * Node and cannot resolve the app's `@/` imports, so the ID is repeated here;
+ * a test keeps it equal to the domain's `STANDARD_DECK_ID`.
+ */
 export const THUMBNAIL_DECK_ID = "atelier-standard-tarot";
 
 /** Where the manifest lives; the library imports it at build time. */

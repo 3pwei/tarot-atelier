@@ -1,89 +1,58 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import type {
-  SpreadSessionStorage,
-  SpreadTemplateStorage,
-} from "@/application/ports/textStorage";
-import type { ReadingProvider } from "@/application/ports/readingProvider";
-import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary";
 import {
   createReadingRequester,
   type ReadingRequester,
 } from "@/application/use-cases/requestReading";
+import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type { RandomSource } from "@/domain/deck/draw";
-import type { CardInstance } from "@/domain/deck/types";
-import { hasDraws } from "@/domain/spread/spread";
-import type { Spread, SpreadPosition, TablePoint } from "@/domain/spread/types";
-import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
-import {
-  LocalStorageTextStorage,
-  SPREAD_SESSION_STORAGE_KEY,
-  SPREAD_TEMPLATE_STORAGE_KEY,
-} from "@/infrastructure/persistence/localStorageTextStorage";
-import { browserReadingConfig } from "@/infrastructure/config/readingConfig";
-import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
-import { TableDeck } from "@/presentation/components/draw/TableDeck";
+import type { ReadingRecord } from "@/domain/history/readingHistory";
+import type { Deck } from "@/domain/deck/deck";
+import { findPlacedCard } from "@/domain/spread/round";
+import type { Spread, SpreadPosition } from "@/domain/spread/types";
+import { DealerDeck } from "@/presentation/components/draw/DealerDeck";
 import {
   ARRANGING_SLOT_WIDTH_CQW,
-  DECK_CARD_WIDTH_CQW,
   slotWidthFor,
 } from "@/presentation/components/spread/boardGeometry";
 import { BoardZoomControls } from "@/presentation/components/spread/BoardZoomControls";
-import { useHoldToShuffle } from "@/presentation/components/draw/useHoldToShuffle";
-import { useTableHold } from "@/presentation/components/draw/useTableHold";
-import {
-  cardBackSmallUrl,
-  cardBackUrl,
-} from "@/presentation/components/library/prerenderedArt";
-import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
-import {
-  hasUnsavedLayout,
-  revertTarget,
-} from "@/presentation/components/spread/editBaseline";
+import { useShuffleGestures } from "@/presentation/components/draw/useShuffleGestures";
+import { HistoryDialog } from "@/presentation/components/history/HistoryDialog";
+import { useReadingHistory } from "@/presentation/components/history/useReadingHistory";
+import { useRoundRecorder } from "@/presentation/components/history/useRoundRecorder";
+import { ShareDialog } from "@/presentation/components/share/ShareDialog";
 import { CardViewer } from "@/presentation/components/draw/CardViewer";
-import {
-  DrawnCard,
-  type CardRole,
-} from "@/presentation/components/draw/DrawnCard";
+import { PlacedCards } from "@/presentation/components/draw/PlacedCards";
 import { motionTimingStyle } from "@/presentation/components/draw/dealMotion";
 import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
 import { ReadingPanel } from "@/presentation/components/reading/ReadingPanel";
 import { createRequestId as createReadingRequestId } from "@/presentation/components/reading/readingSession";
 import { useReadingSession } from "@/presentation/components/reading/useReadingSession";
-import { MainQuestionField } from "@/presentation/components/spread/MainQuestionField";
-import { PositionInspector } from "@/presentation/components/spread/PositionInspector";
-import { PositionList } from "@/presentation/components/spread/PositionList";
+import { ArrangeConfirmDialog } from "@/presentation/components/spread/ArrangeConfirmDialog";
+import { TableStatusBar } from "@/presentation/components/draw/TableStatusBar";
 import {
   SpreadBoard,
   visibleCenter,
 } from "@/presentation/components/spread/SpreadBoard";
-import { SpreadToolbar } from "@/presentation/components/spread/SpreadToolbar";
-import {
-  tableAbilities,
-  type TableMode,
-} from "@/presentation/components/spread/tableMode";
-import { SpreadPicker } from "@/presentation/components/spread/SpreadPicker";
-import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
+import { SpreadDetails } from "@/presentation/components/spread/SpreadDetails";
+import { SpreadSetup } from "@/presentation/components/spread/SpreadSetup";
+import { tableAbilities } from "@/presentation/components/spread/tableMode";
+import { useArrangeMode } from "@/presentation/components/spread/useArrangeMode";
+import { usePositionHandlers } from "@/presentation/components/spread/usePositionHandlers";
 import { useBoardViewport } from "@/presentation/components/spread/useBoardViewport";
-import {
-  dealerStatus,
-  useSpreadDealer,
-} from "@/presentation/components/spread/useSpreadDealer";
+import { useSpreadDealer } from "@/presentation/components/spread/useSpreadDealer";
 import {
   createClientId,
   useSpreadSession,
 } from "@/presentation/components/spread/useSpreadSession";
-
-const STANDARD_DECK_ID = "atelier-standard-tarot";
+import { useAtelierServices } from "@/presentation/services/atelierServices";
 
 interface DrawExperienceProps {
   readonly randomSource?: RandomSource;
-  readonly storage?: SpreadSessionStorage;
-  readonly templateStorage?: SpreadTemplateStorage;
   readonly createId?: () => string;
-  /** Replaces the configured reading provider, e.g. in tests. */
-  readonly readingProvider?: ReadingProvider;
+  /** The clock for recording rounds, e.g. fixed in tests. */
+  readonly now?: () => Date;
   /** Replaces the requester around the provider, e.g. in tests. */
   readonly readingRequester?: ReadingRequester;
   readonly createRequestId?: () => string;
@@ -96,10 +65,8 @@ interface DrawExperienceProps {
  */
 export function DrawExperience({
   randomSource,
-  storage: storageOverride,
-  templateStorage: templateStorageOverride,
   createId = createClientId,
-  readingProvider: readingProviderOverride,
+  now = currentTime,
   readingRequester: readingRequesterOverride,
   createRequestId = createReadingRequestId,
 }: DrawExperienceProps = {}) {
@@ -107,44 +74,57 @@ export function DrawExperience({
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
-  const registry = useMemo(
-    () => registerBuiltInDecks(new InMemoryDeckRegistry()),
-    [],
-  );
+  const {
+    registry,
+    readingProvider,
+    templateStorage,
+    historyStorage,
+    retiredTableStorage,
+    share: shareServices,
+  } = useAtelierServices();
   const deck = useMemo(
     () => registry.get(STANDARD_DECK_ID) ?? registry.getSelected(),
     [registry],
-  );
-  const readingProvider = useMemo(
-    () =>
-      readingProviderOverride ??
-      createBrowserReadingProvider(registry, browserReadingConfig),
-    [readingProviderOverride, registry],
   );
   const readingRequester = useMemo(
     () => readingRequesterOverride ?? createReadingRequester(readingProvider),
     [readingRequesterOverride, readingProvider],
   );
-  const storage = useMemo(
-    () =>
-      storageOverride ??
-      new LocalStorageTextStorage(SPREAD_SESSION_STORAGE_KEY),
-    [storageOverride],
+  const session = useSpreadSession(
+    templateStorage,
+    retiredTableStorage,
+    createId,
   );
-  const templateStorage = useMemo(
-    () =>
-      templateStorageOverride ??
-      new LocalStorageTextStorage(SPREAD_TEMPLATE_STORAGE_KEY),
-    [templateStorageOverride],
-  );
-  const session = useSpreadSession(deck, storage, templateStorage, createId);
   const { state, dispatch, generation } = session;
   const { spread, revealedInstanceIds, selectedId } = state;
+  const announce = useCallback(
+    (text: string) => dispatch({ type: "announce", text }),
+    [dispatch],
+  );
+  const history = useReadingHistory(historyStorage, announce);
+  const [showingHistory, setShowingHistory] = useState(false);
+  const [sharing, setSharing] = useState<ReadingRecord>();
+  const recordReadingServices = useMemo(
+    () => ({
+      requester: readingRequester,
+      source: readingProvider.source,
+      createRequestId,
+    }),
+    [readingRequester, readingProvider.source, createRequestId],
+  );
+  const [inspected, setInspected] = useState<string>();
+  const arrange = useArrangeMode({
+    spread,
+    ...(state.editBaseline ? { editBaseline: state.editBaseline } : {}),
+    library: state.library,
+    dispatch,
+    onDrawsCleared: () => setInspected(undefined),
+  });
+  const { arranging } = arrange;
 
   const loading = session.status === "loading";
   const viewport = useBoardViewport(viewportRef, canvasRef);
   const motionMode = useMotionMode();
-  const [tableMode, setTableMode] = useState<TableMode>("play");
   // The positions' card size. In play it is as large as the layout allows;
   // while arranging it holds still at the smallest size, so cards never grow
   // or shrink under a drag. The deck has one size for every spread.
@@ -152,8 +132,7 @@ export function DrawExperience({
     () => slotWidthFor(spread.positions),
     [spread.positions],
   );
-  const slotWidth =
-    tableMode === "arrange" ? ARRANGING_SLOT_WIDTH_CQW : fittedSlotWidth;
+  const slotWidth = arranging ? ARRANGING_SLOT_WIDTH_CQW : fittedSlotWidth;
   const dealer = useSpreadDealer({
     deck,
     spread,
@@ -164,42 +143,18 @@ export function DrawExperience({
     motionMode,
     root,
     tableScale: viewport.view.scale,
-    arranging: tableMode === "arrange",
+    arranging,
     dispatch,
   });
-  const status = dealerStatus({
-    loading,
-    phase: dealer.phase,
-    holding: dealer.holding,
-    picking: dealer.fanReady,
-    pickNumber: dealer.pickNumber,
-    roundTotal: dealer.roundTotal,
-    blocker: dealer.blocker,
-    emptyCount: dealer.emptyCount,
-    flyingCount: dealer.flights.length,
-    allRevealed: dealer.allRevealed,
-    remaining: dealer.remaining,
-  });
-  const abilities = tableAbilities(tableMode, dealer.layoutLocked);
+  const abilities = tableAbilities(arrange.mode, dealer.layoutLocked);
   const shuffleReady = dealer.canShuffle && abilities.canPlay;
-  const shuffleHold = useHoldToShuffle({
-    enabled: shuffleReady,
+  const shuffle = useShuffleGestures({
+    ready: shuffleReady,
+    phase: dealer.phase,
     onHold: dealer.hold,
     onRelease: dealer.release,
+    boardGestures: viewport.gestureHandlers,
   });
-  // The whole table is the deck to hold until the shuffle ends.
-  const tableHold = useTableHold({
-    enabled: shuffleReady,
-    press: shuffleHold.press,
-    tap: shuffleHold.tap,
-  });
-  const boardGestures = {
-    ...viewport.gestureHandlers({
-      canPan: !shuffleReady && dealer.phase !== "shuffling",
-    }),
-    ...tableHold,
-  };
-  const [inspected, setInspected] = useState<string>();
   const reading = useReadingSession({
     spread,
     registry,
@@ -217,113 +172,34 @@ export function DrawExperience({
     (instanceId: string) => dispatch({ type: "revealed", instanceId }),
     [dispatch],
   );
-  const drawn = drawnCardOf(spread, inspected);
-  const viewedCard = drawn ? deck.getCard(drawn.instance.cardId) : undefined;
-  const viewed =
-    drawn && viewedCard ? { ...drawn, card: viewedCard } : undefined;
-  const handleInspect = useCallback(
-    (instanceId: string) => setInspected(instanceId),
-    [],
+  const spreadName = state.library.find(
+    (template) => template.id === spread.templateId,
+  )?.name;
+  const { recordToShare } = useRoundRecorder({
+    spread,
+    revealedInstanceIds,
+    deckId: deck.id,
+    ...(spreadName ? { spreadName } : {}),
+    reading,
+    history,
+    createId,
+    now,
+  });
+  const shareRound = () => setSharing(recordToShare());
+  const viewed = viewedCard(spread, deck, inspected);
+  const handlers = usePositionHandlers({ dispatch, arranging });
+  const renderCards = (position: SpreadPosition) => (
+    <PlacedCards
+      position={position}
+      deck={deck}
+      flights={dealer.flights}
+      playable={abilities.canPlay}
+      revealedInstanceIds={revealedInstanceIds}
+      motionMode={motionMode}
+      onRevealed={handleRevealed}
+      onInspect={setInspected}
+    />
   );
-  const arranging = tableMode === "arrange";
-  // Selecting a position opens its editor, which belongs to arrange mode.
-  const handleSelect = useCallback(
-    (positionId?: string) => {
-      if (arranging) dispatch({ type: "select", positionId });
-    },
-    [arranging, dispatch],
-  );
-  const [confirmingArrange, setConfirmingArrange] = useState(false);
-  const [confirmingLeave, setConfirmingLeave] = useState(false);
-  const beginArranging = () => {
-    dispatch({ type: "begin-edit" });
-    setTableMode("arrange");
-  };
-  const closeArranging = () => {
-    dispatch({ type: "select", positionId: undefined });
-    setConfirmingLeave(false);
-    setTableMode("play");
-  };
-  const finishArranging = () => {
-    dispatch({ type: "end-edit" });
-    closeArranging();
-  };
-  const discardArranging = () => {
-    dispatch({ type: "revert-edit" });
-    closeArranging();
-  };
-  const leaveTarget = state.editBaseline
-    ? revertTarget(state.editBaseline, spread, state.library)
-    : undefined;
-  const toggleArrange = () => {
-    if (arranging) {
-      // Unsaved layout changes are lost on leaving; ask first.
-      if (leaveTarget && hasUnsavedLayout(spread, leaveTarget)) {
-        setConfirmingLeave(true);
-      } else {
-        finishArranging();
-      }
-    } else if (hasDraws(spread)) {
-      // Drawn positions cannot be rearranged; ask before returning the cards.
-      setConfirmingArrange(true);
-    } else {
-      beginArranging();
-    }
-  };
-  const arrangeAfterClearing = () => {
-    dispatch({ type: "clear-draws" });
-    setInspected(undefined);
-    setConfirmingArrange(false);
-    beginArranging();
-  };
-  const handleMove = useCallback(
-    (positionId: string, point: TablePoint) =>
-      dispatch({ type: "move", positionId, point }),
-    [dispatch],
-  );
-  const handleNudge = useCallback(
-    (positionId: string, delta: TablePoint) =>
-      dispatch({ type: "nudge", positionId, delta }),
-    [dispatch],
-  );
-  const handleRotate = useCallback(
-    (positionId: string, degrees: number) =>
-      dispatch({ type: "rotate", positionId, degrees }),
-    [dispatch],
-  );
-
-  function renderCards(position: SpreadPosition) {
-    const result = position.drawResult;
-    if (!result) return null;
-    const cards = result.jumper
-      ? ([
-          ["primary", result.primary],
-          ["jumper", result.jumper],
-        ] as const)
-      : ([["primary", result.primary]] as const);
-
-    return cards.map(([role, instance]) => {
-      const card = deck.getCard(instance.cardId);
-      const inFlight = dealer.flights.some(
-        (flight) => flight.positionId === position.id && flight.role === role,
-      );
-      return card ? (
-        <DrawnCard
-          key={instance.instanceId}
-          card={card}
-          instance={instance}
-          role={role}
-          positionIndex={position.index}
-          interactive={!inFlight && abilities.canPlay}
-          inFlight={inFlight}
-          initiallyRevealed={revealedInstanceIds.has(instance.instanceId)}
-          motionMode={motionMode}
-          onRevealed={handleRevealed}
-          onInspect={handleInspect}
-        />
-      ) : null;
-    });
-  }
 
   return (
     <div
@@ -333,75 +209,41 @@ export function DrawExperience({
       data-motion={motionMode}
       style={motionTimingStyle()}
       data-all-revealed={dealer.allRevealed || undefined}
-      data-table-mode={tableMode}
+      data-table-mode={arrange.mode}
       aria-busy={loading || undefined}
     >
       <div className="draw-table">
-        <div className="draw-table__bar">
-          <div className="draw-status">
-            <span className="draw-status__light" aria-hidden="true" />
-            <strong aria-live="polite">{status}</strong>
-            <span>剩餘 {dealer.remaining} 張</span>
-          </div>
-          {/* The question comes first: dealing needs it. */}
-          <div className="draw-table__question">
-            <MainQuestionField
-              value={spread.mainQuestion}
-              onChange={(text) => dispatch({ type: "main-question", text })}
-            />
-          </div>
-        </div>
+        <TableStatusBar
+          status={dealer.status}
+          remaining={dealer.remaining}
+          mainQuestion={spread.mainQuestion}
+          onMainQuestion={(text) => dispatch({ type: "main-question", text })}
+        />
 
         <p className="spread-notice" role="status">
           {state.notice?.text}
         </p>
 
-        <div className="spread-setup">
-          {!arranging && (
-            <section className="template-shelf" aria-label="選擇牌陣">
-              <SpreadPicker
-                library={state.library}
-                activeTemplateId={spread.templateId}
-                disabled={filled > 0 || dealer.layoutLocked}
-                onApply={(templateId) =>
-                  dispatch({ type: "apply-template", templateId })
-                }
-              />
-            </section>
-          )}
-          {arranging && (
-            <TemplateShelf
-              library={state.library}
-              activeTemplateId={spread.templateId}
-              applyLocked={filled > 0}
-              busy={dealer.layoutLocked}
-              onApply={(templateId) =>
-                dispatch({ type: "apply-template", templateId })
-              }
-              onBlank={() => dispatch({ type: "blank" })}
-              onSave={(name) => dispatch({ type: "save-template", name })}
-              onDelete={(templateId) =>
-                dispatch({ type: "delete-template", templateId })
-              }
-              onRestore={() => dispatch({ type: "restore-templates" })}
-            />
-          )}
-          <SpreadToolbar
-            positionCount={spread.positions.length}
-            layoutLocked={dealer.layoutLocked}
-            arranging={arranging}
-            canToggleArrange={abilities.canToggleArrange}
-            onToggleArrange={toggleArrange}
-            onAdd={() =>
-              dispatch({
-                type: "add",
-                near: visibleCenter(viewportRef.current, fieldRef.current),
-              })
-            }
-            canClear={dealer.canClear}
-            onClear={session.clear}
-          />
-        </div>
+        <SpreadSetup
+          library={state.library}
+          activeTemplateId={spread.templateId}
+          positionCount={spread.positions.length}
+          drawn={filled > 0}
+          layoutLocked={dealer.layoutLocked}
+          arranging={arranging}
+          canToggleArrange={abilities.canToggleArrange}
+          canClear={dealer.canClear}
+          dispatch={dispatch}
+          onToggleArrange={arrange.toggle}
+          onAdd={() =>
+            dispatch({
+              type: "add",
+              near: visibleCenter(viewportRef.current, fieldRef.current),
+            })
+          }
+          onClear={session.clear}
+          onOpenHistory={() => setShowingHistory(true)}
+        />
 
         <div className="draw-table__stage spread-stage">
           <SpreadBoard
@@ -410,17 +252,18 @@ export function DrawExperience({
             zoom={dealer.zoom}
             selectedId={selectedId}
             arrangeable={abilities.canArrange}
+            pressToShuffle={shuffleReady}
             awaitingIds={dealer.awaitingIds}
             view={viewport.view}
-            gestures={boardGestures}
+            gestures={shuffle.tableGestures}
             viewportRef={viewportRef}
             canvasRef={canvasRef}
             fieldRef={fieldRef}
             renderCards={renderCards}
-            onSelect={handleSelect}
-            onMove={handleMove}
-            onNudge={handleNudge}
-            onRotate={handleRotate}
+            onSelect={handlers.select}
+            onMove={handlers.move}
+            onNudge={handlers.nudge}
+            onRotate={handlers.rotate}
             overlay={
               arranging ? (
                 <BoardZoomControls
@@ -430,101 +273,70 @@ export function DrawExperience({
                   onZoomOut={viewport.zoomOut}
                 />
               ) : (
-                <TableDeck
-                  cardWidth={DECK_CARD_WIDTH_CQW * dealer.zoom}
-                  shuffling={dealer.phase === "shuffling"}
-                  holding={dealer.holding}
-                  gathering={dealer.gathering}
-                  washSeed={dealer.washSeed}
-                  fan={dealer.fan}
-                  fanReady={dealer.fanReady}
-                  nextPositionIndex={dealer.next?.index}
-                  onTable={dealer.deckOnTable}
-                  remaining={dealer.remaining}
-                  total={dealer.total}
+                <DealerDeck
+                  dealer={dealer}
+                  deckId={deck.id}
                   canShuffle={shuffleReady}
-                  label={shuffleReady ? "按住牌堆洗牌" : `牌堆：${status}`}
-                  backUrl={cardBackUrl(deck.id)}
-                  airBackUrl={cardBackSmallUrl(deck.id)}
-                  hold={shuffleHold.handlers}
-                  onPick={dealer.pick}
+                  hold={shuffle.deckHold}
                 />
               )
             }
           />
         </div>
 
-        <div className="spread-details">
-          {selected && arranging ? (
-            <PositionInspector
-              key={selected.id}
-              position={selected}
-              total={spread.positions.length}
-              locked={dealer.layoutLocked}
-              arrangeable={abilities.canArrange}
-              onQuestion={(text) =>
-                dispatch({ type: "question", positionId: selected.id, text })
-              }
-              onRotate={(degrees) => handleRotate(selected.id, degrees)}
-              onMove={(point) => handleMove(selected.id, point)}
-              onReorder={(index) =>
-                dispatch({ type: "reorder", positionId: selected.id, index })
-              }
-              onRemove={() =>
-                dispatch({ type: "remove", positionId: selected.id })
-              }
-              onClose={() => handleSelect(undefined)}
-            />
-          ) : (
-            <p className="spread-details__hint">
-              {arranging
-                ? "編輯牌陣中：點選牌位可改問題、排序或刪除；拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦牌位後用方向鍵、數字鍵盤操作。完成後按「結束編輯」。"
-                : "翻開的牌點一下可放大。要換牌陣範本、改牌位問題、新增或移動牌位，請按「編輯牌陣」。"}
-            </p>
-          )}
-          <PositionList
-            positions={spread.positions}
-            deck={deck}
-            selectedId={selectedId}
-            revealedInstanceIds={revealedInstanceIds}
-            nextPositionId={dealer.next?.id}
-            onSelect={handleSelect}
-          />
-        </div>
+        <SpreadDetails
+          positions={spread.positions}
+          deck={deck}
+          {...(selected ? { selected } : {})}
+          arranging={arranging}
+          layoutLocked={dealer.layoutLocked}
+          arrangeable={abilities.canArrange}
+          revealedInstanceIds={revealedInstanceIds}
+          {...(dealer.next ? { nextPositionId: dealer.next.id } : {})}
+          handlers={handlers}
+          dispatch={dispatch}
+        />
 
         <ReadingPanel
           session={reading}
           revealed={spreadRevealed}
           source={readingProvider.source}
+          onShare={shareRound}
         />
 
         <div className="draw-table__foot">
           <span>
             已抽 {filled} / {spread.positions.length} 個牌位
           </span>
-          <span>牌陣自動保存在這台裝置</span>
+          <span>牌陣庫和歷史紀錄保存在這台裝置</span>
         </div>
       </div>
-      {confirmingArrange && (
-        <ConfirmDialog
-          title="清除這次的抽牌結果？"
-          message="編輯牌陣前，會先把這次抽到的牌收回牌堆，解讀也會一起清除。牌位、問題和主問題都會保留。"
-          confirmLabel="清除並編輯"
-          onConfirm={arrangeAfterClearing}
-          onCancel={() => setConfirmingArrange(false)}
+      {arrange.confirmation && (
+        <ArrangeConfirmDialog
+          confirmation={arrange.confirmation}
+          onConfirm={arrange.confirm}
+          onCancel={arrange.cancel}
         />
       )}
-      {confirmingLeave && leaveTarget && (
-        <ConfirmDialog
-          title="牌陣還沒儲存"
-          message={
-            leaveTarget.kind === "template"
-              ? `離開後，剛才的修改會還原成牌陣庫裡的「${leaveTarget.template.name}」。確定要離開嗎？`
-              : "離開後，剛才的修改會還原成開始編輯前的牌陣。確定要離開嗎？"
-          }
-          confirmLabel="確定離開"
-          onConfirm={discardArranging}
-          onCancel={() => setConfirmingLeave(false)}
+      {showingHistory && (
+        <HistoryDialog
+          history={history.history}
+          registry={registry}
+          shareServices={shareServices}
+          readingServices={recordReadingServices}
+          onReading={history.attach}
+          now={now}
+          onRemove={history.remove}
+          onClearAll={history.clearAll}
+          onClose={() => setShowingHistory(false)}
+        />
+      )}
+      {sharing && (
+        <ShareDialog
+          record={sharing}
+          registry={registry}
+          services={shareServices}
+          onClose={() => setSharing(undefined)}
         />
       )}
       {viewed && (
@@ -541,22 +353,13 @@ export function DrawExperience({
   );
 }
 
-/** The drawn card with `instanceId`, if it is still on the table. */
-function drawnCardOf(
-  spread: Spread,
-  instanceId: string | undefined,
-):
-  | { position: SpreadPosition; role: CardRole; instance: CardInstance }
-  | undefined {
-  if (!instanceId) return undefined;
-  for (const position of spread.positions) {
-    const result = position.drawResult;
-    if (result?.primary.instanceId === instanceId) {
-      return { position, role: "primary", instance: result.primary };
-    }
-    if (result?.jumper?.instanceId === instanceId) {
-      return { position, role: "jumper", instance: result.jumper };
-    }
-  }
-  return undefined;
+function currentTime(): Date {
+  return new Date();
+}
+
+/** The card shown enlarged, if it is still on the table. */
+function viewedCard(spread: Spread, deck: Deck, instanceId?: string) {
+  const placed = instanceId ? findPlacedCard(spread, instanceId) : undefined;
+  const card = placed ? deck.getCard(placed.instance.cardId) : undefined;
+  return placed && card ? { ...placed, card } : undefined;
 }

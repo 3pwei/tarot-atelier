@@ -274,6 +274,36 @@ test("holding anywhere on the table shuffles, not only the pack", async ({
   await expect(fannedDeck(page).locator("[data-fan-slot]")).toHaveCount(78);
 });
 
+test("a finger drifting up or down while it holds keeps shuffling", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "only a touch can be taken over as a scroll");
+  const at = await centreOf(deckPile(page));
+  const client = await page.context().newCDPSession(page);
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [at],
+  });
+  await page.waitForTimeout(500);
+  // Far past the distance at which a browser starts scrolling the page.
+  for (const step of [10, 20, 30, 40, 50, 60]) {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: at.x, y: at.y + step }],
+    });
+  }
+  await page.waitForTimeout(800);
+  await expect(page.getByText("洗牌中，放開後收牌攤開")).toBeVisible();
+  await expect(fannedDeck(page)).toHaveCount(0);
+
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect(fannedDeck(page)).toBeVisible();
+});
+
 test("pressing a position before the shuffle shuffles instead of selecting it", async ({
   page,
   isMobile,

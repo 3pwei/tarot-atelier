@@ -3,20 +3,19 @@
 import { useCallback, useRef, useState, type MouseEvent } from "react";
 import type { CardDefinition, CardInstance } from "@/domain/deck/types";
 import { CardArtwork } from "@/presentation/components/CardArtwork";
+import {
+  ORIENTATION_LABELS,
+  ROLE_LABELS,
+  type CardRole,
+} from "@/presentation/components/cards/cardLabels";
 import { BurnReveal } from "@/presentation/effects/burn/BurnReveal";
 import type { IgnitionPoint } from "@/presentation/effects/burn/burnField";
 import type { MotionMode } from "./useMotionMode";
 
-export type CardRole = "primary" | "jumper";
 type RevealState = "sealed" | "igniting" | "burning" | "revealed";
 
 /** Keyboard activation lights the bottom edge, the way you'd hold a match. */
 const KEYBOARD_IGNITION: IgnitionPoint = { x: 0.5, y: 0.94 };
-
-const ROLE_LABELS: Readonly<Record<CardRole, string>> = {
-  primary: "主牌",
-  jumper: "跳牌",
-};
 
 interface DrawnCardProps {
   readonly card: CardDefinition;
@@ -72,8 +71,7 @@ export function DrawnCard({
     positionIndex === undefined
       ? ROLE_LABELS[role]
       : `牌位 ${positionIndex} ${ROLE_LABELS[role]}`;
-  const orientationLabel =
-    instance.orientation === "reversed" ? "逆位" : "正位";
+  const orientationLabel = ORIENTATION_LABELS[instance.orientation];
   const isRevealed = state === "revealed";
   const canReveal = interactive && state === "sealed";
   const promptText =

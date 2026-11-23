@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { registerBuiltInDecks } from "@/application/use-cases/createDeckLibrary";
+import { useState } from "react";
+import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type { CardDefinition, Orientation } from "@/domain/deck/types";
-import { InMemoryDeckRegistry } from "@/infrastructure/decks/inMemoryDeckRegistry";
 import { CardArtwork } from "@/presentation/components/CardArtwork";
 import { CatalogCardArt } from "@/presentation/components/library/CatalogCardArt";
+import { useAtelierServices } from "@/presentation/services/atelierServices";
 
 type CardFilter = "all" | "major" | "wands" | "cups" | "swords" | "pentacles";
 
@@ -26,10 +26,8 @@ function matchesFilter(card: CardDefinition, filter: CardFilter): boolean {
 }
 
 export function DeckLibrary() {
-  const registry = useMemo(
-    () => registerBuiltInDecks(new InMemoryDeckRegistry()),
-    [],
-  );
+  const { registry } = useAtelierServices();
+  const decks = registry.list();
   const initialDeck = registry.getSelected();
   const [deckId, setDeckId] = useState(initialDeck.id);
   const [cardId, setCardId] = useState(initialDeck.cards[0]?.id ?? "");
@@ -64,21 +62,28 @@ export function DeckLibrary() {
   return (
     <div className="deck-library">
       <div className="deck-toolbar">
-        <label className="deck-select-label" htmlFor="deck-select">
-          <span>目前牌組</span>
-          <select
-            id="deck-select"
-            value={deck.id}
-            onChange={(event) => selectDeck(event.target.value)}
-          >
-            {registry.list().map((registeredDeck) => (
-              <option key={registeredDeck.id} value={registeredDeck.id}>
-                {registeredDeck.manifest.name.zhHant}（
-                {registeredDeck.cards.length} 張）
-              </option>
-            ))}
-          </select>
-        </label>
+        {decks.length > 1 ? (
+          <label className="deck-select-label" htmlFor="deck-select">
+            <span>目前牌組</span>
+            <select
+              id="deck-select"
+              value={deck.id}
+              onChange={(event) => selectDeck(event.target.value)}
+            >
+              {decks.map((registeredDeck) => (
+                <option key={registeredDeck.id} value={registeredDeck.id}>
+                  {registeredDeck.manifest.name.zhHant}（
+                  {registeredDeck.cards.length} 張）
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <p className="deck-select-label">
+            <span>目前牌組</span>
+            <strong>{deck.manifest.name.zhHant}</strong>
+          </p>
+        )}
         <div className="deck-meta" aria-live="polite">
           <span>{deck.manifest.artist}</span>
           <span>
@@ -176,7 +181,7 @@ export function DeckLibrary() {
             </div>
             <span>{visibleCards.length} 張定義</span>
           </div>
-          {deck.id === "atelier-standard-tarot" && (
+          {deck.id === STANDARD_DECK_ID && (
             <div className="filter-bar" aria-label="卡牌分類">
               {filters.map((item) => (
                 <button

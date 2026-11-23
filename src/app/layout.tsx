@@ -1,16 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
+import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
 
-const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const bodyStyle = {
-  "--stardust-background": `url("${publicBasePath}/art/stardust-field.svg")`,
+  "--stardust-background": `url("${PUBLIC_BASE_PATH}/art/stardust-field.svg")`,
 } as CSSProperties;
 
 export const metadata: Metadata = {
   title: "Tarot Atelier｜塔羅工坊",
-  description:
-    "一座為自由牌陣與沉浸式解牌而生的數位塔羅工坊。Phase 01 可擴充牌組引擎。",
+  description: "一座為自由牌陣與沉浸式解牌而生的數位塔羅工坊。",
 };
 
 export const viewport: Viewport = {

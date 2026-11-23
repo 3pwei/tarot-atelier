@@ -25,7 +25,7 @@ export const HEAP_CENTER = Object.freeze({ x: 50, y: 88 });
  * are drawn as ellipses, never by squashing a circle: a squashed layer is
  * redrawn on every frame and halved the frame rate on a throttled desktop.
  */
-export const VORTEX_TILT = 0.3;
+export const VORTEX_TILT = 0.45;
 
 /** One ring of the funnel. Wider rings turn more slowly, like a whirlwind. */
 export interface VortexTier {
@@ -51,6 +51,12 @@ export const VORTEX_TIERS: readonly VortexTier[] = Object.freeze([
   { y: 68, radius: 10, turnMs: 1_300, cards: 3, cardShare: 0.65 },
 ]);
 
+/**
+ * The opening before the first card leaves: the table dims, the pack draws a
+ * breath of light and a ring of light spreads out from it.
+ */
+export const VORTEX_RITUAL_MS = 900;
+
 /** From the first card leaving the pile to the last. */
 export const VORTEX_LIFT_SPAN_MS = 1_500;
 
@@ -60,8 +66,17 @@ export const VORTEX_LIFT_SPAN_MS = 1_500;
  */
 export const VORTEX_LAUNCH_EASE = 2;
 
-/** One card's way from the pile to its ring. */
+/** One card's way from the pile to the outer ring. */
 export const VORTEX_CLIMB_MS = 1_000;
+
+/**
+ * Every card is flung out to the outer ring first and then drawn in, slowly,
+ * to its own: it circles there this long before it starts in.
+ */
+export const VORTEX_OUTER_HOLD_MS = 400;
+
+/** How long a card takes to be drawn in from the outer ring to its own. */
+export const VORTEX_DRAW_IN_MS = 1_600;
 
 /**
  * Share of that way spent being drawn out of the pack; it must match the
@@ -69,6 +84,13 @@ export const VORTEX_CLIMB_MS = 1_000;
  * circles with its ring, so it spirals straight out into it.
  */
 export const VORTEX_DRAW_OUT_SHARE = 0.25;
+
+/**
+ * How far round its ring, as a share of a lap from the near side, a card
+ * joins it: the right side, heading up, so a card drawn out up and to the
+ * right is carried straight on. The orbit keyframes start there.
+ */
+export const VORTEX_JOIN_PHASE = 0.25;
 
 /** When a card starts circling with its ring, after the deck is first held. */
 export function orbitStartMs(launchMs: number): number {
@@ -82,9 +104,9 @@ export function orbitStartMs(launchMs: number): number {
 export const VORTEX_DRAW_OUT = 0.8;
 
 /**
- * Cards are drawn out to the front right at about 45°, the way the near side
- * of the rings turns: how far right a card goes for each step towards the
- * viewer. Each card has its own angle, so no two leave in one line.
+ * Cards are drawn out up and to the right at about 45°, the way the right
+ * side of the rings turns: how far right a card goes for each step up the
+ * table. Each card has its own angle, so no two leave in one line.
  */
 export const VORTEX_DRAW_OUT_SLOPE = Object.freeze({
   least: 0.85,
@@ -132,7 +154,7 @@ export const VORTEX_FIREFLY_COUNT = 8;
  * The lights come up only once the whirl is full: after the last card has
  * left the pile, not with the first ones.
  */
-export const VORTEX_FIREFLY_DELAY_MS = 1_600;
+export const VORTEX_FIREFLY_DELAY_MS = VORTEX_RITUAL_MS + 1_600;
 
 export interface VortexCard {
   readonly tier: number;
@@ -143,7 +165,18 @@ export interface VortexCard {
    * on the table, the deck's size.
    */
   readonly airScale: number;
-  /** How it is drawn out of the pack: rightwards per step towards the viewer. */
+  /** Its look on the outer ring, where every card first circles. */
+  readonly outerAirScale: number;
+  /** The outer ring's radius over its own ring's: 1 on the outer ring. */
+  readonly drawInFrom: number;
+  /**
+   * How far the outer ring sits above its own, in percent of the table's
+   * height: 0 on the outer ring.
+   */
+  readonly drawInRise: number;
+  /** When it starts to be drawn in to its own ring. */
+  readonly drawInMs: number;
+  /** How it is drawn out of the pack: rightwards per step up the table. */
   readonly drawOutSlope: number;
   /** Its own path's radius over its ring's. */
   readonly radiusScale: number;
@@ -227,10 +260,16 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
     const ring = VORTEX_TIERS[tier]!;
     const spread = (amount: number) => between(random, -amount, amount);
     const size = 1 + spread(VORTEX_SCATTER.size);
+    const outer = VORTEX_TIERS[0]!;
+    const launchMs = launchAt(order, total);
     return {
       tier,
-      launchMs: launchAt(order, total),
+      launchMs,
       airScale: ring.cardShare * size,
+      outerAirScale: outer.cardShare * size,
+      drawInFrom: round2(outer.radius / ring.radius),
+      drawInRise: outer.y - ring.y,
+      drawInMs: launchMs + VORTEX_CLIMB_MS + VORTEX_OUTER_HOLD_MS,
       drawOutSlope: round2(
         between(
           random,
@@ -249,12 +288,16 @@ export function vortexCards(random: () => number): readonly VortexCard[] {
   });
 }
 
-/** Ease-out over the span: wide gaps first, then ever narrower. */
+/**
+ * After the opening, eased over the span: wide gaps first, then ever
+ * narrower.
+ */
 export function launchAt(order: number, total: number): number {
-  if (total <= 1) return 0;
+  if (total <= 1) return VORTEX_RITUAL_MS;
   const along = order / (total - 1);
-  return Math.round(
-    VORTEX_LIFT_SPAN_MS * (1 - (1 - along) ** VORTEX_LAUNCH_EASE),
+  return (
+    VORTEX_RITUAL_MS +
+    Math.round(VORTEX_LIFT_SPAN_MS * (1 - (1 - along) ** VORTEX_LAUNCH_EASE))
   );
 }
 
@@ -306,4 +349,21 @@ export function vortexFireflies(
       size: round2(between(random, 0.7, 1.2)),
     };
   });
+}
+
+/**
+ * The rotation, in degrees, of a computed CSS transform ("none" or a 2D or 3D
+ * matrix): the angle its x axis is turned through.
+ */
+export function rotationOf(transform: string): number {
+  const values = /^matrix(?:3d)?\(([^)]*)\)$/u.exec(transform.trim());
+  if (!values) return 0;
+  const [a = 1, b = 0] = values[1]!.split(",").map(Number);
+  return (Math.atan2(b, a) * 180) / Math.PI;
+}
+
+/** The same turn as `degrees`, the short way round: within ±180°. */
+export function shortestTurn(degrees: number): number {
+  const turn = ((((degrees + 180) % 360) + 360) % 360) - 180;
+  return Object.is(turn, -0) ? 0 : turn;
 }

@@ -1,18 +1,18 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   LocalStorageTextStorage,
-  SPREAD_SESSION_STORAGE_KEY,
+  READING_HISTORY_STORAGE_KEY,
 } from "@/infrastructure/persistence/localStorageTextStorage";
 
 afterEach(() => window.localStorage.clear());
 
 describe("LocalStorageTextStorage", () => {
   it("reads, writes and clears one stable key", () => {
-    const storage = new LocalStorageTextStorage(SPREAD_SESSION_STORAGE_KEY);
+    const storage = new LocalStorageTextStorage(READING_HISTORY_STORAGE_KEY);
     expect(storage.read()).toBeNull();
 
     storage.write('{"schemaVersion":1}');
-    expect(window.localStorage.getItem(SPREAD_SESSION_STORAGE_KEY)).toBe(
+    expect(window.localStorage.getItem(READING_HISTORY_STORAGE_KEY)).toBe(
       '{"schemaVersion":1}',
     );
     expect(storage.read()).toBe('{"schemaVersion":1}');

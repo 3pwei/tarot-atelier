@@ -1,4 +1,4 @@
-/* Phase 03 spread table: free positions, editor and reading list. */
+/* Spread table: free positions, editor and reading list. */
 
 .spread-notice {
   min-height: 1.4rem;
@@ -382,6 +382,12 @@
 
 .spread-board[data-zoomed] {
   cursor: grab;
+  touch-action: none;
+}
+
+/* Holding the table shuffles: a finger drifting up or down while it holds
+   must not turn into a scroll, which would cancel the press and end it. */
+.spread-board[data-press-to-shuffle] {
   touch-action: none;
 }
 

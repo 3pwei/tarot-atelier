@@ -3,13 +3,12 @@
 import { useId, useRef } from "react";
 import type { CardDefinition, Orientation } from "@/domain/deck/types";
 import { CardArtwork } from "@/presentation/components/CardArtwork";
+import {
+  ORIENTATION_LABELS,
+  ROLE_LABELS,
+  type CardRole,
+} from "@/presentation/components/cards/cardLabels";
 import { useModalDialog } from "@/presentation/components/dialog/useModalDialog";
-import type { CardRole } from "@/presentation/components/draw/DrawnCard";
-
-const ROLE_LABELS: Readonly<Record<CardRole, string>> = {
-  primary: "主牌",
-  jumper: "跳牌",
-};
 
 interface CardViewerProps {
   readonly card: CardDefinition;
@@ -37,7 +36,7 @@ export function CardViewer({
   const closeRef = useRef<HTMLButtonElement>(null);
   const modal = useModalDialog(onClose, closeRef);
 
-  const orientationLabel = orientation === "reversed" ? "逆位" : "正位";
+  const orientationLabel = ORIENTATION_LABELS[orientation];
 
   return (
     <div

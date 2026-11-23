@@ -7,6 +7,7 @@ import {
   buildReadingRequest,
   type ReadingRequestBuild,
 } from "@/domain/reading/buildReadingRequest";
+import { roundKeyOf } from "@/domain/spread/round";
 import type { Spread } from "@/domain/spread/types";
 import {
   fingerprintOf,
@@ -73,6 +74,19 @@ export function useReadingSession(options: {
   }, [state, fingerprint, run, createRequestId]);
 
   const cancel = useCallback(() => controller.current?.abort(), []);
+
+  // A reading belongs to one round of cards. Clearing the table or drawing
+  // again drops it, and any reading still running, so an earlier round's
+  // reading is never shown under new cards. Editing a question keeps it,
+  // marked stale.
+  const round = roundKeyOf(spread);
+  const shownRound = useRef(round);
+  useEffect(() => {
+    if (shownRound.current === round) return;
+    shownRound.current = round;
+    controller.current?.abort();
+    dispatch({ type: "reset" });
+  }, [round]);
 
   // Leaving the table must not leave a reading running.
   useEffect(() => () => controller.current?.abort(), []);
