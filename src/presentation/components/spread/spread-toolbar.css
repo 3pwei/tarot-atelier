@@ -42,3 +42,12 @@
     width: 100%;
   }
 }
+
+.spread-toolbar__history {
+  margin-left: auto;
+}
+
+/* The restart button follows the history button instead of pushing away. */
+.spread-toolbar__history + .spread-toolbar__restart {
+  margin-left: 0;
+}

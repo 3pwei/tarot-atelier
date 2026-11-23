@@ -1,0 +1,97 @@
+/* The list of recorded rounds. */
+
+.history-empty {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+}
+
+.history-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-entry {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--color-moon);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-entry:hover {
+  border-color: rgba(230, 197, 122, 0.6);
+}
+
+.history-entry:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.history-entry__cards {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.history-entry__card {
+  width: 1.6rem;
+  aspect-ratio: 2 / 3;
+}
+
+.history-entry__card + .history-entry__card {
+  margin-left: -0.55rem;
+}
+
+.history-entry__card .card-artwork {
+  height: 100%;
+  border-radius: 0.2rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.history-entry__more {
+  margin-left: 0.3rem;
+  color: var(--color-ink-soft);
+  font-size: 0.72rem;
+}
+
+.history-entry__text {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.history-entry__question {
+  overflow: hidden;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-entry__meta {
+  color: var(--color-ink-soft);
+  font-size: 0.75rem;
+}
+
+.history-tag {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--border-gold);
+  border-radius: 999px;
+  color: var(--color-gold);
+  font-size: 0.7rem;
+}
+
+.history-tag[data-reading="none"] {
+  border-color: rgba(207, 198, 220, 0.3);
+  color: var(--color-ink-soft);
+}

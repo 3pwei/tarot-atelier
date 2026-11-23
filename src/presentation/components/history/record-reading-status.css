@@ -1,0 +1,18 @@
+/* Generating a reading for a recorded round. */
+
+.history-reading-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-soft);
+  font-size: 0.85rem;
+}
+
+.history-reading-status--loading {
+  border-style: dashed;
+}

@@ -23,9 +23,15 @@
 @import "../presentation/components/spread/position-number.css";
 @import "../presentation/components/spread/position-inspector.css";
 @import "../presentation/components/spread/position-list.css";
-@import "./reading-panel.css";
-@import "./history.css";
-@import "./share.css";
+@import "../presentation/components/reading/reading-panel.css";
+@import "../presentation/components/reading/reading-sections.css";
+@import "../presentation/components/history/history-dialog.css";
+@import "../presentation/components/history/history-list.css";
+@import "../presentation/components/history/history-detail.css";
+@import "../presentation/components/history/recorded-card-face.css";
+@import "../presentation/components/history/record-reading-status.css";
+@import "../presentation/components/share/share-dialog.css";
+@import "../presentation/components/share/share-panel.css";
 
 :root {
   --color-midnight: #080914;
@@ -657,4 +663,14 @@ p.deck-select-label {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* Hidden from sight but read by screen readers; used across the page. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
