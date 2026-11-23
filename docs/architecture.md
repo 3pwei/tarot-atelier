@@ -27,6 +27,7 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 - CSS handles layout, gold-foil surfaces, and lightweight ambient presentation.
 - Motion is CSS keyframes on `transform` and `opacity`, the same on every device; see [ADR 0004](decisions/0004-css-motion-on-every-device.md).
 - `src/app` is a thin Next.js routing layer that wraps the page in `<BrowserServices>`; product UI lives in `presentation`.
+- Component styles live beside their component (for example `presentation/components/draw/vortex.css`). `src/app/globals.css` imports them in one ordered list, which is the cascade order; components do not import CSS themselves, so development and production builds order rules the same way.
 
 ## Draw experience
 

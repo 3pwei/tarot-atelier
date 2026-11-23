@@ -1,0 +1,67 @@
+/* The bar above the table: status light, what the table is doing, and the main question. */
+
+.draw-table__bar {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding: clamp(1rem, 2.6vw, 1.5rem) clamp(1rem, 3vw, 2rem) 0;
+}
+
+.draw-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  color: var(--color-ink-soft);
+  font-size: 0.85rem;
+}
+
+.draw-status strong {
+  color: var(--color-moon);
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2.2vw, 1.2rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.draw-status > span:last-child {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid rgba(230, 197, 122, 0.18);
+  border-radius: 999px;
+  color: var(--color-gold);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.draw-status__light {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-gold);
+  box-shadow: 0 0 0.8rem rgba(230, 197, 122, 0.8);
+}
+
+.draw-experience[data-phase="revealed"]:not([data-all-revealed])
+  .draw-status__light {
+  background: var(--ember);
+  box-shadow: 0 0 0.9rem rgba(255, 154, 60, 0.9);
+}
+
+/* The main question sits in the bar beside the status. */
+.draw-table__question {
+  flex: 1 1 18rem;
+  max-width: 34rem;
+}
+
+@media (max-width: 48rem) {
+  .draw-table__question {
+    width: 100%;
+    max-width: none;
+  }
+}

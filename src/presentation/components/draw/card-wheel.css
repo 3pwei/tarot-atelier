@@ -1,0 +1,82 @@
+/* The wheel the player picks cards from. */
+
+/* Laid out, out of sight, while the cards gather, then opening out of the
+   heap they gathered in once the shuffle completes. */
+.card-wheel[data-waiting] {
+  visibility: hidden;
+  transform: translateY(8cqh) scaleX(0.3);
+}
+
+.draw-experience[data-motion="animated"] .card-wheel {
+  transform-origin: 50% 100%;
+  transition: transform var(--wheel-rise-duration)
+    cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.draw-experience[data-motion="animated"] .card-wheel[data-waiting] {
+  transition: none;
+}
+
+/* The wheel's centre sits below the table; turning it moves one layer. */
+.card-wheel__wheel {
+  position: absolute;
+  top: var(--wheel-y);
+  left: var(--wheel-x);
+  width: 0;
+  height: 0;
+  transform: rotate(var(--wheel-turn, 0deg));
+  pointer-events: none;
+}
+
+.card-wheel__card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--wheel-card-width);
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6% / 4%;
+  background: #141029;
+  box-shadow:
+    0 0 0 1px rgba(251, 234, 184, 0.2),
+    -2px 3px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  pointer-events: auto;
+  /* Turning and pulling are handled here, so the page does not scroll. */
+  touch-action: none;
+  transform: translate(-50%, -50%) rotate(var(--card-angle))
+    translateY(calc(-1 * var(--wheel-radius)));
+  transition: transform 160ms ease-out;
+}
+
+.card-wheel__back,
+.card-wheel__card .procedural-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Chosen: it slides a little forward, out of line, without covering its
+   neighbours; a gold edge marks it. */
+.card-wheel__card[data-chosen] {
+  box-shadow:
+    0 0 0 1.5px var(--color-gold),
+    0 4px 12px rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, -50%) rotate(var(--card-angle))
+    translateY(calc(-1 * var(--wheel-radius) - var(--nudge) - var(--pull, 0px)));
+}
+
+.card-wheel__card[data-pulling] {
+  z-index: 2;
+  transition: none;
+}
+
+.card-wheel__card:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--focus-ring),
+    0 4px 12px rgba(0, 0, 0, 0.55);
+}

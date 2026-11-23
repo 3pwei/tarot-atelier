@@ -1,0 +1,101 @@
+/* The draw table around the spread board: its frame, stage and footer. The board lives in spread-table.css. */
+
+.draw-experience {
+  /* How the pile lies on the cloth; a card leaving it starts at this turn. */
+  --pile-turn: -4deg;
+  --deck-card-width: clamp(6.5rem, 15vw, 10.5rem);
+  --drawn-card-width: clamp(10rem, 22vw, 14rem);
+  --table-radius: clamp(1.25rem, 3.5vw, 2.4rem);
+  --ember: #ff9a3c;
+  --velvet-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.8 0 0 0 0 1 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.draw-table {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(230, 197, 122, 0.22);
+  border-radius: var(--table-radius);
+  background:
+    radial-gradient(
+      ellipse 60% 45% at 62% 46%,
+      rgba(230, 168, 92, 0.13),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 80% 70% at 50% 40%,
+      rgba(76, 44, 112, 0.55),
+      transparent 75%
+    ),
+    linear-gradient(180deg, #120d24 0%, #0a0818 60%, #06050e 100%);
+  box-shadow:
+    0 2.5rem 6rem rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(251, 234, 184, 0.12),
+    inset 0 0 6rem rgba(0, 0, 0, 0.55);
+}
+
+.draw-table::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: var(--velvet-noise);
+  content: "";
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.draw-table::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0.6rem;
+  border: 1px solid rgba(230, 197, 122, 0.08);
+  border-radius: calc(var(--table-radius) - 0.4rem);
+  content: "";
+  pointer-events: none;
+}
+
+.draw-table__stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.7fr) minmax(16rem, 1.6fr);
+  align-items: center;
+  gap: clamp(1rem, 4vw, 3rem);
+  min-height: clamp(30rem, 52vw, 38rem);
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem);
+}
+
+.draw-table__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0 clamp(1rem, 3vw, 2rem) clamp(1rem, 2.6vw, 1.4rem);
+  color: rgba(207, 198, 220, 0.62);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.draw-table__foot time {
+  color: var(--color-gold);
+}
+
+@media (max-width: 48rem) {
+  .draw-experience {
+    --deck-card-width: 6.2rem;
+    --drawn-card-width: clamp(9rem, 42vw, 12rem);
+  }
+
+  .draw-table__stage {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 1.25rem;
+    min-height: 0;
+    padding-top: 1.75rem;
+  }
+}
+
+@media (max-width: 28rem) {
+  .draw-experience {
+    --drawn-card-width: clamp(8rem, 40vw, 10rem);
+  }
+}
