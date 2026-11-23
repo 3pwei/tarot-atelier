@@ -30,7 +30,8 @@ Dependencies only point inward. `domain` is pure TypeScript and has no React, Ne
 
 ## Draw experience
 
-- `DrawExperience` in `domain/deck/draw.ts` owns the remaining stable card IDs and enforces `idle → shuffling → ready → drawing → revealed`. The presentation mirrors this state and cannot draw again while an animation is active.
+- `DrawPile` in `domain/deck/drawPile.ts` is an immutable value holding the remaining stable card IDs; its pure steps enforce `idle → shuffling → ready → drawing → revealed` and return a result (never throw) for a step the state does not allow. Randomness and the clock are passed in.
+- `dealerMachine.ts` in `presentation/components/spread` is the dealer's pure reducer (`waiting → washing → gathering → picking`, plus cards in flight) holding the pile; `useSpreadDealer` adds only timers, the shuffle timing and DOM reads, and applies randomness before sending an event so the reducer stays pure.
 - Fisher–Yates and every probability rule receive an injectable `RandomSource`. Seeded implementations are limited to tests and reproducible demos; they are not cryptographic randomness.
 - A `DrawResult` contains the primary `CardInstance`, optional jumper, ISO draw time, and each card's orientation. Removing IDs and deciding both orientations happen atomically in domain code.
 - Vortex, wheel and flight are CSS keyframes and transitions, the same on every device. `presentation/components/draw/dealMotion.ts` holds their timings, which reach the stylesheet as custom properties, and plans each chosen card's curved flight from the wheel in its slot's frame. `useDealFlights` measures the landing point, writes the flight as custom properties, and only then lets the keyframes start, so a card lands exactly on a moved, rotated position of a zoomed table. `prefers-reduced-motion` skips transitional motion.
