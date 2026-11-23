@@ -1,7 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { atelierStandardDeck } from "@/domain/deck/builtinDecks";
+import {
+  atelierStandardDeck,
+  STANDARD_DECK_ID,
+} from "@/domain/deck/builtinDecks";
 import {
   ARTWORK_SOURCES,
   artworkSourceHash,
@@ -54,6 +57,10 @@ describe("committed catalog thumbnails", () => {
       manifest.sourceHash,
       `The card art changed since the thumbnails were made. ${REGENERATE}`,
     ).toBe(current);
+  });
+
+  it("are made for the deck the domain names as standard", () => {
+    expect(THUMBNAIL_DECK_ID).toBe(STANDARD_DECK_ID);
   });
 
   it("cover every card of the standard deck, and the files exist", () => {

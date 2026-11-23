@@ -1,3 +1,4 @@
+import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type {
   InterpretOptions,
   ReadingProvider,
@@ -14,7 +15,7 @@ export const OTHER_REQUEST_ID = "0a9b8c7d-6e5f-4a3b-8c1d-0e9f8a7b6c5d";
 
 export const validRequest: ReadingRequest = {
   schemaVersion: READING_SCHEMA_VERSION,
-  deckId: "atelier-standard-tarot",
+  deckId: STANDARD_DECK_ID,
   positions: [
     {
       index: 1,

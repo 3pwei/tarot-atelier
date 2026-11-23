@@ -299,8 +299,23 @@ export function useSpreadDealer({
     setPhase(experience.state);
   }
 
+  const pickNumber = roundTotal - empty.length + 1;
   return {
     phase,
+    /** What the table is doing, in words, for the status line. */
+    status: dealerStatus({
+      loading,
+      phase,
+      holding,
+      picking,
+      pickNumber,
+      roundTotal,
+      ...(blocker ? { blocker } : {}),
+      emptyCount: empty.length,
+      flyingCount: flights.length,
+      allRevealed,
+      remaining,
+    }),
     /** The table's zoom while drawing (see `tableZoom`). */
     zoom,
     holding,
@@ -316,7 +331,7 @@ export function useSpreadDealer({
     /** The wheel takes picks; until then it waits below the table. */
     fanReady: picking,
     /** Which card of this fan's round is being chosen, from 1. */
-    pickNumber: roundTotal - empty.length + 1,
+    pickNumber,
     roundTotal,
     flights,
     /** Positions whose chosen card is still on its way; they keep their number. */

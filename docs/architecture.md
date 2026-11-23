@@ -4,7 +4,9 @@
 
 ```mermaid
 flowchart TD
-  P[Presentation] --> A[Application]
+  C[Composition] --> P[Presentation]
+  C --> I
+  P --> A[Application]
   I[Infrastructure] --> A
   A --> D[Domain]
   P --> D
@@ -17,14 +19,14 @@ flowchart TD
   A --> S
 ```
 
-Dependencies only point inward. `domain` is pure TypeScript and has no React, Next.js, Zustand, animation, persistence, or network dependency. `server` composes the reading endpoint for Cloudflare Pages Functions; nothing else may import it, and it may not import presentation. ESLint encodes these restrictions.
+Dependencies only point inward. `domain` is pure TypeScript and has no React, Next.js, animation, persistence, or network dependency. `server` composes the reading endpoint for Cloudflare Pages Functions; nothing else may import it, and it may not import presentation. `composition` is the browser's composition root: `createBrowserServices()` picks the concrete adapters (deck registry, `localStorage`, reading provider, share sheet) and `<BrowserServices>` provides them; presentation reads them as ports with `useAtelierServices()` and never imports infrastructure. Tests build their own with `createTestServices()`. ESLint encodes these restrictions.
 
 ## Rendering decisions
 
 - Accessible controls remain React DOM.
 - CSS handles layout, gold-foil surfaces, and lightweight ambient presentation.
 - Motion is CSS keyframes on `transform` and `opacity`, the same on every device; see [ADR 0004](decisions/0004-css-motion-on-every-device.md).
-- `src/app` is a thin Next.js composition layer; product UI lives in `presentation`.
+- `src/app` is a thin Next.js routing layer that wraps the page in `<BrowserServices>`; product UI lives in `presentation`.
 
 ## Draw experience
 

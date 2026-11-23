@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { readingResultSchema } from "@/application/reading/readingSchemas";
 import {
   atelierStandardDeck,
-  phaseOneTestDeck,
+  STANDARD_DECK_ID,
 } from "@/domain/deck/builtinDecks";
+import { phaseOneTestDeck } from "@/domain/deck/testing/testDeck";
 import { buildReadingRequest } from "@/domain/reading/buildReadingRequest";
 import { findCertaintyPhrases } from "@/domain/reading/readingSafety";
 import {
@@ -22,7 +23,6 @@ import { MAX_SPREAD_POSITIONS } from "@/domain/spread/types";
 import {
   loadDeckReadingContent,
   loadReadingPhrases,
-  STANDARD_DECK_ID,
 } from "@/infrastructure/reading/content/contentLibrary";
 import { PrewrittenReadingProvider } from "@/infrastructure/reading/prewrittenReadingProvider";
 

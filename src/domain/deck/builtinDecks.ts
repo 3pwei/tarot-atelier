@@ -7,7 +7,11 @@ import {
   type TarotSuit,
 } from "@/domain/deck/types";
 
-const CARD_BACK = "procedural://atelier/back/celestial";
+/** The procedural celestial back shared by every built-in deck. */
+export const CARD_BACK = "procedural://atelier/back/celestial";
+
+/** The deck the spread table deals from and the reading content is written for. */
+export const STANDARD_DECK_ID = "atelier-standard-tarot";
 
 interface MajorSeed {
   readonly zhHant: string;
@@ -405,71 +409,15 @@ const minorCards: readonly CardDefinition[] = suitOrder.flatMap(
 
 export const atelierStandardManifest: DeckManifest = {
   schemaVersion: DECK_SCHEMA_VERSION,
-  id: "atelier-standard-tarot",
+  id: STANDARD_DECK_ID,
   name: { zhHant: "工坊標準塔羅", en: "Atelier Standard Tarot" },
   artist: "Tarot Atelier procedural art system",
   license: "Original project artwork; source-available with this repository",
   cards: [...majorCards, ...minorCards],
   supportsReversals: true,
   metadata: {
-    edition: "Phase 01",
     artStatus: "Procedural frames and symbols; not a 78-card illustration set",
   },
 };
 
 export const atelierStandardDeck = parseDeckManifest(atelierStandardManifest);
-
-export const phaseOneTestManifest: DeckManifest = {
-  schemaVersion: DECK_SCHEMA_VERSION,
-  id: "phase-one-test-deck",
-  name: { zhHant: "三張測試牌組", en: "Three-card Test Deck" },
-  artist: "Tarot Atelier QA",
-  license: "Original test content",
-  supportsReversals: false,
-  cards: [
-    {
-      id: "phase-one-test.spark",
-      name: { zhHant: "星火", en: "Spark" },
-      artwork: {
-        face: "missing://phase-one-test/spark",
-        back: CARD_BACK,
-      },
-      keywords: ["開始", "測試"],
-      uprightMeaning: "從一個足夠小的實驗開始。",
-      reversedMeaning: "此牌組已關閉逆位，不會產生此方向。",
-      category: "custom",
-      sequence: 0,
-      metadata: { symbol: "✦", expectedFallback: true },
-    },
-    {
-      id: "phase-one-test.tide",
-      name: { zhHant: "潮汐", en: "Tide" },
-      artwork: {
-        face: "procedural://atelier/test/tide",
-        back: CARD_BACK,
-      },
-      keywords: ["節奏", "回返"],
-      uprightMeaning: "觀察往返的節奏，再選擇投入時點。",
-      reversedMeaning: "此牌組已關閉逆位，不會產生此方向。",
-      category: "custom",
-      sequence: 1,
-      metadata: { symbol: "≈" },
-    },
-    {
-      id: "phase-one-test.stone",
-      name: { zhHant: "基石", en: "Foundation Stone" },
-      artwork: {
-        face: "procedural://atelier/test/stone",
-        back: CARD_BACK,
-      },
-      keywords: ["穩固", "驗證"],
-      uprightMeaning: "先確認基礎可靠，再承載更複雜的選擇。",
-      reversedMeaning: "此牌組已關閉逆位，不會產生此方向。",
-      category: "custom",
-      sequence: 2,
-      metadata: { symbol: "◇" },
-    },
-  ],
-};
-
-export const phaseOneTestDeck = parseDeckManifest(phaseOneTestManifest);
