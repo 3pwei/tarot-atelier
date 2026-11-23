@@ -1,0 +1,108 @@
+/* The pack lying on the cloth, above the positions and outside the zoomed canvas. */
+
+/* Drawn above the positions but outside the zoomed canvas (SpreadBoard's
+   overlay). Sizes follow the table through container units. */
+.table-deck {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  container-type: size;
+  pointer-events: none;
+}
+
+/* The pack lies in the middle of the cloth, where the vortex gathers it. */
+.table-deck__pack {
+  position: absolute;
+  top: calc(var(--table-pile-y) * 1cqh);
+  left: calc(var(--table-pile-x) * 1cqw);
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 240ms ease,
+    visibility 0s linear 0s;
+}
+
+/* The pack is as large as the positions' cards, like every card it holds. */
+/* Holding a card must shuffle, not open the phone's enlarged image preview
+   (iOS) or select it. */
+.table-deck {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.table-deck img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.table-deck .deck-stack {
+  --deck-card-width: var(--slot-w);
+}
+
+/* Every position has its card: the rest of the deck leaves the table. */
+.table-deck__pack[data-gone] {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 420ms ease,
+    visibility 0s linear 420ms;
+}
+
+.deck-stack__back {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The pack stays in the middle while its cards fly off the top of it, and is
+   gone once the last of them has left. */
+.draw-experience[data-motion="animated"]
+  .table-deck[data-washing]
+  .table-deck__pack {
+  animation: pile-emptied 1ms linear
+    calc(var(--vortex-ritual) + var(--vortex-lift-span)) both;
+}
+
+/* Letting go sends the cards to a loose heap below, not back to the pack. */
+.draw-experience[data-motion="animated"]
+  .table-deck[data-gathering]
+  .table-deck__pack {
+  animation: none;
+  opacity: 0;
+}
+
+/* The pack thins as its cards leave: the deepest slice goes first and the
+   last just before the top card does. */
+.draw-experience[data-motion="animated"]
+  .table-deck[data-washing]
+  .deck-stack__slice {
+  animation: pile-emptied 1ms linear
+    calc(
+      var(--vortex-ritual) + var(--vortex-lift-span) *
+        (1 - var(--slice) / var(--slices))
+    )
+    both;
+}
+
+/* Its glow stays still while washing: a glow growing under the moving cards
+   is redrawn every frame. */
+.table-deck[data-washing] .deck-stack__pile::before {
+  animation: none;
+  opacity: 0;
+  transform: none;
+  transition: none;
+}
+
+/* Positions step back while the cards circle over them. */
+.draw-experience[data-phase="shuffling"] .spread-slot {
+  opacity: 0.3;
+  transition: opacity 300ms ease;
+}
+
+@keyframes pile-emptied {
+  to {
+    opacity: 0;
+  }
+}

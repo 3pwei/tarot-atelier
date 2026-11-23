@@ -255,7 +255,7 @@ describe("carrying a card's turn from the air to the table", () => {
 describe("the vortex-heading keyframes", () => {
   it("follow the slope of a ring as flat as VORTEX_TILT, from where cards join it", () => {
     const css = readFileSync(
-      resolve(process.cwd(), "src/app/draw-experience.css"),
+      resolve(process.cwd(), "src/presentation/components/draw/vortex.css"),
       "utf8",
     );
     const block = /@keyframes vortex-heading \{([\s\S]*?)\n\}/u.exec(css)?.[1];
