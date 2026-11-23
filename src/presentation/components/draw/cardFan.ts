@@ -47,3 +47,8 @@ export function jumperSlot(fan: CardFan, slot: number): number | undefined {
 export function takeSlots(fan: CardFan, slots: readonly number[]): CardFan {
   return { ...fan, taken: new Set([...fan.taken, ...slots]) };
 }
+
+/** Selector for a card on the wheel; the dealer reads where a jumper leaves from. */
+export function fanSlotSelector(slot: number): string {
+  return `[data-fan-slot="${slot}"]`;
+}
