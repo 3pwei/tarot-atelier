@@ -72,6 +72,7 @@ export function DrawExperience({
 }: DrawExperienceProps = {}) {
   const root = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
   const {
     registry,
@@ -122,7 +123,7 @@ export function DrawExperience({
   const { arranging } = arrange;
 
   const loading = session.status === "loading";
-  const viewport = useBoardViewport(viewportRef);
+  const viewport = useBoardViewport(viewportRef, canvasRef);
   const motionMode = useMotionMode();
   // The positions' card size. In play it is as large as the layout allows;
   // while arranging it holds still at the smallest size, so cards never grow
@@ -256,6 +257,7 @@ export function DrawExperience({
             view={viewport.view}
             gestures={shuffle.tableGestures}
             viewportRef={viewportRef}
+            canvasRef={canvasRef}
             fieldRef={fieldRef}
             renderCards={renderCards}
             onSelect={handlers.select}

@@ -482,10 +482,17 @@
   touch-action: none;
 }
 
-/* Arrange mode: a dashed frame says the layout is open for editing. */
-.spread-board[data-arranging] {
-  outline: 2px dashed rgba(230, 197, 122, 0.55);
-  outline-offset: -0.5rem;
+/* Arrange mode: a dashed frame says the layout is open for editing. It is a
+   layer of its own, not an outline: an outline on the board repaints the
+   whole board, and the page around it, on every move of a dragged position. */
+.spread-board[data-arranging]::before {
+  position: absolute;
+  z-index: 6;
+  inset: 0.5rem;
+  border: 2px dashed rgba(230, 197, 122, 0.55);
+  border-radius: calc(var(--table-radius) - 0.9rem);
+  content: "";
+  pointer-events: none;
 }
 
 .spread-board[data-arranging]::after {

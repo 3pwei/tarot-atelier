@@ -101,8 +101,9 @@ test("hold to shuffle in the vortex, lay out the wheel, choose cards and burn re
 });
 
 test("drag a position and pan a zoomed table", async ({ page }, testInfo) => {
+  // No main question: once it is asked, holding the cloth shuffles instead of
+  // panning, and the pan would measure the shuffle.
   await openHome(page);
-  await askMainQuestion(page);
   const board = page.locator(".spread-board");
   await board.scrollIntoViewIfNeeded();
 
@@ -110,7 +111,7 @@ test("drag a position and pan a zoomed table", async ({ page }, testInfo) => {
   await measure(page, testInfo, "table-drag", () =>
     dragFrom(page, slot(page, 3), -60, -50),
   );
-  await page.getByRole("button", { name: "完成編輯" }).click();
+  await page.getByRole("button", { name: "結束編輯" }).click();
   // The drag is not saved; leaving restores the layout.
   await page
     .getByRole("alertdialog", { name: "牌陣還沒儲存" })
@@ -122,10 +123,19 @@ test("drag a position and pan a zoomed table", async ({ page }, testInfo) => {
   if (!box) throw new Error("the spread board is not visible");
   // A corner of the cloth, away from the positions in the middle.
   const start = { x: box.x + box.width * 0.06, y: box.y + box.height * 0.9 };
+  const before = await canvasTransform(page);
   await measure(page, testInfo, "table-pan", () =>
     dragPoint(page, start, 80, -60),
   );
+  expect(await canvasTransform(page), "the table did not pan").not.toBe(before);
 });
+
+/** Where the zoomed table sits, as the board's canvas transform. */
+function canvasTransform(page: Page): Promise<string> {
+  return page
+    .locator(".spread-board__canvas")
+    .evaluate((canvas) => getComputedStyle(canvas).transform);
+}
 
 async function scrollToBottom(page: Page) {
   for (let step = 0; step < SCROLL_STEPS; step += 1) {

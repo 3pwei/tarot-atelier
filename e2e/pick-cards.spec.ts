@@ -410,6 +410,30 @@ test("a tapped card slides forward right where it was tapped", async ({
   ).toBe(turnBefore);
 });
 
+test("Enter on a card off to one side brings it into view", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "the whole deck fits on a wide table");
+  await deckPile(page).click();
+  await wheelRisen(page);
+  const card = fannedDeck(page).locator("[data-fan-slot]").nth(70);
+  await card.focus();
+  await page.keyboard.press("Enter");
+  await expect(card).toHaveAttribute("aria-pressed", "true");
+
+  const board = await page.locator(".spread-board").boundingBox();
+  if (!board) throw new Error("the table is not visible");
+  await expect
+    .poll(async () => {
+      const box = await card.boundingBox();
+      return box
+        ? box.x >= board.x && box.x + box.width <= board.x + board.width
+        : false;
+    })
+    .toBe(true);
+});
+
 test("a sideways drag turns the wheel on a narrow table", async ({
   page,
   isMobile,

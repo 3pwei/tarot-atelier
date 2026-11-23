@@ -26,6 +26,11 @@ export interface BoardView {
 
 const IDENTITY: BoardView = { scale: 1, x: 0, y: 0 };
 
+/** The CSS transform that shows the table at `view`. */
+export function viewTransform(view: BoardView): string {
+  return `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
+}
+
 /** Keeps the zoomed table covering the viewport: no empty gutters. */
 export function clampView(
   view: BoardView,
@@ -59,8 +64,18 @@ export function zoomAround(
   );
 }
 
+/** Where the frame sits and how big it is, read once per gesture. */
+interface FrameBox {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 interface Gesture {
   readonly pointers: Map<number, TablePoint>;
+  /** Read when the gesture starts, so moves never force a layout. */
+  readonly frame: FrameBox;
   startView: BoardView;
   startDistance: number;
   startCenter: TablePoint;
@@ -91,7 +106,16 @@ export interface GestureOptions {
   readonly canPan: boolean;
 }
 
-export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
+/**
+ * `viewport` is the table's frame; `canvas` is what zooms and pans inside it.
+ * During a pan or pinch the canvas moves directly, frame by frame, and the
+ * view is committed to React once the last pointer lifts: re-rendering the
+ * table on every move cost a long task per frame.
+ */
+export function useBoardViewport(
+  viewport: RefObject<HTMLElement | null>,
+  canvas: RefObject<HTMLElement | null>,
+) {
   const [view, setView] = useState<BoardView>(IDENTITY);
   const gesture = useRef<Gesture | null>(null);
   const panUpdates = useRef(createFrameCoalescer());
@@ -145,13 +169,24 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
     return () => observer.disconnect();
   }, [viewport]);
 
-  const localPoint = (event: ReactPointerEvent<HTMLElement>): TablePoint => {
-    const rect = viewport.current?.getBoundingClientRect();
+  const frameBox = (): FrameBox => {
+    const element = viewport.current;
+    const rect = element?.getBoundingClientRect();
     return {
-      x: event.clientX - (rect?.left ?? 0),
-      y: event.clientY - (rect?.top ?? 0),
+      left: rect?.left ?? 0,
+      top: rect?.top ?? 0,
+      width: element?.clientWidth ?? 0,
+      height: element?.clientHeight ?? 0,
     };
   };
+
+  const localPoint = (
+    event: ReactPointerEvent<HTMLElement>,
+    frame: FrameBox,
+  ): TablePoint => ({
+    x: event.clientX - frame.left,
+    y: event.clientY - frame.top,
+  });
 
   /** Background gestures: one pointer pans a zoomed table, two pinch. */
   const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
@@ -165,11 +200,12 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     const current = gesture.current ?? {
       pointers: new Map<number, TablePoint>(),
+      frame: frameBox(),
       startView: latestView.current,
       startDistance: 0,
       startCenter: { x: 0, y: 0 },
     };
-    current.pointers.set(event.pointerId, localPoint(event));
+    current.pointers.set(event.pointerId, localPoint(event, current.frame));
     const points = [...current.pointers.values()];
     current.startView = latestView.current;
     current.startDistance = distanceOf(points);
@@ -182,10 +218,10 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
     (event: ReactPointerEvent<HTMLElement>) => {
       const current = gesture.current;
       if (!current?.pointers.has(event.pointerId)) return;
-      current.pointers.set(event.pointerId, localPoint(event));
+      current.pointers.set(event.pointerId, localPoint(event, current.frame));
       const points = [...current.pointers.values()];
       const center = centerOf(points);
-      const { width, height } = size();
+      const { width, height } = current.frame;
       const { startView, startCenter } = current;
       const pinching = points.length >= 2 && current.startDistance > 0;
       if (!pinching && (!canPan || startView.scale <= MIN_ZOOM)) return;
@@ -210,7 +246,7 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
       );
       panUpdates.current.schedule(() => {
         latestView.current = next;
-        setView(next);
+        canvas.current?.style.setProperty("transform", viewTransform(next));
       });
     };
 
@@ -222,6 +258,7 @@ export function useBoardViewport(viewport: RefObject<HTMLElement | null>) {
     current.pointers.delete(event.pointerId);
     if (current.pointers.size === 0) {
       gesture.current = null;
+      setView(latestView.current);
       return;
     }
     // Re-anchor so lifting one finger of a pinch does not jump.

@@ -78,11 +78,12 @@ type Gesture =
 
 /** Stable for the life of the wheel; they read the latest render from a ref. */
 interface WheelHandlers {
-  /** Slides a card forward where it lies, as a tap or Enter does. */
+  /** Slides a card forward where it lies, as a tap does. */
   choose(slot: number): void;
   /**
    * Slides a card forward and turns the wheel to bring it into view, as the
-   * arrow keys do when they move to a card that may be off to one side.
+   * keyboard does: Enter, and the arrow keys moving to a card that may be off
+   * to one side.
    */
   chooseAndShow(slot: number): void;
   draw(slot: number): void;
@@ -93,8 +94,8 @@ interface WheelHandlers {
 /**
  * The shuffled pile laid face down on a wheel along the bottom of the table.
  * Tap a card to slide it forward where it lies, then pull it forward out of
- * the wheel; Enter does the same from the keyboard, and the arrow keys move
- * along the wheel, turning it to keep the chosen card in view. A sideways
+ * the wheel. From the keyboard Enter does the same, turning the wheel to keep
+ * the chosen card in view, as the arrow keys do moving along it. A sideways
  * drag turns the wheel when
  * not every card fits. Turning moves one layer, and only the chosen card
  * re-renders, so the other cards stay still and cheap.
@@ -180,9 +181,11 @@ export function CardWheelView({
         const at = (offset: number) =>
           slots[Math.min(slots.length - 1, Math.max(0, index + offset))] ??
           slot;
-        // Enter or Space draws the chosen card; on any other card, chooses it.
+        // Enter or Space draws the chosen card; on any other card, chooses it
+        // and brings it into view: the keyboard has no finger to stay under,
+        // and a focused card may lie off to one side of a wide wheel.
         const chooseOrDraw = () =>
-          chosenSlot === slot ? draw(slot) : choose(slot);
+          chosenSlot === slot ? draw(slot) : chooseAndShow(slot);
         const keys: Readonly<Record<string, () => void>> = {
           ArrowRight: () => chooseAndShow(at(1)),
           ArrowLeft: () => chooseAndShow(at(-1)),
