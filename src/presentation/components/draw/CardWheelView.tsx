@@ -13,6 +13,7 @@ import {
 } from "react";
 import { ProceduralBack } from "@/presentation/components/cards/ProceduralBack";
 import {
+  fanSlotSelector,
   openSlots,
   type CardFan,
 } from "@/presentation/components/draw/cardFan";
@@ -23,7 +24,6 @@ import {
   turnToShow,
   wheelLayout,
 } from "@/presentation/components/draw/cardWheel";
-import { fanSlotSelector } from "@/presentation/components/spread/useSpreadDealer";
 
 function contains(
   box: DOMRect | undefined,
