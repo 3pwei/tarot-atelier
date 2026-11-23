@@ -6,9 +6,9 @@
  */
 
 /** Horizontal room each card shows of itself, so a fingertip can find it. */
-export const CARD_SPACING_PX = 13;
+export const CARD_SPACING_PX = 20;
 /** Larger cards show a little more of themselves, as a share of their width. */
-export const CARD_SPACING_SHARE = 0.12;
+export const CARD_SPACING_SHARE = 0.18;
 /**
  * How far a chosen card slides forward out of the wheel, of its height:
  * enough that it clearly stands out from its neighbours.
@@ -16,11 +16,17 @@ export const CARD_SPACING_SHARE = 0.12;
 export const NUDGE_SHARE = 0.2;
 /**
  * The wheel's cards are the deck's size, so the wheel lies along the table's
- * bottom edge with only this much of its top card showing.
+ * bottom edge with only this much of its top card showing: most of it, so a
+ * card is easy to tap.
  */
-export const VISIBLE_SHARE = 0.55;
-/** How far a chosen card must be pulled forward to leave the wheel. */
-export const PULL_OUT_PX = 48;
+export const VISIBLE_SHARE = 0.85;
+/**
+ * The wheel's radius, as a share of the table's width, and never below a
+ * minimum. A wide wheel keeps the arc flat, so the cards towards either edge
+ * do not sink below the table's bottom edge out of reach.
+ */
+export const RADIUS_SHARE = 1.6;
+export const MIN_RADIUS_PX = 420;
 
 export interface WheelLayout {
   readonly cardWidth: number;
@@ -47,7 +53,7 @@ export function wheelLayout(options: {
 }): WheelLayout {
   const { width, height, count, cardWidth } = options;
   const cardHeight = cardWidth * 1.5;
-  const radius = Math.max(260, width * 0.85);
+  const radius = Math.max(MIN_RADIUS_PX, width * RADIUS_SHARE);
   const spacing = Math.max(CARD_SPACING_PX, cardWidth * CARD_SPACING_SHARE);
   const step = toDegrees(spacing / radius);
   const span = Math.max(0, count - 1) * step;

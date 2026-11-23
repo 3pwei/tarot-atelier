@@ -81,6 +81,23 @@ describe("wheelLayout", () => {
   });
 });
 
+describe("cards at the edges of the table", () => {
+  it("still show at least half of themselves, so they can be tapped", () => {
+    for (const [layout, width, height] of [
+      [phone, 340, 227],
+      [desktop, 1100, 733],
+    ] as const) {
+      // The outermost card still wholly on the table, as the layout counts it.
+      const edgeAngle =
+        Math.asin(Math.min(1, width / 2 / layout.radius)) -
+        layout.cardWidth / layout.radius;
+      const centreY = layout.centerY - layout.radius * Math.cos(edgeAngle);
+      const shown = height - (centreY - layout.cardHeight / 2);
+      expect(shown / layout.cardHeight).toBeGreaterThanOrEqual(0.5);
+    }
+  });
+});
+
 describe("turning the wheel", () => {
   it("puts the middle card at the top before turning", () => {
     expect(cardAngle(phone, 0, 3)).toBeCloseTo(-phone.step);

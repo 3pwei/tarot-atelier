@@ -76,19 +76,24 @@ test("hold to shuffle in the vortex, lay out the wheel, choose cards and burn re
     dragPoint(page, along, -wheelBox.width * 0.4, 0),
   );
 
-  const card = wheel.locator("[data-fan-slot]").nth(30);
+  // Located by its slot, which stays its own once the cards after it move up.
+  const slot30 = await wheel
+    .locator("[data-fan-slot]")
+    .nth(30)
+    .getAttribute("data-fan-slot");
+  const card = wheel.locator(`[data-fan-slot="${slot30}"]`);
   await card.focus();
   await page.keyboard.press("Enter");
   await expect(card).toHaveAttribute("aria-pressed", "true");
   const chosen = await card.boundingBox();
   if (!chosen) throw new Error("the chosen card is not visible");
-  await measure(page, testInfo, "wheel-pull", async () => {
-    const x = chosen.x + chosen.width / 2;
-    const y = chosen.y + chosen.height * 0.3;
-    await page.mouse.move(x, y);
-    await page.mouse.down();
-    await page.mouse.move(x, y - 90, { steps: GESTURE_STEPS });
-    await page.mouse.up();
+  // A second tap on the lifted card draws it; its upper part is uncovered.
+  await measure(page, testInfo, "wheel-draw", async () => {
+    await page.mouse.click(
+      chosen.x + chosen.width / 2,
+      chosen.y + chosen.height * 0.12,
+    );
+    await expect(card).toHaveCount(0);
     await page.waitForTimeout(FLIGHT_SETTLE_MS);
   });
 

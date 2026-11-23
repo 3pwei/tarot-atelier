@@ -17,7 +17,9 @@
   transition: none;
 }
 
-/* The wheel's centre sits below the table; turning it moves one layer. */
+/* The wheel's centre sits below the table; turning it moves one layer. The
+   layer is its own, so a turn only moves it: repainting the cards each frame
+   halved the frame rate once most of every card showed (pnpm perf). */
 .card-wheel__wheel {
   position: absolute;
   top: var(--wheel-y);
@@ -26,6 +28,7 @@
   height: 0;
   transform: rotate(var(--wheel-turn, 0deg));
   pointer-events: none;
+  will-change: transform;
 }
 
 .card-wheel__card {
@@ -44,7 +47,7 @@
     -2px 3px 8px rgba(0, 0, 0, 0.5);
   cursor: pointer;
   pointer-events: auto;
-  /* Turning and pulling are handled here, so the page does not scroll. */
+  /* Turning is handled here, so the page does not scroll. */
   touch-action: none;
   transform: translate(-50%, -50%) rotate(var(--card-angle))
     translateY(calc(-1 * var(--wheel-radius)));
@@ -66,12 +69,7 @@
     0 0 0 1.5px var(--color-gold),
     0 4px 12px rgba(0, 0, 0, 0.55);
   transform: translate(-50%, -50%) rotate(var(--card-angle))
-    translateY(calc(-1 * var(--wheel-radius) - var(--nudge) - var(--pull, 0px)));
-}
-
-.card-wheel__card[data-pulling] {
-  z-index: 2;
-  transition: none;
+    translateY(calc(-1 * var(--wheel-radius) - var(--nudge)));
 }
 
 .card-wheel__card:focus-visible {

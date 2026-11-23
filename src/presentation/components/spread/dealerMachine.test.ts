@@ -135,7 +135,7 @@ describe("dealer state machine", () => {
     expect(view.picking).toBe(true);
     expect(view.canShuffle).toBe(false);
     expect(view.status).toBe(
-      "請選第 1 張（共 2 張）：點一下讓牌往前，再往前拉出",
+      "請選第 1 張（共 2 張）：點一下讓牌往前，再點一次抽出",
     );
   });
 

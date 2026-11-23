@@ -19,7 +19,6 @@ import {
 } from "@/presentation/components/draw/cardFan";
 import {
   cardAngle,
-  PULL_OUT_PX,
   turnByDrag,
   turnToShow,
   wheelLayout,
@@ -38,7 +37,7 @@ function contains(
   );
 }
 
-/** Movement that still counts as a tap rather than a turn or a pull. */
+/** Movement that still counts as a tap rather than a turn. */
 const TAP_SLOP_PX = 6;
 
 interface CardWheelViewProps {
@@ -67,13 +66,6 @@ type Gesture =
       readonly pointerId: number;
       readonly x: number;
       readonly startTurn: number;
-    }
-  | {
-      readonly kind: "pulling";
-      readonly pointerId: number;
-      readonly slot: number;
-      readonly y: number;
-      pull: number;
     };
 
 /** Stable for the life of the wheel; they read the latest render from a ref. */
@@ -93,12 +85,11 @@ interface WheelHandlers {
 
 /**
  * The shuffled pile laid face down on a wheel along the bottom of the table.
- * Tap a card to slide it forward where it lies, then pull it forward out of
- * the wheel. From the keyboard Enter does the same, turning the wheel to keep
- * the chosen card in view, as the arrow keys do moving along it. A sideways
- * drag turns the wheel when
- * not every card fits. Turning moves one layer, and only the chosen card
- * re-renders, so the other cards stay still and cheap.
+ * Tap a card to slide it forward where it lies, and tap it again to draw it.
+ * From the keyboard Enter does the same, turning the wheel to keep the chosen
+ * card in view, as the arrow keys do moving along it. A sideways drag turns
+ * the wheel when not every card fits. Turning moves one layer, and only the
+ * chosen card re-renders, so the other cards stay still and cheap.
  */
 export function CardWheelView({
   fan,
@@ -226,65 +217,38 @@ export function CardWheelView({
     const active = gesture.current;
     if (!active || active.pointerId !== event.pointerId) return;
     if (active.kind === "pending") {
-      const dx = event.clientX - active.x;
-      const dy = event.clientY - active.y;
-      if (Math.hypot(dx, dy) < TAP_SLOP_PX) return;
-      const forward = -dy > Math.abs(dx);
-      // Neighbours overlap the chosen card; a forward drag that starts
-      // anywhere over it pulls it, whichever card took the press.
-      const pulled =
-        current !== undefined &&
-        (active.slot === current ||
-          contains(cardAt(current)?.getBoundingClientRect(), active))
-          ? current
-          : undefined;
-      if (forward && pulled !== undefined) {
-        gesture.current = {
-          kind: "pulling",
-          pointerId: active.pointerId,
-          slot: pulled,
-          y: active.y,
-          pull: 0,
-        };
-        cardAt(pulled)?.setAttribute("data-pulling", "true");
-      } else {
-        gesture.current = {
-          kind: "turning",
-          pointerId: active.pointerId,
-          x: active.x,
-          startTurn: turn.current,
-        };
+      if (
+        Math.hypot(event.clientX - active.x, event.clientY - active.y) <
+        TAP_SLOP_PX
+      ) {
+        return;
       }
+      gesture.current = {
+        kind: "turning",
+        pointerId: active.pointerId,
+        x: active.x,
+        startTurn: turn.current,
+      };
       return;
     }
-    if (active.kind === "turning") {
-      handlers.setTurn(
-        turnByDrag(layout, active.startTurn, event.clientX - active.x),
-      );
-      return;
-    }
-    active.pull = Math.max(0, active.y - event.clientY);
-    cardAt(active.slot)?.style.setProperty("--pull", `${active.pull}px`);
+    handlers.setTurn(
+      turnByDrag(layout, active.startTurn, event.clientX - active.x),
+    );
   }
 
   function onPointerEnd(event: PointerEvent<HTMLDivElement>) {
     const active = gesture.current;
     if (!active || active.pointerId !== event.pointerId) return;
     gesture.current = null;
-    const released = event.type === "pointerup";
-    if (active.kind === "pending") {
-      if (released) handlers.choose(active.slot);
-      return;
-    }
-    if (active.kind !== "pulling") return;
-    const card = cardAt(active.slot);
-    card?.removeAttribute("data-pulling");
-    if (released && active.pull >= PULL_OUT_PX) {
-      handlers.draw(active.slot);
-      return;
-    }
-    // Not far enough: it slides back to its chosen place.
-    card?.style.removeProperty("--pull");
+    if (active.kind !== "pending" || event.type !== "pointerup") return;
+    // Neighbours overlap the chosen card; a tap anywhere over it draws it,
+    // whichever card took the press.
+    const tappedChosen =
+      current !== undefined &&
+      (active.slot === current ||
+        contains(cardAt(current)?.getBoundingClientRect(), active));
+    if (tappedChosen) handlers.draw(current);
+    else handlers.choose(active.slot);
   }
 
   const wheelStyle = {
@@ -369,7 +333,7 @@ const WheelCard = memo(function WheelCard({
       data-fan-slot={slot}
       data-chosen={chosen || undefined}
       aria-pressed={chosen}
-      aria-label={chosen ? "往前推出的牌，往前拉出抽出" : "背面朝上的牌"}
+      aria-label={chosen ? "往前推出的牌，再點一次抽出" : "背面朝上的牌"}
       aria-describedby={describedBy}
       tabIndex={tabbable ? 0 : -1}
       style={{ "--card-angle": `${angle}deg` } as CSSProperties}

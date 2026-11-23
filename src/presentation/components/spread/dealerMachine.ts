@@ -286,7 +286,7 @@ function dealerStatus(table: {
   if (phase === "shuffling") return "正在洗牌";
   if (stage.kind === "picking") {
     const pickNumber = stage.roundTotal - emptyCount + 1;
-    return `請選第 ${pickNumber} 張（共 ${stage.roundTotal} 張）：點一下讓牌往前，再往前拉出`;
+    return `請選第 ${pickNumber} 張（共 ${stage.roundTotal} 張）：點一下讓牌往前，再點一次抽出`;
   }
   if (flying) return "牌正在放到牌位";
   if (!allRevealed) return "點擊卡牌，以火焰逐一揭示牌面";
