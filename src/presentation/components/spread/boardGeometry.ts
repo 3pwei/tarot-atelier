@@ -2,7 +2,8 @@
  * Where cards sit on the spread board, in units of 1% of the board's width
  * (CSS `cqw` on the board canvas). The board is 3:2, cards are 2:3, and
  * relative coordinates map onto an inset field so a card at an edge stays
- * whole. spread-table.css lays the board out from these same numbers.
+ * whole. spread-board.css and position-slot.css lay the board out from these
+ * same numbers.
  */
 
 /**

@@ -1,0 +1,74 @@
+/* Every position with its question and card. */
+
+.position-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.position-list__empty {
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: 0.85rem;
+}
+
+.position-list__item {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(230, 197, 122, 0.14);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  background: rgba(10, 9, 24, 0.55);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease;
+}
+
+.position-list__item:hover,
+.position-list__item[aria-current="true"] {
+  border-color: rgba(230, 197, 122, 0.6);
+}
+
+.position-list__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.position-list__body {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.position-list__body strong {
+  overflow-wrap: anywhere;
+  color: var(--color-moon);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.position-list__item[data-missing-question] strong {
+  color: #ffb877;
+}
+
+.position-list__body small {
+  color: rgba(207, 198, 220, 0.7);
+  font-size: 0.76rem;
+}
+
+.position-list__item[data-next] small {
+  color: var(--color-gold);
+}
+
+@media (max-width: 48rem) {
+  .position-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

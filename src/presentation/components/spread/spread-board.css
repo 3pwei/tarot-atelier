@@ -1,0 +1,147 @@
+/* The board: the cloth, its zoomed canvas and the field positions lie on. */
+
+/* The deck yields width to the table, where the cards now land. */
+.draw-experience {
+  --deck-card-width: clamp(5.5rem, 10vw, 8.5rem);
+}
+
+/* One table for everything: the deck, its wash and the wheel live on it. */
+.draw-table__stage.spread-stage {
+  --table-screen-margin: 6rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  min-height: 0;
+  padding-top: clamp(1.25rem, 3vw, 2rem);
+  padding-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+
+.spread-board {
+  position: relative;
+  overflow: hidden;
+  /* Clip without becoming scrollable: focusing a wheel card half below the
+     edge must not slide the whole table up. */
+  overflow: clip;
+  width: 100%;
+  /* The whole table, wheel included, stays on one screen on wide displays. */
+  max-width: calc((100svh - var(--table-screen-margin)) * 3 / 2);
+  margin-inline: auto;
+  aspect-ratio: 3 / 2;
+  border: 1px solid rgba(230, 197, 122, 0.18);
+  border-radius: calc(var(--table-radius) - 0.4rem);
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 50%,
+      rgba(114, 84, 163, 0.22),
+      transparent 75%
+    ),
+    rgba(6, 5, 14, 0.45);
+  box-shadow: inset 0 0 3rem rgba(0, 0, 0, 0.55);
+  /* Vertical swipes still scroll the page until the table is zoomed. */
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.spread-board[data-zoomed] {
+  cursor: grab;
+  touch-action: none;
+}
+
+/* Holding the table shuffles: a finger drifting up or down while it holds
+   must not turn into a scroll, which would cancel the press and end it. */
+.spread-board[data-press-to-shuffle] {
+  touch-action: none;
+}
+
+/* --slot-w and --field-margin come from boardGeometry.ts. */
+.spread-board__canvas {
+  --slot-h: calc(var(--slot-w) * 1.5);
+  position: absolute;
+  inset: 0;
+  container-type: inline-size;
+  transform-origin: 0 0;
+}
+
+/* The table steps back while cards are drawn; see `tableZoom`. */
+.spread-board__table {
+  position: absolute;
+  inset: 0;
+  transform: scale(var(--table-zoom, 1));
+  transition: transform var(--table-zoom-duration, 0ms)
+    cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.spread-board__canvas .table-ornament {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 62%;
+  color: rgba(230, 197, 122, 0.12);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  /* Painted once on its own layer, so positions moving over it never
+     repaint the large ornament. */
+  will-change: transform;
+}
+
+/* Coordinates 0–1 map onto this inset area, so cards at an edge stay whole. */
+.spread-board__field {
+  position: absolute;
+  inset: calc(var(--slot-h) / 2 + var(--field-margin))
+    calc(var(--slot-w) / 2 + var(--field-margin));
+}
+
+.spread-board__empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(80%, 22rem);
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 2.4cqw, 1.05rem);
+  letter-spacing: 0.06em;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+/* Arrange mode: a dashed frame says the layout is open for editing. It is a
+   layer of its own, not an outline: an outline on the board repaints the
+   whole board, and the page around it, on every move of a dragged position. */
+.spread-board[data-arranging]::before {
+  position: absolute;
+  z-index: 6;
+  inset: 0.5rem;
+  border: 2px dashed rgba(230, 197, 122, 0.55);
+  border-radius: calc(var(--table-radius) - 0.9rem);
+  content: "";
+  pointer-events: none;
+}
+
+.spread-board[data-arranging]::after {
+  position: absolute;
+  top: 0.9rem;
+  left: 50%;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(6, 5, 14, 0.8);
+  color: var(--color-gold);
+  content: "編輯牌陣中";
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 48rem) {
+  .draw-table__stage.spread-stage {
+    grid-template-columns: 1fr;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw-experience .spread-board__canvas .table-ornament {
+    animation: none !important;
+  }
+}

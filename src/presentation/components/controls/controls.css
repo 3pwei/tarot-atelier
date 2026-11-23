@@ -1,0 +1,166 @@
+/* Buttons and form fields shared by every part of the page: the table, dialogs, history, sharing and readings. */
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--color-ink-soft);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}
+
+.field > span {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.field em {
+  color: #ffb877;
+  font-size: 0.7rem;
+  font-style: normal;
+  letter-spacing: 0.12em;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(230, 197, 122, 0.26);
+  border-radius: 0.7rem;
+  color: var(--color-moon);
+  background: rgba(8, 8, 20, 0.62);
+  font: inherit;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  transition: border-color 160ms ease;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible,
+.field select:focus-visible {
+  border-color: var(--color-gold);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.field input:disabled,
+.field select:disabled {
+  opacity: 0.45;
+}
+
+.field textarea[aria-invalid="true"] {
+  border-color: rgba(255, 154, 60, 0.75);
+}
+
+.field small {
+  color: rgba(207, 198, 220, 0.62);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.field small[data-invalid] {
+  color: #ffb877;
+}
+
+.preset-chip,
+.ghost-action,
+.danger-action,
+.icon-action {
+  min-height: 2.4rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(230, 197, 122, 0.3);
+  border-radius: 999px;
+  color: var(--color-moon);
+  background: rgba(16, 13, 34, 0.7);
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.preset-chip:not(:disabled):hover,
+.ghost-action:not(:disabled):hover,
+.icon-action:not(:disabled):hover {
+  border-color: rgba(230, 197, 122, 0.7);
+  transform: translateY(-1px);
+}
+
+.preset-chip[aria-pressed="true"] {
+  border-color: var(--color-gold);
+  color: #1a1206;
+  background: linear-gradient(135deg, #fbeab8, #e6c57a 55%, #c69a4f);
+  font-weight: 700;
+}
+
+.ghost-action--gold {
+  border-color: rgba(230, 197, 122, 0.6);
+  color: var(--color-gold);
+}
+
+.ghost-action--gold[data-full] {
+  opacity: 0.6;
+}
+
+.danger-action {
+  border-color: rgba(255, 140, 110, 0.55);
+  color: #ffc6b4;
+  background: rgba(60, 18, 14, 0.5);
+}
+
+.danger-action:not(:disabled):hover {
+  border-color: #ff9a7c;
+  background: rgba(90, 26, 18, 0.65);
+}
+
+.icon-action {
+  display: inline-grid;
+  min-width: 2.4rem;
+  padding: 0.3rem 0.6rem;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.preset-chip:disabled,
+.ghost-action:disabled,
+.danger-action:disabled,
+.icon-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.preset-chip:focus-visible,
+.ghost-action:focus-visible,
+.danger-action:focus-visible,
+.icon-action:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.ghost-action--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ghost-action--icon svg {
+  font-size: 1.1rem;
+}
+
+@media (max-width: 28rem) {
+  .preset-chip {
+    flex: 1 1 auto;
+    padding-inline: 0.7rem;
+  }
+}

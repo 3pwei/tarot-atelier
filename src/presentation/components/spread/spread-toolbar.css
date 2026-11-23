@@ -1,0 +1,44 @@
+/* The toolbar: position count, editing, adding, clearing and history. */
+
+.spread-toolbar {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.spread-toolbar__row,
+.spread-toolbar__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spread-toolbar__row {
+  gap: 0.6rem 0.9rem;
+}
+
+.spread-toolbar__count {
+  color: var(--color-ink-soft);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.spread-toolbar__count[data-full] {
+  color: #ffb877;
+}
+
+/* Starting over sits apart, at the end of the row. */
+.spread-toolbar__restart {
+  margin-left: auto;
+}
+
+.spread-toolbar__confirm span {
+  color: #ffd5ad;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 28rem) {
+  .spread-toolbar__confirm span {
+    width: 100%;
+  }
+}

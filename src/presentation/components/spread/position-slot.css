@@ -1,0 +1,230 @@
+/* A position on the board: its frame, number, handles, rotation and the cards dealt to it. */
+
+/* Frames and numbers belong to arranging; in play only the cards show. A
+   focused position still shows its number for keyboard users. */
+.spread-board:not([data-arranging]) .spread-slot__frame {
+  opacity: 0;
+}
+
+.spread-slot {
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--y) * 100%);
+  left: calc(var(--x) * 100%);
+  width: var(--slot-w);
+  aspect-ratio: 2 / 3;
+  cursor: pointer;
+  /* Taps select and reveal; only arranging captures drags. */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  transform: translate(-50%, -50%) rotate(var(--rot));
+}
+
+.spread-slot[data-selected] {
+  z-index: 3;
+}
+
+.spread-slot[data-dragging],
+.spread-slot[data-rotating] {
+  z-index: 4;
+  cursor: grabbing;
+  /* Its own layer while it moves: the board underneath is not repainted. */
+  will-change: translate, transform;
+}
+
+.spread-slot[data-arrangeable] {
+  cursor: grab;
+  touch-action: none;
+}
+
+/* Press and hold switches to rotating: a dial ring and the live angle. */
+.spread-slot[data-rotating] {
+  z-index: 4;
+  cursor: grabbing;
+}
+
+.spread-slot[data-rotating]::before {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--slot-h) * 1.25);
+  aspect-ratio: 1;
+  border: 1px dashed rgba(230, 197, 122, 0.75);
+  border-radius: 50%;
+  box-shadow: 0 0 1.4rem rgba(230, 197, 122, 0.25);
+  content: "";
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.spread-slot__angle::after {
+  content: attr(data-angle);
+}
+
+.spread-slot__angle {
+  position: absolute;
+  z-index: 9;
+  top: 50%;
+  left: 50%;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid rgba(251, 234, 184, 0.8);
+  border-radius: 999px;
+  color: #1a1206;
+  background: var(--color-gold);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(calc(var(--rot) * -1));
+}
+
+.spread-slot__frame {
+  position: absolute;
+  display: grid;
+  inset: 0;
+  place-items: center;
+  border: 1px dashed rgba(230, 197, 122, 0.55);
+  border-radius: 6% / 4%;
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(230, 197, 122, 0.1),
+    rgba(6, 5, 14, 0.35) 75%
+  );
+  box-shadow: inset 0 0 0 0.35cqw rgba(6, 5, 14, 0.4);
+  color: var(--color-gold);
+}
+
+/* The position's number, as a faint watermark in the middle of the frame,
+   upright whatever the position's rotation. */
+.spread-slot__number {
+  font-family: var(--font-display);
+  font-size: calc(var(--slot-w) * 0.6);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.32;
+  transform: rotate(calc(var(--rot) * -1));
+  user-select: none;
+}
+
+.spread-slot[data-missing-question] .spread-slot__frame {
+  border-color: rgba(255, 154, 60, 0.75);
+  color: #ffb877;
+}
+
+.spread-slot[data-selected] .spread-slot__frame,
+.spread-slot[data-selected] .spread-slot__cards {
+  border-radius: 6% / 4%;
+  box-shadow:
+    0 0 0 2px rgba(230, 197, 122, 0.9),
+    0 0 1.6rem rgba(230, 197, 122, 0.45);
+}
+
+/* The position's own control: an invisible button over the whole frame, for
+   focus and the keyboard. Pointer gestures belong to the slot around it, and
+   cards dealt onto the position lie above it. */
+.spread-slot__handle {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6% / 4%;
+  background: none;
+  cursor: inherit;
+}
+
+/* One-tap rotation, shown on the selected position. */
+.spread-slot__rotate {
+  position: absolute;
+  z-index: 8;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  width: max(1.9rem, calc(var(--slot-w) * 0.32));
+  aspect-ratio: 1;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(251, 234, 184, 0.8);
+  border-radius: 50%;
+  color: var(--color-gold);
+  background: rgba(14, 11, 30, 0.92);
+  box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.5);
+  font-size: max(1rem, calc(var(--slot-w) * 0.18));
+  transform: translate(40%, 40%) rotate(calc(var(--rot) * -1));
+  cursor: grab;
+  touch-action: none;
+}
+
+.spread-slot[data-rotating] .spread-slot__rotate {
+  color: #1a1206;
+  background: var(--color-gold);
+  cursor: grabbing;
+}
+
+.spread-slot__rotate:hover {
+  color: #1a1206;
+  background: var(--color-gold);
+}
+
+.spread-slot__rotate:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.spread-slot__handle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* A position whose card has landed leaves the tab order: the card carries
+   the number in its own label. */
+.spread-board:not([data-arranging])
+  .spread-slot[data-settled]
+  .spread-slot__handle {
+  display: none;
+}
+
+.spread-slot__cards {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+}
+
+.spread-slot .drawn-card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  gap: 0;
+}
+
+.spread-slot .drawn-card__caption {
+  display: none;
+}
+
+.spread-slot .drawn-card--jumper {
+  z-index: 2;
+  top: 16%;
+  left: 34%;
+  width: 86%;
+  margin-top: 0;
+}
+
+.spread-slot .drawn-card__badge {
+  top: -0.5rem;
+  right: -0.4rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+}
+
+.spread-slot .drawn-card__body {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 48rem) {
+  .spread-slot .drawn-card__badge {
+    display: none;
+  }
+}

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "./card-artwork.css";
-/* The draw table's styles live beside their components. The order below is
+/* Component styles live beside their components. The order below is
    the cascade order: keep it here, not in component imports, so development
    and production builds agree. */
 @import "../presentation/components/draw/draw-table.css";
@@ -12,7 +12,17 @@
 @import "../presentation/components/draw/drawn-card.css";
 @import "../presentation/components/draw/card-viewer.css";
 @import "../presentation/components/dialog/dialog.css";
-@import "./spread-table.css";
+@import "../presentation/components/controls/controls.css";
+@import "../presentation/components/spread/spread-setup.css";
+@import "../presentation/components/spread/spread-toolbar.css";
+@import "../presentation/components/spread/template-shelf.css";
+@import "../presentation/components/spread/spread-board.css";
+@import "../presentation/components/spread/board-zoom-controls.css";
+@import "../presentation/components/spread/position-slot.css";
+@import "../presentation/components/spread/spread-details.css";
+@import "../presentation/components/spread/position-number.css";
+@import "../presentation/components/spread/position-inspector.css";
+@import "../presentation/components/spread/position-list.css";
 @import "./reading-panel.css";
 @import "./history.css";
 @import "./share.css";
