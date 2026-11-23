@@ -1,0 +1,20 @@
+/* Below the board: the hint or the position editor, then the list of positions. */
+
+/* The hint (or the position editor) spans the top; positions sit below. */
+.spread-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1.25rem;
+  padding: 0 clamp(1rem, 3vw, 2rem) clamp(1rem, 2.6vw, 1.5rem);
+}
+
+.spread-details__hint {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border: 1px dashed rgba(230, 197, 122, 0.22);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}

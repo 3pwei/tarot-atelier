@@ -1,4 +1,4 @@
-/* The draw table around the spread board: its frame, stage and footer. The board lives in spread-table.css. */
+/* The draw table around the spread board: its frame, stage, footer and notice line. The board lives in spread/spread-board.css. */
 
 .draw-experience {
   /* How the pile lies on the cloth; a card leaving it starts at this turn. */
@@ -98,4 +98,16 @@
   .draw-experience {
     --drawn-card-width: clamp(8rem, 40vw, 10rem);
   }
+}
+
+.spread-notice {
+  min-height: 1.4rem;
+  margin: 0.6rem clamp(1rem, 3vw, 2rem) 0;
+  color: var(--color-gold);
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
+
+.spread-notice:empty {
+  visibility: hidden;
 }
