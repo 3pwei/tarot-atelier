@@ -94,3 +94,70 @@ test("a spread saved in a chapter becomes a chapter of its own", async ({
   await page.getByRole("button", { name: "回到目錄" }).click();
   await expect(entry(page, "我的三張")).toBeVisible();
 });
+
+test("opening the cover plays, then the frontispiece takes the focus", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "打開魔法書" }).click();
+  await expect(page.locator(".opening")).toBeAttached();
+  await expect(page.locator(".opening")).toHaveCount(0, { timeout: 5_000 });
+  await expect(
+    page.getByRole("img", { name: /巫師站在高塔上/u }),
+  ).toBeVisible();
+});
+
+test("a turning leaf never blocks the page's buttons", async ({ page }) => {
+  await page.goto("/#contents");
+  const codex = entry(page, "The Codex");
+  await codex.click();
+  await codex.click();
+  await expect(page.locator(".page-turn__sheet")).toHaveCount(7);
+  await expect(page.locator(".page-turn")).toHaveCount(0);
+  // The first click after landing reaches the page, not a leftover layer.
+  await page.getByRole("button", { name: "回到目錄" }).click();
+  await expect(entry(page, "The Codex")).toBeVisible();
+});
+
+test("a chapter opened from a link turns its leaf back to the contents", async ({
+  page,
+}) => {
+  await page.goto("/#spread-three-card");
+  await expect(page.locator("[data-slot]")).toHaveCount(3);
+  await page.getByRole("button", { name: "回到目錄" }).click();
+  await expect(page.locator(".page-turn")).toBeAttached();
+  await expect(entry(page, "The Three Cards")).toBeVisible();
+});
+
+test("with less motion, pages swap with no opening and no leaf", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await page.getByRole("button", { name: "打開魔法書" }).click();
+  await expect(page.locator(".opening")).toHaveCount(0);
+  await expect(
+    page.getByRole("img", { name: /巫師站在高塔上/u }),
+  ).toBeVisible();
+  await page.goto("/#contents");
+  const single = entry(page, "The Single Card");
+  await single.click();
+  await single.click();
+  await expect(page.locator(".page-turn")).toHaveCount(0);
+  await expect(page.locator("[data-slot]")).toHaveCount(1);
+});
+
+test("the page sound is off until turned on, and stays on after a reload", async ({
+  page,
+}) => {
+  await page.goto("/#contents");
+  const toggle = page.getByRole("button", { name: "翻頁聲" });
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "翻頁聲" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});

@@ -5,10 +5,12 @@ import {
   LocalStorageTextStorage,
   READING_HISTORY_STORAGE_KEY,
   RETIRED_TABLE_STORAGE_KEY,
+  SOUND_PREFERENCE_STORAGE_KEY,
   SPREAD_TEMPLATE_STORAGE_KEY,
 } from "@/infrastructure/persistence/localStorageTextStorage";
 import { createBrowserReadingProvider } from "@/infrastructure/reading/readingProviders";
 import { BrowserSharer } from "@/infrastructure/share/browserSharer";
+import { WebAudioPageSound } from "@/infrastructure/sound/webAudioPageSound";
 import { renderShareImage } from "@/presentation/components/share/renderShareImage";
 import type { AtelierServices } from "@/presentation/services/atelierServices";
 import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
@@ -30,6 +32,10 @@ export function createBrowserServices(): AtelierServices {
       renderImage: renderShareImage,
       siteUrl: currentSiteUrl,
     },
+    pageSound: new WebAudioPageSound(),
+    soundPreferenceStorage: new LocalStorageTextStorage(
+      SOUND_PREFERENCE_STORAGE_KEY,
+    ),
   };
 }
 

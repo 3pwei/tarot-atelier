@@ -21,6 +21,9 @@ export const BOOK_COPY = {
   leaveTitle: "離開這一章？",
   leaveMessage: "牌桌上還有沒翻完的牌或正在編輯的牌陣，離開後不會保留。",
   leaveConfirm: "離開",
+  soundOn: "Sound on",
+  soundOff: "Sound off",
+  soundLabel: "翻頁聲",
   codexHeading: "The Codex of Cards",
   recordsHeading: "The Records",
 } as const;

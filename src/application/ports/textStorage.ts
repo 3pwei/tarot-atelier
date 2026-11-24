@@ -22,3 +22,6 @@ export type SpreadTemplateStorage = TextStorage;
 
 /** The finished rounds kept on this device. */
 export type ReadingHistoryStorage = TextStorage;
+
+/** Whether the book's pages make a sound when they turn. */
+export type SoundPreferenceStorage = TextStorage;

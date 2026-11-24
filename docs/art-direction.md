@@ -59,6 +59,8 @@ illustrations; no third-party artwork, font glyph art or traced imagery is used.
 
 ## Motion
 
+The book's page turns, riffles and opening are described in [ADR 0011](decisions/0011-turning-the-book-s-pages.md): CSS keyframes on `transform` and `opacity`, a paper sound that is off until the reader turns it on.
+
 Motion begins subtly and must respect `prefers-reduced-motion`. Scene effects are decorative, skip-safe, pointer-inert, and separable from future asynchronous interpretation tasks.
 
 ## Phase 09 the magic book

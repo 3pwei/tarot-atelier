@@ -3,7 +3,8 @@ import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
 import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
 
 interface BookCoverProps {
-  readonly onOpen: () => void;
+  /** Hears where the closed book lay, so the opening starts right there. */
+  readonly onOpen: (book: DOMRect) => void;
 }
 
 /** The closed book on the desk; one tap opens it. */
@@ -13,7 +14,10 @@ export function BookCover({ onOpen }: BookCoverProps) {
       type="button"
       className="book-cover"
       aria-label={BOOK_COPY.openCoverLabel}
-      onClick={onOpen}
+      onClick={(event) => {
+        const front = event.currentTarget.querySelector(".book-cover__front");
+        onOpen((front ?? event.currentTarget).getBoundingClientRect());
+      }}
     >
       <span className="book-cover__front">
         <Image

@@ -33,6 +33,7 @@
 @import "../presentation/components/share/share-dialog.css";
 @import "../presentation/components/share/share-panel.css";
 @import "../presentation/components/book/book.css";
+@import "../presentation/components/book/turning/turning.css";
 
 :root {
   --color-midnight: #080914;

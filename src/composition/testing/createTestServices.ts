@@ -22,6 +22,8 @@ export function createTestServices(
     historyStorage: new MemoryTextStorage(),
     retiredTableStorage: new MemoryTextStorage(),
     share: fakeShareServices().services,
+    pageSound: { play: () => undefined },
+    soundPreferenceStorage: new MemoryTextStorage(),
     ...overrides,
   };
 }
