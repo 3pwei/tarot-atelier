@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { SpreadTemplateStorage } from "@/application/ports/textStorage";
 import {
+  libraryFromText,
   loadTemplateLibrary,
+  readStoredLibrary,
   saveTemplateLibrary,
 } from "@/application/use-cases/templateLibrary";
 import { BUILT_IN_TEMPLATES } from "@/domain/spread/templates";
@@ -58,5 +60,23 @@ describe("template library persistence", () => {
     expect(saveTemplateLibrary(storage, BUILT_IN_TEMPLATES)).toEqual({
       ok: false,
     });
+  });
+});
+
+describe("libraryFromText", () => {
+  it("reads a library without touching storage", () => {
+    expect(libraryFromText(null).status).toBe("default");
+    expect(libraryFromText("not json").status).toBe("discarded");
+    expect(libraryFromText("not json").library).toBe(BUILT_IN_TEMPLATES);
+  });
+});
+
+describe("readStoredLibrary", () => {
+  it("treats storage it cannot read as empty", () => {
+    const storage = new MemoryStorage();
+    storage.read = () => {
+      throw new Error("blocked");
+    };
+    expect(readStoredLibrary(storage)).toBeNull();
   });
 });

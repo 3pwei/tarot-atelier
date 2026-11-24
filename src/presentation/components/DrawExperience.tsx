@@ -1,10 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import {
-  createReadingRequester,
-  type ReadingRequester,
-} from "@/application/use-cases/requestReading";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReadingRequester } from "@/application/use-cases/requestReading";
 import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type { RandomSource } from "@/domain/deck/draw";
 import type { ReadingRecord } from "@/domain/history/readingHistory";
@@ -28,6 +25,7 @@ import { motionTimingStyle } from "@/presentation/components/draw/dealMotion";
 import { useMotionMode } from "@/presentation/components/draw/useMotionMode";
 import { ReadingPanel } from "@/presentation/components/reading/ReadingPanel";
 import { createRequestId as createReadingRequestId } from "@/presentation/components/reading/readingSession";
+import { useReadingServices } from "@/presentation/components/reading/useReadingServices";
 import { useReadingSession } from "@/presentation/components/reading/useReadingSession";
 import { ArrangeConfirmDialog } from "@/presentation/components/spread/ArrangeConfirmDialog";
 import { TableStatusBar } from "@/presentation/components/draw/TableStatusBar";
@@ -56,6 +54,13 @@ interface DrawExperienceProps {
   /** Replaces the requester around the provider, e.g. in tests. */
   readonly readingRequester?: ReadingRequester;
   readonly createRequestId?: () => string;
+  /** The chapter's spread; the table starts from it on every visit. */
+  readonly templateId?: string;
+  /**
+   * Hears whether leaving now would lose something: cards drawn but not all
+   * revealed, or a layout being edited.
+   */
+  readonly onUnfinishedChange?: (unfinished: boolean) => void;
 }
 
 /**
@@ -69,6 +74,8 @@ export function DrawExperience({
   now = currentTime,
   readingRequester: readingRequesterOverride,
   createRequestId = createReadingRequestId,
+  templateId,
+  onUnfinishedChange,
 }: DrawExperienceProps = {}) {
   const root = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -86,14 +93,18 @@ export function DrawExperience({
     () => registry.get(STANDARD_DECK_ID) ?? registry.getSelected(),
     [registry],
   );
-  const readingRequester = useMemo(
-    () => readingRequesterOverride ?? createReadingRequester(readingProvider),
-    [readingRequesterOverride, readingProvider],
-  );
+  const { requester: readingRequester, recordServices: recordReadingServices } =
+    useReadingServices({
+      ...(readingRequesterOverride
+        ? { requester: readingRequesterOverride }
+        : {}),
+      createRequestId,
+    });
   const session = useSpreadSession(
     templateStorage,
     retiredTableStorage,
     createId,
+    templateId,
   );
   const { state, dispatch, generation } = session;
   const { spread, revealedInstanceIds, selectedId } = state;
@@ -104,14 +115,6 @@ export function DrawExperience({
   const history = useReadingHistory(historyStorage, announce);
   const [showingHistory, setShowingHistory] = useState(false);
   const [sharing, setSharing] = useState<ReadingRecord>();
-  const recordReadingServices = useMemo(
-    () => ({
-      requester: readingRequester,
-      source: readingProvider.source,
-      createRequestId,
-    }),
-    [readingRequester, readingProvider.source, createRequestId],
-  );
   const [inspected, setInspected] = useState<string>();
   const arrange = useArrangeMode({
     spread,
@@ -167,6 +170,11 @@ export function DrawExperience({
   // reading needs every position drawn as well.
   const spreadRevealed =
     filled > 0 && dealer.emptyCount === 0 && dealer.allRevealed;
+
+  const unfinished = arranging || (filled > 0 && !spreadRevealed);
+  useEffect(() => {
+    onUnfinishedChange?.(unfinished);
+  }, [unfinished, onUnfinishedChange]);
 
   const handleRevealed = useCallback(
     (instanceId: string) => dispatch({ type: "revealed", instanceId }),

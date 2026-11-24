@@ -42,14 +42,16 @@ export interface SpreadSessionHandle {
 }
 
 /**
- * The table for this visit. Every visit, a reload included, starts from the
- * default template: finished rounds live in the reading history, and saved
- * layouts in the template library, so the table itself is never stored.
+ * The table for this visit. Every visit, a reload included, starts fresh from
+ * `startTemplateId` (the chapter's spread) or else the default template:
+ * finished rounds live in the reading history, and saved layouts in the
+ * template library, so the table itself is never stored.
  */
 export function useSpreadSession(
   templateStorage: SpreadTemplateStorage,
   retiredTableStorage: RetiredTableStorage,
   createId: () => string = createClientId,
+  startTemplateId?: string,
 ): SpreadSessionHandle {
   const reducer = useMemo(() => createSpreadReducer(createId), [createId]);
   const [state, dispatch] = useReducer(reducer, undefined, () =>
@@ -72,11 +74,12 @@ export function useSpreadSession(
     dispatch({
       type: "hydrate",
       library: templates.library,
+      ...(startTemplateId ? { templateId: startTemplateId } : {}),
       ...(templates.status === "discarded"
         ? { notice: "本機的牌陣庫無法讀取，已換回預設範例。" }
         : {}),
     });
-  }, [templateStorage, retiredTableStorage]);
+  }, [templateStorage, retiredTableStorage, startTemplateId]);
 
   useEffect(() => {
     if (status !== "ready" || state.library === loadedLibrary.current) return;

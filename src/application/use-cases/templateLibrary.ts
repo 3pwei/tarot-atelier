@@ -16,28 +16,40 @@ export type LibraryLoad =
 export function loadTemplateLibrary(
   storage: SpreadTemplateStorage,
 ): LibraryLoad {
-  let text: string | null;
-  try {
-    text = storage.read();
-  } catch {
-    text = null;
+  const load = libraryFromText(readStoredLibrary(storage));
+  if (load.status === "discarded") {
+    try {
+      storage.clear();
+    } catch {
+      // The next successful save overwrites it.
+    }
   }
-  if (text === null) return { status: "default", library: BUILT_IN_TEMPLATES };
+  return load;
+}
 
+/** The stored text, or null when there is none or it cannot be read. */
+export function readStoredLibrary(
+  storage: SpreadTemplateStorage,
+): string | null {
+  try {
+    return storage.read();
+  } catch {
+    return null;
+  }
+}
+
+/** The library a stored text describes, without touching storage. */
+export function libraryFromText(text: string | null): LibraryLoad {
+  if (text === null) return { status: "default", library: BUILT_IN_TEMPLATES };
   let library: TemplateLibrary | undefined;
   try {
     library = parseTemplateLibrary(JSON.parse(text));
   } catch {
     library = undefined;
   }
-  if (library) return { status: "restored", library };
-
-  try {
-    storage.clear();
-  } catch {
-    // The next successful save overwrites it.
-  }
-  return { status: "discarded", library: BUILT_IN_TEMPLATES };
+  return library
+    ? { status: "restored", library }
+    : { status: "discarded", library: BUILT_IN_TEMPLATES };
 }
 
 export function saveTemplateLibrary(

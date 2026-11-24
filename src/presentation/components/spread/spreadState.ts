@@ -54,6 +54,8 @@ export interface SpreadUiState {
   readonly notice?: { readonly id: number; readonly text: string };
   /** Set while the layout is being edited; see editBaseline.ts. */
   readonly editBaseline?: EditBaseline;
+  /** The chapter's spread: a fresh table, cleared included, starts from it. */
+  readonly startTemplateId?: string;
 }
 
 export interface DealtPosition {
@@ -65,6 +67,8 @@ export type SpreadAction =
   | {
       readonly type: "hydrate";
       readonly library: TemplateLibrary;
+      /** The spread to start from; the library's first one when absent or gone. */
+      readonly templateId?: string;
       readonly notice?: string;
     }
   | { readonly type: "apply-template"; readonly templateId: string }
@@ -122,9 +126,15 @@ export function createHydrationIds(): CreateId {
   return () => `hydrating-${(next += 1)}`;
 }
 
-/** A fresh reading from the library's first template, or a blank table. */
-function freshSpread(library: TemplateLibrary, createId: CreateId): Spread {
-  const template = defaultTemplate(library);
+/** A fresh reading from the chosen template, else the library's first, else a blank table. */
+function freshSpread(
+  library: TemplateLibrary,
+  createId: CreateId,
+  templateId?: string,
+): Spread {
+  const template =
+    library.find((candidate) => candidate.id === templateId) ??
+    defaultTemplate(library);
   return template
     ? createSpreadFromTemplate({ template, createId })
     : createBlankSpread({ createId });
@@ -133,9 +143,11 @@ function freshSpread(library: TemplateLibrary, createId: CreateId): Spread {
 export function createInitialState(
   createId: CreateId,
   library: TemplateLibrary = BUILT_IN_TEMPLATES,
+  startTemplateId?: string,
 ): SpreadUiState {
   return {
-    spread: freshSpread(library, createId),
+    ...(startTemplateId ? { startTemplateId } : {}),
+    spread: freshSpread(library, createId, startTemplateId),
     library,
     revealedInstanceIds: new Set(),
     hydrated: false,
@@ -336,7 +348,8 @@ export function createSpreadReducer(createId: CreateId) {
         const next: SpreadUiState = {
           ...state,
           library: action.library,
-          spread: freshSpread(action.library, createId),
+          spread: freshSpread(action.library, createId, action.templateId),
+          ...(action.templateId ? { startTemplateId: action.templateId } : {}),
           revealedInstanceIds: new Set<string>(),
           selectedId: undefined,
           hydrated: true,
@@ -439,10 +452,17 @@ export function createSpreadReducer(createId: CreateId) {
       case "select":
         return { ...state, selectedId: action.positionId };
       case "clear": {
-        const first = defaultTemplate(state.library);
+        const next = createInitialState(
+          createId,
+          state.library,
+          state.startTemplateId,
+        );
+        const first = state.library.find(
+          (template) => template.id === next.spread.templateId,
+        );
         return announce(
           {
-            ...createInitialState(createId, state.library),
+            ...next,
             hydrated: true,
             generation: state.generation + 1,
           },
