@@ -13,34 +13,43 @@ export interface BookArtPiece {
   readonly height: number;
   readonly quality: number;
   /**
-   * Keeps transparency: the cover's rounded corners sit on the desk, and the
-   * frontispiece is ink on the page's own paper.
+   * What shows where the art draws nothing. Only the cover keeps transparency,
+   * for its rounded corners on the desk: Chrome encodes a WebP with alpha
+   * nearly losslessly, at three times the size.
    */
-  readonly transparent: boolean;
+  readonly background: "transparent" | `#${string}`;
 }
 
 export const BOOK_ART: readonly BookArtPiece[] = [
-  { name: "cover", width: 340, height: 520, quality: 0.88, transparent: true },
   {
-    name: "frontispiece",
-    width: 300,
-    height: 640,
+    name: "cover",
+    width: 340,
+    height: 520,
     quality: 0.88,
-    transparent: true,
+    background: "transparent",
+  },
+  {
+    // Cropped to its frame: the half of the frame's line outside it falls on
+    // the page's own paper colour.
+    name: "frontispiece",
+    width: 288,
+    height: 628,
+    quality: 0.82,
+    background: "#e9d7ad",
   },
   {
     name: "desk-portrait",
     width: 390,
     height: 844,
     quality: 0.78,
-    transparent: false,
+    background: "#1a0d05",
   },
   {
     name: "desk-landscape",
     width: 1280,
     height: 860,
     quality: 0.78,
-    transparent: false,
+    background: "#1a0d05",
   },
 ];
 

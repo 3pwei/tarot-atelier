@@ -21,8 +21,8 @@ export function FrontispiecePage({ onToContents }: FrontispiecePageProps) {
         <Image
           src={`${PUBLIC_BASE_PATH}/book/frontispiece.webp`}
           alt={BOOK_COPY.frontispieceAlt}
-          width={300}
-          height={640}
+          width={288}
+          height={628}
         />
       </div>
       <div className="book-frontispiece__foot">

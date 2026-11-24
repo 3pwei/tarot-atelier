@@ -41,11 +41,11 @@ async function main() {
       });
       const svg = readFileSync(sourcePath(piece), "utf8");
       await page.setContent(
-        `<!doctype html><style>${faces}html,body{margin:0;background:transparent}svg{display:block}</style>${svg}`,
+        `<!doctype html><style>${faces}html,body{margin:0;background:${piece.background}}svg{display:block}</style>${svg}`,
       );
       await page.evaluate(() => document.fonts.ready);
       const png = await page.screenshot({
-        omitBackground: piece.transparent,
+        omitBackground: piece.background === "transparent",
       });
       writeFileSync(
         outputPath(piece),
