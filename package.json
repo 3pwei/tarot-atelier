@@ -23,9 +23,13 @@
     "test:e2e": "playwright test",
     "perf": "pnpm build && playwright test -c playwright.perf.config.ts",
     "thumbnails": "node scripts/thumbnails/cli.ts",
+    "book-art": "node scripts/book-art/cli.ts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
+    "@fontsource/iansui": "5.3.1",
+    "@fontsource/im-fell-english": "5.3.0",
+    "@fontsource/pinyon-script": "5.3.0",
     "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",
