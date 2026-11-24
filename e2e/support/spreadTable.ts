@@ -2,6 +2,15 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 /** Shared steps for specs that play the spread table. */
 
+/** The spread the table opens with when no chapter is named. */
+export const DEFAULT_CHAPTER = "three-card";
+
+/** Opens the book straight at a spread's chapter, past the cover. */
+export async function openChapter(page: Page, templateId = DEFAULT_CHAPTER) {
+  await page.goto(`/#spread-${templateId}`);
+  await expect(page.locator("[data-slot]").first()).toBeVisible();
+}
+
 export function slot(page: Page, index: number): Locator {
   return page.locator(`[data-slot][data-index='${index}']`);
 }

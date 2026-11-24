@@ -5,12 +5,13 @@ import {
   fannedDeck,
   slot,
   wheelRisen,
+  openChapter,
 } from "./support/spreadTable";
 
 /** Hold the pack in the middle to wash, then choose cards from the wheel: tap to lift, tap again to draw. */
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page);
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
 });
@@ -103,13 +104,14 @@ test("holding the deck lifts its cards into a vortex of cards the pack's size", 
 test("the pack is the same size whichever spread is laid out", async ({
   page,
 }) => {
-  const picker = page.getByRole("region", { name: "選擇牌陣" });
   const widths: number[] = [];
-  for (const name of ["經典三張", "單張指引", "五張十字", "圓環"]) {
-    await picker.getByRole("button", { name, exact: true }).click();
-    await expect(
-      page.getByText(`已套用「${name}」`, { exact: false }),
-    ).toBeVisible();
+  for (const templateId of [
+    "three-card",
+    "single-card",
+    "five-card",
+    "circle",
+  ]) {
+    await openChapter(page, templateId);
     widths.push(await topCardWidth(page));
   }
   for (const width of widths)

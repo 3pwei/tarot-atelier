@@ -9,6 +9,7 @@ import {
   deckPile,
   pickAll,
   reveal,
+  openChapter,
 } from "./support/spreadTable";
 
 // Deals and burns three cards before reading; software-rendered CI browsers need headroom.
@@ -27,7 +28,7 @@ function offSiteRequests(page: Page, baseURL: string | undefined): string[] {
 
 async function finishSpread(page: Page, answer: EndpointAnswer) {
   const received = await answerReadings(page, answer);
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page, "面試結果");
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
   const panel = page.locator(".reading-panel");

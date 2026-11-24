@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { askMainQuestion, slot } from "./support/spreadTable";
+import { askMainQuestion, slot, openChapter } from "./support/spreadTable";
 
 /** Leaving the editor with layout changes that are not in the library. */
 
@@ -24,7 +24,7 @@ const unsavedDialog = (page: Page) =>
   page.getByRole("alertdialog", { name: "牌陣還沒儲存" });
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page);
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
   await page.getByRole("button", { name: "編輯牌陣" }).click();
