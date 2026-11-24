@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
+import "@fontsource/pinyon-script/400.css";
+import "@fontsource/im-fell-english/400.css";
+import "@fontsource/im-fell-english/400-italic.css";
+import "@fontsource/iansui/400.css";
 import "./globals.css";
-import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
-
-const bodyStyle = {
-  "--stardust-background": `url("${PUBLIC_BASE_PATH}/art/stardust-field.svg")`,
-} as CSSProperties;
 
 export const metadata: Metadata = {
   title: "Tarot Atelier｜塔羅工坊",
@@ -22,7 +21,7 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="zh-Hant">
-      <body style={bodyStyle}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

@@ -1,0 +1,441 @@
+/* The magic book: a spell book on a candle-lit desk. Light falls from beyond
+   the top-left corner, so every shadow drifts softly to the lower right. */
+.atelier-book {
+  --book-ink: #3d2a18;
+  --book-ink-soft: #6b5238;
+  --book-paper: #efe0bd;
+  --book-paper-deep: #e4cf9f;
+  --book-gold: #e6c57a;
+  --book-script: "Pinyon Script", cursive;
+  --book-serif: "IM Fell English", "Iansui", serif;
+  --book-text: "Iansui", "Noto Serif TC", serif;
+  --book-space-1: 8px;
+  --book-space-2: 16px;
+  --book-space-3: 24px;
+  --book-space-4: 40px;
+  --book-page-inline: 22px;
+  /* Fine fibres and speckle, multiplied into the paper; drawn once. */
+  --book-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .22 0 0 0 0 .1 0 0 0 .32 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+  --book-shadow:
+    6px 10px 22px rgba(8, 3, 0, 0.45), 2px 3px 6px rgba(8, 3, 0, 0.4);
+
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 12px 10px;
+  background: #1a0d05 var(--desk-portrait) center / cover no-repeat;
+  color: var(--book-ink);
+  font-family: var(--book-text);
+  overflow-x: clip;
+}
+
+@media (min-aspect-ratio: 1/1) {
+  .atelier-book {
+    background-image: var(--desk-landscape);
+  }
+}
+
+/* ---- the closed book ---- */
+.book-cover {
+  display: grid;
+  justify-items: center;
+  gap: var(--book-space-4);
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.book-cover__front {
+  position: relative;
+  width: min(340px, 82vw);
+  aspect-ratio: 340 / 520;
+  border-radius: 4px 10px 10px 4px;
+  box-shadow:
+    9px 9px 0 -1px #e3cfa3,
+    10px 10px 0 -1px #8c6c3f,
+    var(--book-shadow);
+}
+
+.book-cover__front img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.book-cover__front::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at -10% -10%,
+      rgba(255, 205, 140, 0.42),
+      rgba(255, 170, 90, 0.14) 38%,
+      transparent 62%
+    ),
+    linear-gradient(140deg, transparent 40%, rgba(8, 3, 0, 0.4));
+}
+
+.book-cover:focus-visible {
+  outline: none;
+}
+
+.book-cover:focus-visible .book-cover__front {
+  outline: 3px solid var(--book-gold);
+  outline-offset: 6px;
+}
+
+/* ---- text lifted off the paper by a heavy shadow, never by colour ---- */
+.book-float {
+  border: 0;
+  padding: 6px 4px;
+  background: none;
+  cursor: pointer;
+  font-family: var(--book-serif);
+  font-size: 19px;
+  letter-spacing: 0.12em;
+  color: #2a1606;
+  text-shadow:
+    0 1px 0 rgba(255, 235, 190, 0.45),
+    0 3px 2px rgba(40, 18, 2, 0.55),
+    0 10px 10px rgba(40, 18, 2, 0.55),
+    0 22px 26px rgba(30, 12, 0, 0.5);
+  min-height: 44px;
+}
+
+.book-float:focus-visible {
+  outline: 2px solid var(--book-ink);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.book-cover .book-float {
+  color: #f1dfb4;
+  font-style: italic;
+  text-shadow:
+    0 2px 2px rgba(0, 0, 0, 0.8),
+    0 8px 14px rgba(0, 0, 0, 0.8);
+}
+
+/* ---- the open book ---- */
+.book-spread {
+  position: relative;
+  width: min(100%, 420px);
+  height: calc(100dvh - 24px);
+  max-height: 900px;
+  display: flex;
+}
+
+.book-page {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 26px var(--book-page-inline) 14px;
+  border-radius: 4px 10px 10px 4px;
+  background:
+    var(--book-grain),
+    radial-gradient(
+      ellipse at 30% 20%,
+      rgba(255, 248, 225, 0.55),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 80% 90%,
+      rgba(120, 80, 30, 0.28),
+      transparent 55%
+    ),
+    linear-gradient(90deg, rgba(60, 35, 10, 0.38) 0, rgba(60, 35, 10, 0) 9%),
+    linear-gradient(180deg, var(--book-paper), var(--book-paper-deep));
+  box-shadow:
+    inset 0 0 70px rgba(70, 30, 4, 0.7),
+    inset 0 0 22px rgba(50, 20, 2, 0.75),
+    inset 0 0 4px rgba(30, 10, 0, 0.9);
+  /* Ragged paper edges: a fixed mask, so scrolling never repaints them. */
+  mask: var(--book-page-edge) 0 0 / 100% 100% no-repeat;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: book-page-in 260ms ease-out both;
+}
+
+.book-page[data-side="left"] {
+  border-radius: 10px 4px 4px 10px;
+  background:
+    var(--book-grain),
+    radial-gradient(
+      ellipse at 70% 20%,
+      rgba(255, 248, 225, 0.55),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 20% 90%,
+      rgba(120, 80, 30, 0.28),
+      transparent 55%
+    ),
+    linear-gradient(270deg, rgba(60, 35, 10, 0.38) 0, rgba(60, 35, 10, 0) 9%),
+    linear-gradient(180deg, var(--book-paper), var(--book-paper-deep));
+}
+
+/* The book's shadow on the desk: a plain box-shadow behind the pages. A
+   filter here would re-raster the whole book whenever a card moved. */
+.book-spread::before {
+  content: "";
+  position: absolute;
+  inset: 4px 2px 2px 4px;
+  border-radius: 8px;
+  box-shadow: 8px 12px 22px rgba(8, 3, 0, 0.5);
+  pointer-events: none;
+}
+
+/* One page at a time on a phone; the left page of a spread waits its turn. */
+.book-spread[data-focus="right"] > .book-page[data-side="left"],
+.book-spread[data-focus="left"] > .book-page[data-side="right"] {
+  display: none;
+}
+
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
+  .book-spread {
+    width: min(94vw, 1240px);
+    height: min(calc(100dvh - 40px), 860px);
+  }
+  /* Both pages of a spread face each other on a wide screen. */
+  .book-spread[data-focus] > .book-page[data-side] {
+    display: flex;
+  }
+  .book-spread > .book-page[data-side="left"] {
+    padding: 40px 50px 18px;
+  }
+  .book-spread > .book-page[data-side="right"] {
+    padding: 40px 50px 18px;
+  }
+  .book-page[data-wide] {
+    padding: 34px 48px 18px;
+  }
+  .book-only-narrow {
+    display: none;
+  }
+}
+
+@keyframes book-page-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-page {
+    animation: none;
+  }
+}
+
+/* ---- page furniture ---- */
+.book-running-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--book-space-2);
+  min-height: 44px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(61, 42, 24, 0.3);
+  font-family: var(--book-serif);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #4a2e12;
+}
+
+.book-running-head .book-float {
+  text-transform: none;
+}
+
+.book-title {
+  margin: var(--book-space-2) 0 0;
+  font-family: var(--book-text);
+  font-weight: 400;
+  font-size: clamp(28px, 8vw, 44px);
+  line-height: 1.1;
+  text-align: center;
+  color: var(--book-ink);
+  overflow-wrap: anywhere;
+}
+
+.book-title:lang(en) {
+  font-family: var(--book-script);
+  font-size: clamp(40px, 11vw, 64px);
+}
+
+.book-title:focus {
+  outline: none;
+}
+
+.book-flourish {
+  display: block;
+  width: 150px;
+  height: 16px;
+  margin: var(--book-space-1) auto 0;
+  flex: none;
+}
+
+.book-folio {
+  flex: none;
+  margin-top: var(--book-space-2);
+  text-align: center;
+  font-family: var(--book-serif);
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: var(--book-ink-soft);
+}
+
+.book-hint {
+  margin: var(--book-space-2) 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  font-style: italic;
+  color: #3a2410;
+}
+
+/* The table and the codex keep their own night-sky look on a dark plate,
+   until their chapters are redrawn for the book. */
+.book-plate {
+  /* Bleeds to the page edges on a phone, so the table keeps its width. */
+  margin: var(--book-space-3) calc(var(--book-page-inline) * -1) 0;
+  border-radius: 10px;
+  background: #0d0d1d;
+  box-shadow:
+    inset 0 0 0 1px rgba(230, 197, 122, 0.25),
+    2px 4px 10px rgba(30, 12, 0, 0.35);
+  color: var(--color-moon);
+  font-family: var(--font-body);
+}
+
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
+  .book-plate {
+    margin-inline: 0;
+    padding: 10px;
+  }
+}
+
+/* ---- frontispiece ---- */
+.book-frontispiece {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* The plate scales to whatever height the page leaves it. */
+.book-frontispiece img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.book-frontispiece__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--book-space-2);
+}
+
+.book-disclaimer {
+  margin: 0;
+  font-size: 11px;
+  color: var(--book-ink-soft);
+}
+
+/* ---- contents ---- */
+.book-contents {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  margin: var(--book-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.book-contents__section {
+  text-align: center;
+  font-family: var(--book-serif);
+  font-style: italic;
+  font-size: 15px;
+  letter-spacing: 0.15em;
+  color: var(--book-ink-soft);
+}
+
+.book-contents__entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--book-ink);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.book-contents__numeral {
+  flex: none;
+  width: 42px;
+  font-family: var(--book-serif);
+  font-size: 17px;
+  color: var(--book-ink-soft);
+}
+
+/* A reader's own spread may be named in Chinese, which the script face
+   cannot set: titles take the hand-lettered face unless marked English. */
+.book-contents__title {
+  font-family: var(--book-text);
+  font-size: 22px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.book-contents__title:lang(en) {
+  font-family: var(--book-script);
+  font-size: 30px;
+}
+
+.book-contents__dots {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 2px dotted rgba(61, 42, 24, 0.45);
+  transform: translateY(4px);
+}
+
+.book-contents__page {
+  flex: none;
+  font-family: var(--book-serif);
+  font-size: 16px;
+  color: var(--book-ink-soft);
+}
+
+.book-contents__entry[data-lit] {
+  background: radial-gradient(
+    ellipse at 40% 50%,
+    rgba(255, 206, 110, 0.95),
+    rgba(255, 180, 70, 0.5) 45%,
+    rgba(255, 180, 70, 0) 75%
+  );
+  box-shadow: 0 0 28px rgba(255, 190, 80, 0.55);
+}
+
+.book-contents__entry:focus-visible {
+  outline: 2px solid var(--book-ink);
+  outline-offset: 2px;
+}

@@ -82,7 +82,7 @@ ESLint 會阻擋向外層的 import，例如 `domain` 不得 import `presentatio
 
 ## 素材狀態
 
-`public/brand/tarot-atelier-mark.svg` 與 `public/art/stardust-field.svg` 是本專案原創的 Phase 00 placeholder，不是正式完稿美術。完整素材紀錄見 `docs/art-direction.md`。
+網站是一本放在木桌上的魔法書：封面、扉頁與桌面是本專案原創的 SVG（`art/book/`），以 `pnpm book-art` 輸出成 `public/book/` 的 WebP。完整素材與字型授權紀錄見 `docs/art-direction.md`。
 
 Phase 02 起的卡牌使用 `src/presentation/components/cards/` 中的程序式 SVG。牌組格式、驗證規則、JSON Schema 與最小自製牌組範例見 [`docs/deck-engine.md`](docs/deck-engine.md)。
 
