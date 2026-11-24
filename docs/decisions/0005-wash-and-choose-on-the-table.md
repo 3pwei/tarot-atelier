@@ -1,6 +1,6 @@
 # ADR 0005: Shuffle in a vortex and choose cards on the table
 
-- Status: Accepted
+- Status: Accepted; the wheel's layout and choosing by pulling are amended by [ADR 0009](0009-tap-twice-to-draw.md)
 - Date: 2026-11-16
 - Supersedes: one-click dealing of every position from the top of the pile (Phase 03)
 

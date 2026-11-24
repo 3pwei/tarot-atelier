@@ -7,7 +7,7 @@ import {
   wheelRisen,
 } from "./support/spreadTable";
 
-/** Hold the pack in the middle to wash, then choose cards from the wheel by pulling them. */
+/** Hold the pack in the middle to wash, then choose cards from the wheel: tap to lift, tap again to draw. */
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -28,13 +28,21 @@ async function lift(page: Page, card: Locator) {
   await expect(card).toHaveAttribute("aria-pressed", "true");
 }
 
-/** Pulls a lifted card up by `distance` pixels and lets go. */
-async function pull(page: Page, card: Locator, distance: number) {
-  const start = await centreOf(card);
-  await page.mouse.move(start.x, start.y);
-  await page.mouse.down();
-  await page.mouse.move(start.x, start.y - distance, { steps: 8 });
-  await page.mouse.up();
+/** Taps the point, with a finger on phones and the mouse elsewhere. */
+async function tapAt(
+  page: Page,
+  point: { readonly x: number; readonly y: number },
+  isMobile: boolean,
+) {
+  if (isMobile) await page.touchscreen.tap(point.x, point.y);
+  else await page.mouse.click(point.x, point.y);
+}
+
+/** A point on the card's upper part, which no neighbour covers once it is lifted. */
+async function upperPartOf(card: Locator) {
+  const box = await card.boundingBox();
+  if (!box) throw new Error("the card is not visible");
+  return { x: box.x + box.width / 2, y: box.y + box.height * 0.12 };
 }
 
 test("the deck lies in the middle of the table, with no separate shuffle button", async ({
@@ -349,26 +357,68 @@ test("two fingers still pinch the table before the shuffle", async ({
   await expect(fannedDeck(page)).toHaveCount(0);
 });
 
-test("a lifted card pulled up and out goes to the next position", async ({
+test("tapping the lifted card again draws it into the next position", async ({
   page,
+  isMobile,
 }) => {
   await deckPile(page).click();
+  await wheelRisen(page);
   const card = fannedDeck(page).locator('[data-fan-slot="39"]');
-  await card.scrollIntoViewIfNeeded();
-
-  // A short pull is not enough: the card settles back, still lifted.
   await lift(page, card);
-  await pull(page, card, 20);
-  await expect(card).toHaveAttribute("aria-pressed", "true");
-  await expect(slot(page, 1).locator("[data-draw-card]")).toHaveCount(0);
+  await expect(card).toHaveAccessibleName("往前推出的牌，再點一次抽出");
 
-  await pull(page, card, 110);
+  await tapAt(page, await upperPartOf(card), isMobile);
+
   await expect(card).toHaveCount(0);
   await expect(slot(page, 1).locator("[data-draw-card]")).not.toHaveCount(0);
   await expect(slot(page, 2).locator("[data-draw-card]")).toHaveCount(0);
   await expect(page.getByText(/^請選第 2 張（共 3 張）/u)).toBeVisible();
   // No reshuffle until every position has its card: the pack is on the wheel.
   await expect(deckPile(page)).toHaveCount(0);
+});
+
+test("tapping another card while one is lifted lifts that one instead", async ({
+  page,
+  isMobile,
+}) => {
+  await deckPile(page).click();
+  await wheelRisen(page);
+  const first = fannedDeck(page).locator('[data-fan-slot="39"]');
+  await lift(page, first);
+  const box = await fannedDeck(page).boundingBox();
+  if (!box) throw new Error("the wheel is not visible");
+  const at = { x: box.x + box.width * 0.25, y: box.y + box.height - 20 };
+  const under = await page.evaluate(
+    ({ x, y }) =>
+      document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-fan-slot]")
+        ?.dataset.fanSlot,
+    at,
+  );
+  expect(under).not.toBe("39");
+
+  await tapAt(page, at, isMobile);
+
+  await expect(first).toHaveAttribute("aria-pressed", "false");
+  await expect(
+    fannedDeck(page).locator(`[data-fan-slot="${under}"]`),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(slot(page, 1).locator("[data-draw-card]")).toHaveCount(0);
+});
+
+test("dragging up on a lifted card does not draw it", async ({ page }) => {
+  await deckPile(page).click();
+  await wheelRisen(page);
+  const card = fannedDeck(page).locator('[data-fan-slot="39"]');
+  await lift(page, card);
+  const start = await upperPartOf(card);
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x, start.y - 110, { steps: 8 });
+  await page.mouse.up();
+
+  await expect(card).toHaveAttribute("aria-pressed", "true");
+  await expect(slot(page, 1).locator("[data-draw-card]")).toHaveCount(0);
 });
 
 test("a tapped card slides forward right where it was tapped", async ({
@@ -392,8 +442,7 @@ test("a tapped card slides forward right where it was tapped", async ({
           ?.dataset.fanSlot,
       at,
     );
-    if (isMobile) await page.touchscreen.tap(at.x, at.y);
-    else await page.mouse.click(at.x, at.y);
+    await tapAt(page, at, isMobile);
 
     const chosen = fannedDeck(page).locator(`[data-fan-slot="${under}"]`);
     await expect(chosen).toHaveAttribute("aria-pressed", "true");
