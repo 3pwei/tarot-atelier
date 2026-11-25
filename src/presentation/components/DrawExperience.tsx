@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { ReadingRequester } from "@/application/use-cases/requestReading";
 import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type { RandomSource } from "@/domain/deck/draw";
@@ -36,7 +43,14 @@ import {
   visibleCenter,
 } from "@/presentation/components/spread/SpreadBoard";
 import { SpreadDetails } from "@/presentation/components/spread/SpreadDetails";
-import { SpreadSetup } from "@/presentation/components/spread/SpreadSetup";
+import { SpreadToolbar } from "@/presentation/components/spread/SpreadToolbar";
+import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
+import type { TableLayout } from "@/presentation/components/draw/tableLayout";
+import {
+  ReadingSpread,
+  type PrintedSpread,
+  type ReadingPages,
+} from "@/presentation/components/reading/ReadingSpread";
 import { tableAbilities } from "@/presentation/components/spread/tableMode";
 import { useArrangeMode } from "@/presentation/components/spread/useArrangeMode";
 import { usePositionHandlers } from "@/presentation/components/spread/usePositionHandlers";
@@ -63,6 +77,10 @@ interface DrawExperienceProps {
    * revealed, or a layout being edited.
    */
   readonly onUnfinishedChange?: (unfinished: boolean) => void;
+  /** One page under another, or two facing pages that never scroll. */
+  readonly layout?: TableLayout;
+  /** With facing pages, the reading's own spreads after the table's. */
+  readonly readingPages?: ReadingPages;
 }
 
 /**
@@ -78,6 +96,8 @@ export function DrawExperience({
   createRequestId = createReadingRequestId,
   templateId,
   onUnfinishedChange,
+  layout = "single-page",
+  readingPages,
 }: DrawExperienceProps = {}) {
   const root = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -174,10 +194,52 @@ export function DrawExperience({
   // The reading opens on request, once per round: a new round closes it.
   const [readingRound, setReadingRound] = useState<string>();
   const roundKey = roundKeyOf(spread);
+  // With facing pages the reading lies on the next pages; on one page it
+  // opens under the table.
+  const readingPage =
+    layout === "facing-pages" ? readingPages?.page : undefined;
   const readingOpen =
-    spreadRevealed && roundKey !== undefined && readingRound === roundKey;
+    layout === "single-page" &&
+    spreadRevealed &&
+    roundKey !== undefined &&
+    readingRound === roundKey;
+  // One spread of the reading on facing pages, live or as a still copy.
+  const readingOnPages = (
+    page: number,
+    heading: ReactNode,
+    onPage: (page: number) => void,
+  ) => (
+    <ReadingSpread page={page} onPage={onPage}>
+      <ReadingPanel
+        session={reading}
+        revealed={spreadRevealed}
+        source={readingProvider.source}
+        onShare={shareRound}
+        heading={heading}
+      />
+    </ReadingSpread>
+  );
+  // The still copy sits where the live one would, so it lays out the same.
+  const printedSpread: PrintedSpread = (page) => (
+    <div className="draw-experience">
+      <div className="draw-table paper-surface" data-layout="facing-pages">
+        <div className="draw-table__reading">
+          {readingOnPages(page, readingPages?.printedHeading, STILL_PAGE)}
+        </div>
+      </div>
+    </div>
+  );
+  const showReadingPage = (page: number | undefined) =>
+    readingPages?.show(page, printedSpread);
+  const openReading = () =>
+    layout === "facing-pages" && readingPages
+      ? showReadingPage(0)
+      : setReadingRound(roundKey);
 
   const unfinished = arranging || (filled > 0 && !spreadRevealed);
+  // On facing pages the notes page has room for the question or for the
+  // spread library and position editor, not both; arranging takes it.
+  const questionShown = !(arranging && layout === "facing-pages");
   useEffect(() => {
     onUnfinishedChange?.(unfinished);
   }, [unfinished, onUnfinishedChange]);
@@ -226,111 +288,158 @@ export function DrawExperience({
       data-table-mode={arrange.mode}
       aria-busy={loading || undefined}
     >
-      <div className="draw-table paper-surface">
-        {/* The question comes first: dealing needs it. */}
-        <div className="draw-table__question">
-          <MainQuestionField
-            value={spread.mainQuestion}
-            onChange={(text) => dispatch({ type: "main-question", text })}
-          />
-        </div>
-
-        <p className="spread-notice" role="status">
-          {state.notice?.text}
-        </p>
-
-        <SpreadSetup
-          library={state.library}
-          activeTemplateId={spread.templateId}
-          positionCount={spread.positions.length}
-          drawn={filled > 0}
-          layoutLocked={dealer.layoutLocked}
-          arranging={arranging}
-          canToggleArrange={abilities.canToggleArrange}
-          canClear={dealer.canClear}
-          dispatch={dispatch}
-          onToggleArrange={arrange.toggle}
-          onAdd={() =>
-            dispatch({
-              type: "add",
-              near: visibleCenter(viewportRef.current, fieldRef.current),
-            })
-          }
-          onClear={session.clear}
-        />
-
-        <div className="draw-table__stage spread-stage">
-          <SpreadBoard
-            spread={spread}
-            slotWidth={slotWidth}
-            zoom={dealer.zoom}
-            selectedId={selectedId}
-            arrangeable={abilities.canArrange}
-            pressToShuffle={shuffleReady}
-            awaitingIds={dealer.awaitingIds}
-            view={viewport.view}
-            gestures={shuffle.tableGestures}
-            viewportRef={viewportRef}
-            canvasRef={canvasRef}
-            fieldRef={fieldRef}
-            renderCards={renderCards}
-            onSelect={handlers.select}
-            onMove={handlers.move}
-            onNudge={handlers.nudge}
-            onRotate={handlers.rotate}
-            overlay={
-              arranging ? (
-                <BoardZoomControls
-                  canZoomIn={viewport.canZoomIn}
-                  canZoomOut={viewport.canZoomOut}
-                  onZoomIn={viewport.zoomIn}
-                  onZoomOut={viewport.zoomOut}
-                />
-              ) : (
-                <DealerDeck
-                  dealer={dealer}
-                  deckId={deck.id}
-                  canShuffle={shuffleReady}
-                  hold={shuffle.deckHold}
-                />
-              )
-            }
-          />
-        </div>
-
-        <TableHint status={dealer.status} remaining={dealer.remaining} />
-
-        {spreadRevealed && !arranging && !readingOpen && (
-          <div className="draw-table__reading-cue">
-            <BookFloatButton
-              label={BOOK_COPY.cardReadingLabel}
-              onPress={() => setReadingRound(roundKey)}
-            >
-              <span lang="en">{BOOK_COPY.cardReading}</span>
-            </BookFloatButton>
+      <div className="draw-table paper-surface" data-layout={layout}>
+        {readingPage !== undefined && readingPages ? (
+          <div className="draw-table__reading">
+            {readingOnPages(readingPage, readingPages.heading, showReadingPage)}
           </div>
-        )}
-        {readingOpen && (
-          <ReadingPanel
-            session={reading}
-            revealed={spreadRevealed}
-            source={readingProvider.source}
-            onShare={shareRound}
-          />
-        )}
+        ) : (
+          <>
+            {/* The table itself: the left page, with facing pages. */}
+            <div className="draw-table__play">
+              <SpreadToolbar
+                positionCount={spread.positions.length}
+                layoutLocked={dealer.layoutLocked}
+                arranging={arranging}
+                canToggleArrange={abilities.canToggleArrange}
+                onToggleArrange={arrange.toggle}
+                onAdd={() =>
+                  dispatch({
+                    type: "add",
+                    near: visibleCenter(viewportRef.current, fieldRef.current),
+                  })
+                }
+                canClear={dealer.canClear}
+                onClear={session.clear}
+              />
 
-        <SpreadDetails
-          positions={spread.positions}
-          deck={deck}
-          {...(selected ? { selected } : {})}
-          arranging={arranging}
-          layoutLocked={dealer.layoutLocked}
-          arrangeable={abilities.canArrange}
-          revealedInstanceIds={revealedInstanceIds}
-          {...(dealer.next ? { nextPositionId: dealer.next.id } : {})}
-          handlers={handlers}
-          dispatch={dispatch}
-        />
+              <div className="draw-table__stage spread-stage">
+                <SpreadBoard
+                  spread={spread}
+                  slotWidth={slotWidth}
+                  zoom={dealer.zoom}
+                  selectedId={selectedId}
+                  arrangeable={abilities.canArrange}
+                  pressToShuffle={shuffleReady}
+                  awaitingIds={dealer.awaitingIds}
+                  view={viewport.view}
+                  gestures={shuffle.tableGestures}
+                  viewportRef={viewportRef}
+                  canvasRef={canvasRef}
+                  fieldRef={fieldRef}
+                  renderCards={renderCards}
+                  onSelect={handlers.select}
+                  onMove={handlers.move}
+                  onNudge={handlers.nudge}
+                  onRotate={handlers.rotate}
+                  overlay={
+                    arranging ? (
+                      <BoardZoomControls
+                        canZoomIn={viewport.canZoomIn}
+                        canZoomOut={viewport.canZoomOut}
+                        onZoomIn={viewport.zoomIn}
+                        onZoomOut={viewport.zoomOut}
+                      />
+                    ) : (
+                      <DealerDeck
+                        dealer={dealer}
+                        deckId={deck.id}
+                        canShuffle={shuffleReady}
+                        hold={shuffle.deckHold}
+                      />
+                    )
+                  }
+                />
+              </div>
+
+              <TableHint status={dealer.status} remaining={dealer.remaining} />
+            </div>
+
+            {/* What the table is asked, and what lies on it: the right page. */}
+            <div className="draw-table__notes">
+              {questionShown && (
+                <>
+                  <p
+                    className="draw-table__heading"
+                    lang="en"
+                    aria-hidden="true"
+                  >
+                    {BOOK_COPY.questionHeading}
+                  </p>
+                  {/* The question comes first: dealing needs it. */}
+                  <div className="draw-table__question">
+                    <MainQuestionField
+                      value={spread.mainQuestion}
+                      onChange={(text) =>
+                        dispatch({ type: "main-question", text })
+                      }
+                    />
+                  </div>
+                </>
+              )}
+
+              <p className="spread-notice" role="status">
+                {state.notice?.text}
+              </p>
+
+              {arranging && (
+                <div className="draw-table__shelf">
+                  <TemplateShelf
+                    library={state.library}
+                    activeTemplateId={spread.templateId}
+                    applyLocked={filled > 0}
+                    busy={dealer.layoutLocked}
+                    onApply={(id) =>
+                      dispatch({ type: "apply-template", templateId: id })
+                    }
+                    onBlank={() => dispatch({ type: "blank" })}
+                    onSave={(name) => dispatch({ type: "save-template", name })}
+                    onDelete={(id) =>
+                      dispatch({ type: "delete-template", templateId: id })
+                    }
+                    onRestore={() => dispatch({ type: "restore-templates" })}
+                  />
+                </div>
+              )}
+
+              <p className="draw-table__heading" lang="en" aria-hidden="true">
+                {BOOK_COPY.positionsHeading}
+              </p>
+              <SpreadDetails
+                positions={spread.positions}
+                deck={deck}
+                {...(selected ? { selected } : {})}
+                arranging={arranging}
+                layoutLocked={dealer.layoutLocked}
+                arrangeable={abilities.canArrange}
+                revealedInstanceIds={revealedInstanceIds}
+                {...(dealer.next ? { nextPositionId: dealer.next.id } : {})}
+                handlers={handlers}
+                dispatch={dispatch}
+              />
+
+              {spreadRevealed && !arranging && !readingOpen && (
+                <div className="draw-table__reading-cue">
+                  <BookFloatButton
+                    label={BOOK_COPY.cardReadingLabel}
+                    onPress={openReading}
+                  >
+                    <span lang="en">{BOOK_COPY.cardReading}</span>
+                  </BookFloatButton>
+                </div>
+              )}
+              {readingOpen && (
+                <ReadingPanel
+                  session={reading}
+                  revealed={spreadRevealed}
+                  source={readingProvider.source}
+                  onShare={shareRound}
+                  heading={<ReadingTitle />}
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
       {arrange.confirmation && (
         <ArrangeConfirmDialog
@@ -370,4 +479,19 @@ function viewedCard(spread: Spread, deck: Deck, instanceId?: string) {
   const placed = instanceId ? findPlacedCard(spread, instanceId) : undefined;
   const card = placed ? deck.getCard(placed.instance.cardId) : undefined;
   return placed && card ? { ...placed, card } : undefined;
+}
+
+/** A still copy's page turns lead nowhere. */
+const STILL_PAGE = () => undefined;
+
+/**
+ * The reading's title under the table on one page, set as on the reading's
+ * own page; the panel's heading names it for assistive tech.
+ */
+function ReadingTitle() {
+  return (
+    <p className="book-title" lang="en" aria-hidden="true">
+      {BOOK_COPY.readingTitle}
+    </p>
+  );
 }

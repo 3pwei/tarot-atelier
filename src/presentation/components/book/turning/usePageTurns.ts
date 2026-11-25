@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { PageSound } from "@/application/ports/pageSound";
 import type { BookPlace } from "@/presentation/components/book/bookPlace";
 import { samePlace } from "@/presentation/components/book/bookPlace";
@@ -12,6 +18,7 @@ import {
 } from "@/presentation/components/book/turning/timing";
 import {
   planTurn,
+  type TurnDirection,
   type TurnPlan,
 } from "@/presentation/components/book/turning/turnPlan";
 
@@ -19,6 +26,18 @@ export interface ActiveTurn {
   readonly plan: TurnPlan;
   readonly from: BookPlace;
   readonly to: BookPlace;
+  /** Within a place, what its pages print before and after the leaf turns. */
+  readonly prints?: LeafPrints;
+}
+
+/**
+ * Still copies of a whole page (both halves of the open book), printed on
+ * a leaf turning within a place. One left out is blank paper, as a live
+ * table cannot be copied.
+ */
+export interface LeafPrints {
+  readonly leaving?: ReactNode;
+  readonly arriving?: ReactNode;
 }
 
 export interface PageTurnsOptions {
@@ -42,6 +61,17 @@ export interface PageTurns {
   readonly arrival: Arrival;
   /** Lands `turn` once its animations have played out. */
   readonly finishTurn: (turn: ActiveTurn) => void;
+  /**
+   * Turns one leaf within the place shown, as a chapter does between its
+   * table and its reading. The place stays; nothing turns with reduced
+   * motion or while another turn plays.
+   */
+  readonly turnLeaf: (direction: TurnDirection, prints: LeafPrints) => void;
+  /**
+   * A leaf is turning within the place shown. The page keeps what it showed
+   * until this ends, then changes in the same frame the leaf is lifted away.
+   */
+  readonly leafTurning: boolean;
 }
 
 /**
@@ -131,7 +161,38 @@ export function usePageTurns({
     [],
   );
 
-  return { shown: state.shown, turn, arrival: state.arrival, finishTurn };
+  const reduced = useRef(reducedMotion);
+  useEffect(() => {
+    reduced.current = reducedMotion;
+  });
+  const turnLeaf = useCallback(
+    (direction: TurnDirection, prints: LeafPrints) => {
+      if (reduced.current) return;
+      setState((now) =>
+        now.turn
+          ? now
+          : {
+              ...now,
+              turn: {
+                plan: { kind: "single", direction },
+                from: now.shown,
+                to: now.shown,
+                prints,
+              },
+            },
+      );
+    },
+    [],
+  );
+
+  return {
+    shown: state.shown,
+    turn,
+    arrival: state.arrival,
+    finishTurn,
+    turnLeaf,
+    leafTurning: turn !== undefined && samePlace(turn.from, turn.to),
+  };
 }
 
 const NO_TURN: TurnPlan = Object.freeze({ kind: "none" });

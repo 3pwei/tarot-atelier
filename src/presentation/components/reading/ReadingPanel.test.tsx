@@ -58,6 +58,7 @@ function Harness(props: {
       revealed={props.revealed ?? true}
       source={props.source ?? "prewritten"}
       onShare={() => undefined}
+      heading={<p>Card Reading</p>}
     />
   );
 }
@@ -125,16 +126,18 @@ describe("ReadingPanel", () => {
     expect(screen.queryByText("解讀語氣")).not.toBeInTheDocument();
   });
 
-  it("generates an expandable reading section by section", async () => {
+  it("prints the reading: each position, then the spread as a whole", async () => {
     render(<Harness requester={realRequester()} />);
     generate();
 
-    const synthesis = await screen.findByText("全局關聯");
-    const sections = document.querySelectorAll("details.reading-section");
+    expect(
+      await screen.findByRole("heading", { name: "全局關聯" }),
+    ).toBeInTheDocument();
+    const sections = document.querySelectorAll(".printed-reading__section");
     expect(sections).toHaveLength(2 + 3);
-    expect(sections[0]).toHaveAttribute("open");
-    expect(synthesis.closest("details")).not.toHaveAttribute("open");
-    expect(screen.getAllByText("單牌象徵")).toHaveLength(2);
+    // Nothing folds away, and no night-panel labels split the paragraphs.
+    expect(document.querySelector("details")).toBeNull();
+    expect(screen.queryByText("單牌象徵")).not.toBeInTheDocument();
     expect(screen.getByText(/跳牌補充・聖杯三/u)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "重新產生" })).toBeEnabled();
   });

@@ -11,7 +11,11 @@ import {
   pickAll,
   reveal,
   openChapter,
+  readingPanel,
 } from "./support/spreadTable";
+
+/** A printed reading's sections: each position, then the spread as a whole. */
+const READING_SECTIONS = ".printed-reading__section";
 
 // Deals and burns three cards before reading; software-rendered CI browsers need headroom.
 test.describe.configure({ timeout: 90_000 });
@@ -32,7 +36,7 @@ async function finishSpread(page: Page, answer: EndpointAnswer) {
   await openChapter(page);
   await askMainQuestion(page, "面試結果");
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
-  const panel = page.locator(".reading-panel");
+  const panel = readingPanel(page);
   await expect(page.getByRole("button", { name: "看解讀" })).toHaveCount(0);
 
   await deckPile(page).click();
@@ -55,17 +59,15 @@ test("reads a finished spread with AI through the site's own endpoint", async ({
 
   await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();
-  const sections = panel.locator("details.reading-section");
+  const sections = panel.locator(READING_SECTIONS);
   await expect(sections).toHaveCount(3 + 3);
-  await expect(sections.first()).toHaveAttribute("open", "");
-  // Exactly the main card's sentence: a jumper, if position 1 drew one,
-  // says something else.
-  await expect(
-    sections.first().getByText(MOCK_PRIMARY_INTERPRETATION, { exact: true }),
-  ).toBeVisible();
+  // Printed, the card's symbolism and its sentence make one paragraph,
+  // and a jumper has a paragraph of its own after it.
+  await expect(sections.first().locator("p").first()).toContainText(
+    MOCK_PRIMARY_INTERPRETATION,
+  );
 
-  const synthesis = panel.locator("details", { hasText: "全局關聯" });
-  await synthesis.locator("summary").click();
+  const synthesis = sections.filter({ hasText: "全局關聯" });
   await expect(synthesis.getByText("模擬的 AI 全局關聯。")).toBeVisible();
 
   expect(received).toHaveLength(1);
@@ -91,8 +93,10 @@ test("falls back to a labelled sample when today's AI readings are used up", asy
   await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText(/今天的 AI 解讀額度已用完/u)).toBeVisible();
   await expect(panel.getByText("範例解牌，不是 AI")).toBeVisible();
-  await expect(panel.locator("details.reading-section")).toHaveCount(3 + 3);
-  await expect(panel.getByText("單牌象徵").first()).toBeVisible();
+  const sections = panel.locator(READING_SECTIONS);
+  await expect(sections).toHaveCount(3 + 3);
+  // The sample reads each card.
+  await expect(sections.first().locator("p").first()).not.toBeEmpty();
   expect(external).toEqual([]);
 });
 

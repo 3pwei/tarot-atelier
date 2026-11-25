@@ -24,6 +24,8 @@ interface ContentsPageProps {
   };
   /** The entry lit when the page appears, as on a still copy of it. */
   readonly initiallyLit?: BookPlace;
+  /** An entry was lit: the reader may turn there next. */
+  readonly onLight?: (place: BookPlace) => void;
 }
 
 const SECTION_LABEL: Readonly<Record<ContentsSection, string>> = {
@@ -40,6 +42,7 @@ export function ContentsPage({
   onOpen,
   sound,
   initiallyLit,
+  onLight,
 }: ContentsPageProps) {
   const titleId = useId();
   const hintId = useId();
@@ -56,6 +59,7 @@ export function ContentsPage({
       return;
     }
     setLit(key);
+    onLight?.(entry.place);
   };
 
   return (

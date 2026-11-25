@@ -77,10 +77,21 @@ export async function reveal(page: Page, index: number) {
   ).toHaveCount(count, { timeout: 20_000 });
 }
 
-/** Once every card is revealed, "Card Reading" opens the reading under the table. */
+/**
+ * Once every card is revealed, "Card Reading" opens the reading: under the
+ * table on one page, or a leaf turn away on facing pages.
+ */
 export async function openReading(page: Page) {
   await page.getByRole("button", { name: "看解讀" }).click();
-  await expect(page.locator(".reading-panel")).toBeVisible();
+  await expect(readingPanel(page)).toBeVisible();
+}
+
+/**
+ * The live reading. By its role, as a turning leaf can print still copies
+ * of it, hidden from assistive tech.
+ */
+export function readingPanel(page: Page): Locator {
+  return page.getByRole("region", { name: "解讀" });
 }
 
 /** The records live in the book's appendix, not on the table. */

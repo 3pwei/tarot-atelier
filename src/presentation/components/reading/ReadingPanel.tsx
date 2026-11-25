@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { ReadingSource } from "@/domain/reading/types";
 import {
   FAILURE_MESSAGES,
@@ -9,10 +9,8 @@ import {
   READING_COPY,
   SOURCE_COPY,
 } from "@/presentation/components/reading/readingLabels";
-import {
-  ProfessionalNote,
-  ReadingSections,
-} from "@/presentation/components/reading/ReadingSections";
+import { ProfessionalNote } from "@/presentation/components/reading/ReadingSections";
+import { PrintedReading } from "@/presentation/components/reading/PrintedReading";
 import type { ReadingSession } from "@/presentation/components/reading/useReadingSession";
 import { SHARE_COPY } from "@/presentation/components/share/shareLabels";
 
@@ -24,11 +22,13 @@ interface ReadingPanelProps {
   readonly source: ReadingSource;
   /** Shares the finished round, with its reading if there is one. */
   readonly onShare: () => void;
+  /** The reading's title, printed first, as the page around it sets it. */
+  readonly heading: ReactNode;
 }
 
 /**
- * The reading for a finished spread. It shows which deck and draws it
- * reads, labels pre-written readings as such and always carries the
+ * The reading for a finished spread, printed on the book's page in its ink.
+ * It labels pre-written readings as such and always carries the
  * entertainment disclaimer.
  */
 export function ReadingPanel({
@@ -36,6 +36,7 @@ export function ReadingPanel({
   revealed,
   source,
   onShare,
+  heading,
 }: ReadingPanelProps) {
   const titleId = useId();
   const { state, build, stale } = session;
@@ -45,10 +46,11 @@ export function ReadingPanel({
 
   return (
     <section
-      className="reading-panel night-surface"
+      className="reading-panel paper-surface"
       aria-labelledby={titleId}
       aria-busy={loading || undefined}
     >
+      {heading}
       <header className="reading-panel__head">
         <h2 id={titleId}>{READING_COPY.title}</h2>
         {/* Labelled once there is a reading, by where it actually came from. */}
@@ -140,9 +142,26 @@ export function ReadingPanel({
 
           <ProfessionalNote topics={topics} />
 
-          {result ? <ReadingSections result={result} /> : null}
+          {result ? (
+            <PrintedReading
+              result={result}
+              positionNames={positionNamesOf(build)}
+            />
+          ) : null}
         </>
       )}
     </section>
+  );
+}
+
+/** The short names of the positions read, by number. */
+function positionNamesOf(
+  build: ReadingSession["build"],
+): ReadonlyMap<number, string> {
+  if (!build.ok) return new Map();
+  return new Map(
+    build.request.positions.flatMap((position) =>
+      position.name ? [[position.index, position.name] as const] : [],
+    ),
   );
 }

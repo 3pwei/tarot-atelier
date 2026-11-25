@@ -661,13 +661,20 @@ test("arranging shows each position's number as a watermark in its middle, and n
     if (!box) throw new Error(`${selector} is not visible`);
     return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   };
-  const number = await centre(".spread-slot__number");
-  const frame = await centre(".spread-slot__frame");
-  const width = (await slot(page, 1).boundingBox())?.width ?? 0;
   // Centred, give or take the glyph's own side bearings, which weigh more
-  // on the small cards used while arranging.
-  expect(Math.abs(number.x - frame.x)).toBeLessThan(width * 0.15);
-  expect(Math.abs(number.y - frame.y)).toBeLessThan(width * 0.15);
+  // on the small cards used while arranging. Measured once the cards have
+  // settled at that size.
+  await expect
+    .poll(async () => {
+      const number = await centre(".spread-slot__number");
+      const frame = await centre(".spread-slot__frame");
+      const width = (await slot(page, 1).boundingBox())?.width ?? 0;
+      return (
+        Math.max(Math.abs(number.x - frame.x), Math.abs(number.y - frame.y)) /
+        width
+      );
+    })
+    .toBeLessThan(0.15);
 });
 
 test("while arranging, a mouse gets zoom buttons in the table's top-right corner", async ({

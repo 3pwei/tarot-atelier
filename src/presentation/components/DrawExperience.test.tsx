@@ -16,6 +16,17 @@ import { createTestServices } from "@/composition/testing/createTestServices";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
 import { fakeShareServices } from "@/presentation/components/share/testing/fakeShareServices";
 import { AtelierServicesProvider } from "@/presentation/services/atelierServices";
+import {
+  choose,
+  deckPile,
+  fannedDeck,
+  openReading,
+  queryDeckPile,
+  ready,
+  reveal,
+  shuffleAndPick,
+} from "@/presentation/components/testing/playTable";
+import { useState, type ComponentProps } from "react";
 
 function idFactory() {
   let next = 0;
@@ -38,6 +49,30 @@ beforeEach(() => {
   );
 });
 
+/**
+ * The table as a chapter sets it: on one page, or on facing pages whose
+ * reading lies a page turn away (the chapter turns at once here).
+ */
+function TableOnPages({
+  facingPages,
+  ...props
+}: ComponentProps<typeof DrawExperience> & { readonly facingPages: boolean }) {
+  const [page, setPage] = useState<number>();
+  if (!facingPages) return <DrawExperience {...props} />;
+  return (
+    <DrawExperience
+      {...props}
+      layout="facing-pages"
+      readingPages={{
+        page,
+        show: (next) => setPage(next),
+        heading: <h2>Card Reading</h2>,
+        printedHeading: <h2>Card Reading</h2>,
+      }}
+    />
+  );
+}
+
 function renderTable(
   options: {
     readonly random?: () => number;
@@ -47,6 +82,7 @@ function renderTable(
     readonly share?: ReturnType<typeof fakeShareServices>;
     readonly templateId?: string;
     readonly onUnfinishedChange?: (unfinished: boolean) => void;
+    readonly facingPages?: boolean;
   } = {},
 ) {
   const retiredTableStorage =
@@ -62,7 +98,8 @@ function renderTable(
   });
   const view = render(
     <AtelierServicesProvider services={services}>
-      <DrawExperience
+      <TableOnPages
+        facingPages={options.facingPages ?? false}
         randomSource={options.random ?? (() => 0.9)}
         createId={idFactory()}
         now={() => new Date(2026, 10, 20, 2, 10)}
@@ -80,62 +117,6 @@ function renderTable(
     historyStorage,
     share,
   };
-}
-
-/** Asks a main question, which dealing needs, and waits until play can start. */
-async function ready(mainQuestion = "這段時間的方向？") {
-  await screen.findByText("請先輸入這次想問的主問題");
-  fireEvent.change(screen.getByRole("textbox", { name: /^主問題/u }), {
-    target: { value: mainQuestion },
-  });
-  await screen.findByText("準備好了，按住牌桌洗牌");
-}
-
-/** The fanned deck, once a shuffle has finished. */
-function fannedDeck() {
-  return screen.findByRole("group", { name: /^扇形牌堆/u });
-}
-
-/** Chooses the fanned card in `slot` from the keyboard: lift, then draw. */
-function choose(slot: number) {
-  const card = document.querySelector<HTMLElement>(`[data-fan-slot="${slot}"]`);
-  if (!card) throw new Error(`no fanned card in slot ${slot}`);
-  fireEvent.keyDown(card, { key: "Enter" });
-  fireEvent.keyDown(card, { key: "Enter" });
-}
-
-/** The pack in the middle of the table, which shuffles while held. */
-const DECK_PILE_NAME = /^(按住牌堆洗牌|牌堆：)/u;
-
-function deckPile() {
-  return screen.getByRole("button", { name: DECK_PILE_NAME });
-}
-
-function queryDeckPile() {
-  return screen.queryByRole("button", { name: DECK_PILE_NAME });
-}
-
-/** Shuffles, then chooses a card for each of `count` empty positions. */
-async function shuffleAndPick(count = 3) {
-  fireEvent.click(deckPile());
-  await fannedDeck();
-  for (let picked = 0; picked < count; picked += 1) {
-    // A jumper takes a neighbour too, so choose whichever card is first.
-    const first = document.querySelector<HTMLElement>("[data-fan-slot]");
-    choose(Number(first?.dataset.fanSlot));
-  }
-  await screen.findByText("點擊卡牌，以火焰逐一揭示牌面");
-}
-
-function reveal(index: number, role = "主牌") {
-  fireEvent.click(
-    screen.getByRole("button", { name: `以火焰揭示牌位 ${index} ${role}` }),
-  );
-}
-
-/** Once every card is revealed, the reading opens from "Card Reading". */
-function openReading() {
-  fireEvent.click(screen.getByRole("button", { name: "看解讀" }));
 }
 
 /** The history as the table stored it. */
@@ -338,7 +319,9 @@ describe("DrawExperience spread table", () => {
     fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
     expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
-    expect(screen.getAllByText("單牌象徵").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll(".printed-reading__section")).toHaveLength(
+      3 + 3,
+    );
   });
 
   it("records a finished round once, and adds its reading when generated", async () => {
@@ -1031,5 +1014,55 @@ describe("DrawExperience template library", () => {
     fireEvent.click(screen.getByRole("button", { name: "刪除牌陣「圓環」" }));
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
     expect(screen.getByRole("button", { name: "圓環" })).toBeInTheDocument();
+  });
+});
+
+describe("DrawExperience on facing pages", () => {
+  async function finishedTable() {
+    renderTable({ facingPages: true });
+    await ready();
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+  }
+
+  it("sets the table and its notes as two pages", async () => {
+    renderTable({ facingPages: true });
+    await ready();
+    const table = document.querySelector(".draw-table");
+    expect(table).toHaveAttribute("data-layout", "facing-pages");
+    expect(
+      table?.querySelector(".draw-table__play .spread-board"),
+    ).not.toBeNull();
+    expect(
+      table?.querySelector(".draw-table__notes .position-list"),
+    ).not.toBeNull();
+  });
+
+  it("puts the main question away while the layout is being edited", async () => {
+    renderTable({ facingPages: true });
+    await ready();
+    arrange();
+    expect(screen.queryByRole("textbox", { name: /^主問題/u })).toBeNull();
+    expect(screen.getByRole("button", { name: "儲存目前牌陣" })).toBeVisible();
+    finishArranging();
+    expect(screen.getByRole("textbox", { name: /^主問題/u })).toHaveValue(
+      "這段時間的方向？",
+    );
+  });
+
+  it("turns to the reading's own pages from Card Reading, printed in full", async () => {
+    await finishedTable();
+    openReading();
+
+    expect(screen.getByRole("heading", { name: "Card Reading" })).toBeVisible();
+    expect(document.querySelector(".draw-table__play")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
+    expect(await screen.findByText("全局關聯")).toBeInTheDocument();
+    // Printed, not folded: each position headed by its short name.
+    expect(document.querySelector(".reading-panel details")).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: /^牌位 1：過去/u }),
+    ).toBeInTheDocument();
   });
 });

@@ -169,14 +169,34 @@ describe("page turns", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps a chapter's table off the page until the leaf has landed", async () => {
+  it("lays a lit chapter out unseen, and shows that same page once the leaf lands", async () => {
     window.history.replaceState(null, "", "/#contents");
     renderBook();
     await settle();
     const first = screen.getByRole("button", { name: /^The Three Cards，/u });
     tap(first);
-    tap(first);
 
+    // Lit, its table waits unseen beneath the contents, out of reach.
+    const unseen = document.querySelector(".book-place[data-unseen]");
+    expect(unseen).toHaveAttribute("inert");
+    expect(unseen).toHaveAttribute("aria-hidden", "true");
+    const table = unseen?.querySelector(".draw-experience");
+    expect(table).toBeInTheDocument();
+
+    tap(first);
+    advance(SINGLE_TURN_MS);
+    expect(document.querySelector(".book-place[data-unseen]")).toBeNull();
+    expect(document.querySelector(".draw-experience")).toBe(table);
+  });
+
+  it("turns from the keyboard with nothing laid out beforehand", async () => {
+    window.history.replaceState(null, "", "/#contents");
+    renderBook();
+    await settle();
+    const first = screen.getByRole("button", { name: /^The Three Cards，/u });
+    fireEvent.click(first, { detail: 0 });
+
+    expect(document.querySelector(".book-place[data-unseen]")).toBeNull();
     expect(document.querySelector(".draw-experience")).toBeNull();
     advance(SINGLE_TURN_MS);
     expect(document.querySelector(".draw-experience")).toBeInTheDocument();
