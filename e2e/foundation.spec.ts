@@ -6,7 +6,7 @@ import {
   pickAll,
 } from "./support/spreadTable";
 
-test("deck library exposes 78 definitions and has no horizontal overflow", async ({
+test("the codex shows every card a section at a time, printed on the page", async ({
   page,
 }) => {
   await page.goto("/#codex");
@@ -14,13 +14,17 @@ test("deck library exposes 78 definitions and has no horizontal overflow", async
   await expect(
     page.getByRole("heading", { name: "The Codex of Cards" }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "卡牌庫" })).toBeVisible();
-  await expect(page.getByText("78 張定義")).toBeVisible();
-  await expect(page.getByTestId("catalog-card")).toHaveCount(78);
+  await expect(page.getByRole("region", { name: "單卡檢視" })).toBeVisible();
+  let total = 0;
+  for (const section of ["大牌", "權杖", "聖杯", "寶劍", "錢幣"]) {
+    await page.getByRole("button", { name: section, exact: true }).click();
+    total += await page.getByTestId("catalog-card").count();
+  }
+  expect(total).toBe(78);
 
   // Test decks stay out of the site: the only deck is named, not offered.
   await expect(page.getByLabel("目前牌組")).toHaveCount(0);
-  await expect(page.getByText("工坊標準塔羅")).toBeVisible();
+  await expect(page.getByText(/工坊標準塔羅/u)).toBeVisible();
 
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,

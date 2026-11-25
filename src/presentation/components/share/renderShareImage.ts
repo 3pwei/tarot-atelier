@@ -1,4 +1,3 @@
-import { designTokens } from "@/shared/design/tokens";
 import { ROLE_LABELS } from "@/presentation/components/cards/cardLabels";
 import {
   cardLabel,
@@ -17,15 +16,17 @@ import { SHARE_COPY } from "@/presentation/components/share/shareLabels";
 /** Turns a share card into a PNG; injected so tests need no canvas. */
 export type ShareImageRenderer = (card: ShareCard) => Promise<Blob>;
 
-const { colors } = designTokens;
-const INK_SOFT = "#cfc6dc";
+/** The book's paper and ink: the image is a page of it. */
+const PAPER = "#efe0bd";
+const PAPER_DEEP = "#e4cf9f";
+const INK = "#3d2a18";
+const INK_SOFT = "#6b5238";
 const KRAFT = "#c9a777";
 const KRAFT_EDGE = "#8a6b42";
 const KRAFT_INK = "#3b2a1a";
-const DIVIDER = "rgba(230, 197, 122, 0.22)";
-const SANS =
-  '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif';
-const SERIF = '"Iowan Old Style", "Palatino Linotype", "Noto Serif TC", serif';
+const DIVIDER = "rgba(61, 42, 24, 0.28)";
+const SANS = '"Iansui", "Noto Serif TC", "PingFang TC", serif';
+const SERIF = '"IM Fell English", "Iansui", "Noto Serif TC", serif';
 
 const PADDING = 80;
 const CONTENT_WIDTH = SHARE_IMAGE_SIZE.width - PADDING * 2;
@@ -83,8 +84,8 @@ function drawFace(
   const radius = Math.max(6, box.width * 0.05);
   const image = face.faceUrl ? images.get(face.faceUrl) : undefined;
   context.save();
-  context.shadowColor = "rgba(0, 0, 0, 0.55)";
-  context.shadowBlur = 24;
+  context.shadowColor = "rgba(40, 20, 4, 0.4)";
+  context.shadowBlur = 18;
   context.shadowOffsetY = 10;
   roundedRect(context, box, radius);
   context.fillStyle = KRAFT;
@@ -129,10 +130,10 @@ function drawIndex(
   const radius = Math.max(16, box.width * 0.09);
   context.beginPath();
   context.arc(box.x + 4, box.y + 4, radius, 0, Math.PI * 2);
-  context.fillStyle = colors.gold;
+  context.fillStyle = INK;
   context.fill();
-  context.fillStyle = colors.midnight;
-  context.font = font(Math.round(radius * 1.1), SANS, 700);
+  context.fillStyle = PAPER;
+  context.font = font(Math.round(radius * 1.1), SERIF);
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillText(String(index), box.x + 4, box.y + 5);
@@ -190,7 +191,7 @@ function drawPositions(
     const centre = box.x + box.width / 2;
     context.textAlign = "center";
     context.textBaseline = "top";
-    context.fillStyle = colors.moon;
+    context.fillStyle = INK;
     context.font = font(26);
     const name = position.jumper
       ? `${cardLabel(position.primary)}＋${ROLE_LABELS.jumper}`
@@ -216,20 +217,25 @@ function drawPositions(
 
 function drawBackground(context: CanvasRenderingContext2D): void {
   const { width, height } = SHARE_IMAGE_SIZE;
-  const glow = context.createRadialGradient(
-    width / 2,
-    0,
-    0,
-    width / 2,
-    0,
-    height * 0.95,
-  );
-  glow.addColorStop(0, "#2a1f55");
-  glow.addColorStop(0.7, "#0b0a1c");
-  glow.addColorStop(1, colors.midnight);
-  context.fillStyle = glow;
+  const paper = context.createLinearGradient(0, 0, 0, height);
+  paper.addColorStop(0, PAPER);
+  paper.addColorStop(1, PAPER_DEEP);
+  context.fillStyle = paper;
   context.fillRect(0, 0, width, height);
-  context.strokeStyle = "rgba(230, 197, 122, 0.34)";
+  // The page's edges darken, as the book's paper does.
+  const edge = context.createRadialGradient(
+    width / 2,
+    height / 2,
+    height * 0.35,
+    width / 2,
+    height / 2,
+    height * 0.75,
+  );
+  edge.addColorStop(0, "rgba(70, 30, 4, 0)");
+  edge.addColorStop(1, "rgba(70, 30, 4, 0.35)");
+  context.fillStyle = edge;
+  context.fillRect(0, 0, width, height);
+  context.strokeStyle = "rgba(61, 42, 24, 0.4)";
   context.lineWidth = 2;
   context.strokeRect(28, 28, width - 56, height - 56);
 }
@@ -237,10 +243,10 @@ function drawBackground(context: CanvasRenderingContext2D): void {
 function drawBrand(context: CanvasRenderingContext2D, card: ShareCard): void {
   context.beginPath();
   context.arc(PADDING + 18, PADDING + 22, 18, 0, Math.PI * 2);
-  context.strokeStyle = colors.gold;
+  context.strokeStyle = INK;
   context.lineWidth = 2.5;
   context.stroke();
-  context.fillStyle = colors.gold;
+  context.fillStyle = INK;
   context.font = font(30, SERIF);
   context.textAlign = "left";
   context.textBaseline = "middle";
@@ -260,7 +266,7 @@ function drawQuestion(
 ): number {
   const top = PADDING + 92;
   if (!card.mainQuestion) return top;
-  context.fillStyle = colors.moon;
+  context.fillStyle = INK;
   context.font = font(44);
   context.textAlign = "left";
   context.textBaseline = "top";
@@ -327,7 +333,7 @@ function drawSummary(
 function drawFooter(context: CanvasRenderingContext2D, card: ShareCard): void {
   const y = SHARE_IMAGE_SIZE.height - PADDING;
   context.font = font(24);
-  context.fillStyle = "rgba(207, 198, 220, 0.75)";
+  context.fillStyle = INK_SOFT;
   context.textBaseline = "bottom";
   context.textAlign = "left";
   context.fillText(card.siteUrl.replace(/^https?:\/\//u, ""), PADDING, y);

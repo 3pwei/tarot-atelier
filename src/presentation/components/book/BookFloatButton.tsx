@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 interface BookFloatButtonProps {
   readonly children: ReactNode;
@@ -8,6 +8,7 @@ interface BookFloatButtonProps {
   /** For a switch: whether it is on. */
   readonly pressed?: boolean;
   readonly disabled?: boolean;
+  readonly ref?: Ref<HTMLButtonElement>;
 }
 
 /** A control set as raised lettering: a heavy shadow, never a colour. */
@@ -18,9 +19,11 @@ export function BookFloatButton({
   className,
   pressed,
   disabled,
+  ref,
 }: BookFloatButtonProps) {
   return (
     <button
+      ref={ref}
       type="button"
       className={className ? `book-float ${className}` : "book-float"}
       aria-label={label}

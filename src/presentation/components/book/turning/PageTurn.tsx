@@ -37,9 +37,11 @@ interface PageTurnProps {
   /** The leaf's printed side: the page leaving, or the one arriving. */
   readonly face: ReactNode;
   /**
-   * The leaf's other side, with facing pages: the left page it becomes once
-   * it lands (or was, turning back). Without it, the back is paper with the
-   * front's ink faintly showing through.
+   * With facing pages, the left page the turn lands on (or lifts off, turning
+   * back). One leaf carries it on its back. A riffle prints it on the last
+   * sheet to land instead (the first to lift, turning back), so it shows only
+   * once every page in between has gone over. Without it, a leaf's back is
+   * paper with the front's ink faintly showing through.
    */
   readonly back?: ReactNode;
   /**
@@ -105,6 +107,9 @@ export function PageTurn({
     onFinished,
   );
   const windowSize = { width: reach, height: reach * 2 };
+  const leafBack = kind === "single" ? back : undefined;
+  const lastSheetBack = kind === "riffle" ? back : undefined;
+  const lastSheet = timeline.sheets.length - 1;
   const pageSize = { width, height };
 
   return (
@@ -153,53 +158,68 @@ export function PageTurn({
                   }
                 >
                   <i />
+                  {index === lastSheet && lastSheetBack && (
+                    <div className="page-turn__sheet-back">{lastSheetBack}</div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
         <div
-          className="page-turn__window"
-          style={{ ...windowSize, ...curl("keepWindow") }}
+          className="page-turn__flight"
+          data-kind={kind}
+          data-direction={direction}
+          style={
+            {
+              "--leaf-delay": `${leaf.delayMs}ms`,
+              "--leaf-ms": `${leaf.durationMs}ms`,
+            } as CSSProperties
+          }
         >
           <div
-            className="page-turn__page"
-            style={{ ...pageSize, ...curl("keepPage") }}
+            className="page-turn__window"
+            style={{ ...windowSize, ...curl("keepWindow") }}
           >
-            {face}
-            <div className="page-turn__fold" style={curl("keepFold")}>
-              <div
-                className="page-turn__shade page-turn__shade--keep"
-                style={curl("keepShade")}
-              />
+            <div
+              className="page-turn__page"
+              style={{ ...pageSize, ...curl("keepPage") }}
+            >
+              {face}
+              <div className="page-turn__fold" style={curl("keepFold")}>
+                <div
+                  className="page-turn__shade page-turn__shade--keep"
+                  style={curl("keepShade")}
+                />
+              </div>
             </div>
           </div>
-        </div>
-        <div
-          className="page-turn__window"
-          style={{ ...windowSize, ...curl("flapWindow") }}
-        >
           <div
-            className="page-turn__page"
-            style={{ ...pageSize, ...curl("flapPage") }}
+            className="page-turn__window"
+            style={{ ...windowSize, ...curl("flapWindow") }}
           >
-            {back ? (
-              // Folded over, the leaf is a mirror image; mirrored again, its
-              // back reads the right way round.
-              <div className="page-turn__back">{back}</div>
-            ) : (
-              <>
-                {face}
-                {/* The back of a leaf: the front's ink shows through, faint and mirrored. */}
-                <div className="page-turn__verso" />
-              </>
-            )}
-            <div className="page-turn__fold" style={curl("flapFold")}>
-              <div
-                className="page-turn__shade page-turn__shade--flap"
-                style={curl("flapShade")}
-              />
-              <div className="page-turn__rim" style={curl("flapRim")} />
+            <div
+              className="page-turn__page"
+              style={{ ...pageSize, ...curl("flapPage") }}
+            >
+              {leafBack ? (
+                // Folded over, the leaf is a mirror image; mirrored again, its
+                // back reads the right way round.
+                <div className="page-turn__back">{leafBack}</div>
+              ) : (
+                <>
+                  {face}
+                  {/* The back of a leaf: the front's ink shows through, faint and mirrored. */}
+                  <div className="page-turn__verso" />
+                </>
+              )}
+              <div className="page-turn__fold" style={curl("flapFold")}>
+                <div
+                  className="page-turn__shade page-turn__shade--flap"
+                  style={curl("flapShade")}
+                />
+                <div className="page-turn__rim" style={curl("flapRim")} />
+              </div>
             </div>
           </div>
         </div>

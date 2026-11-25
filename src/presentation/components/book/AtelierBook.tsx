@@ -447,7 +447,11 @@ function PlacePages({
       return (
         entry && (
           <div ref={spread} className="book-spread">
-            <CodexPage entry={entry} onBack={back} />
+            <CodexPage
+              entry={entry}
+              layout={facingPages ? "facing-pages" : "single-page"}
+              onBack={back}
+            />
           </div>
         )
       );
@@ -455,7 +459,13 @@ function PlacePages({
       return (
         entry && (
           <div ref={spread} className="book-spread">
-            <RecordsPage entry={entry} onBack={back} />
+            <RecordsPage
+              entry={entry}
+              layout={facingPages ? "facing-pages" : "single-page"}
+              turnLeaf={turnLeaf}
+              leafTurning={leafTurning}
+              onBack={back}
+            />
           </div>
         )
       );

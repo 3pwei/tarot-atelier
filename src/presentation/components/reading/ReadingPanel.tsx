@@ -9,7 +9,7 @@ import {
   READING_COPY,
   SOURCE_COPY,
 } from "@/presentation/components/reading/readingLabels";
-import { ProfessionalNote } from "@/presentation/components/reading/ReadingSections";
+import { ProfessionalNote } from "@/presentation/components/reading/ProfessionalNote";
 import { PrintedReading } from "@/presentation/components/reading/PrintedReading";
 import type { ReadingSession } from "@/presentation/components/reading/useReadingSession";
 import { SHARE_COPY } from "@/presentation/components/share/shareLabels";

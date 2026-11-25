@@ -5,8 +5,10 @@ import {
   askMainQuestion,
   deckPile,
   openReading,
+  openRecord,
   openRecords,
   pickAll,
+  recordList,
   reveal,
   openChapter,
 } from "./support/spreadTable";
@@ -34,36 +36,36 @@ test("keeps a finished round with its reading, and deletes it on request", async
   await page.reload();
   await expect(page.locator("[data-draw-card]")).toHaveCount(0);
   await openRecords(page);
-  const panel = page.getByRole("dialog", { name: /歷史紀錄/u });
-  const entries = panel.getByRole("listitem");
+  const entries = recordList(page).getByRole("listitem");
   await expect(entries).toHaveCount(1);
   await expect(entries.first()).toContainText("這份新工作適合我嗎？");
   await expect(entries.first()).toContainText("已解讀");
-  await expect(entries.first().locator(".card-artwork img")).toHaveCount(3);
   if (evidence) {
     await page.screenshot({
       path: `${evidence}/${testInfo.project.name}-list.png`,
     });
   }
 
-  await entries.first().getByRole("button").click();
-  const article = panel.getByRole("article");
-  await expect(article.locator(".history-position")).toHaveCount(3);
+  await openRecord(page, "這份新工作適合我嗎？");
+  const article = page.getByRole("article");
+  await expect(article.locator(".record__position")).toHaveCount(3);
+  await expect(article.locator(".card-artwork img")).toHaveCount(3);
   await expect(article.getByText("AI 解讀", { exact: true })).toBeVisible();
   await expect(article.getByText(/僅供娛樂與自我反思/u)).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   if (evidence) {
     await page.screenshot({
       path: `${evidence}/${testInfo.project.name}-detail.png`,
     });
   }
 
-  await panel.getByRole("button", { name: "刪除這筆" }).click();
-  await expect(panel.getByRole("alert")).toContainText("確定刪除這筆紀錄？");
-  await panel.getByRole("button", { name: "刪除", exact: true }).click();
-  await expect(panel.getByText(/還沒有紀錄/u)).toBeVisible();
+  await page.getByRole("button", { name: "刪除這筆" }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "確定刪除這筆紀錄？" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "刪除", exact: true }).click();
+  await expect(page.getByText(/還沒有紀錄/u)).toBeVisible();
 
-  await page.keyboard.press("Escape");
-  await expect(panel).toBeHidden();
   await page.reload();
   await openRecords(page);
   await expect(page.getByText(/還沒有紀錄/u)).toBeVisible();
@@ -83,19 +85,22 @@ test("reads a recorded round again from the history", async ({
 
   await hideDevOverlay(page);
   await openRecords(page);
-  const panel = page.getByRole("dialog", { name: /歷史紀錄/u });
-  await panel.getByRole("listitem").first().getByRole("button").click();
-  await expect(panel.getByText("這次沒有產生解讀。")).toBeVisible();
-  await panel.getByRole("button", { name: "產生解讀" }).click();
+  await openRecord(page, "這份新工作適合我嗎？");
+  await expect(page.getByText("這次沒有產生解讀。")).toBeVisible();
+  await page.getByRole("button", { name: "產生解讀" }).click();
 
-  const article = panel.getByRole("article");
+  const article = page.getByRole("article");
   await expect(article.getByText("AI 解讀", { exact: true })).toBeVisible();
-  await expect(panel.getByRole("button", { name: "重新解讀" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "重新解讀" })).toBeEnabled();
   if (evidence) {
     await page.screenshot({
       path: `${evidence}/${testInfo.project.name}-reread.png`,
     });
   }
-  await panel.getByRole("button", { name: "‹ 返回" }).click();
-  await expect(panel.getByRole("listitem").first()).toContainText("已解讀");
+  // A phone turns back to the list; facing pages show it all along.
+  const toList = page.getByRole("button", { name: "回到紀錄列表" });
+  if (await toList.isVisible()) await toList.click();
+  await expect(recordList(page).getByRole("listitem").first()).toContainText(
+    "已解讀",
+  );
 });

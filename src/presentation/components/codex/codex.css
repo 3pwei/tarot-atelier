@@ -1,0 +1,233 @@
+/* The codex printed on the book's pages: the card being read, and the deck a section at a time. */
+
+.codex {
+  margin-top: var(--book-space-2);
+  color: var(--book-ink);
+  font-family: var(--book-text);
+}
+
+/* ---- the card being read ---- */
+
+.codex__card-body {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.codex__art {
+  width: 150px;
+  flex: none;
+  filter: drop-shadow(0 6px 8px rgba(40, 20, 4, 0.35));
+}
+
+.codex__copy {
+  min-width: 0;
+}
+
+.codex__name {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.codex__english {
+  margin: 0 0 6px;
+  color: var(--book-ink-soft);
+  font-size: 14px;
+}
+
+.codex__english span {
+  font-family: var(--book-serif);
+  letter-spacing: 0.04em;
+}
+
+.codex__keywords {
+  margin: 0 0 8px;
+  color: var(--book-ink-soft);
+  font-size: 13px;
+}
+
+.codex__meanings {
+  margin: 0;
+}
+
+.codex__meanings div {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.codex__meanings dt {
+  flex: none;
+  font-weight: 600;
+}
+
+.codex__meanings dd {
+  margin: 0;
+  text-align: justify;
+}
+
+.codex__meanings div[data-unavailable] {
+  color: var(--book-ink-soft);
+}
+
+.codex__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-top: 10px;
+}
+
+.codex__toggles [role="group"] {
+  display: flex;
+  gap: 16px;
+}
+
+.codex__toggles .book-float {
+  font-size: 16px;
+}
+
+.codex__toggles .book-float[aria-pressed="true"] {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.codex__toggles .book-float:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+/* ---- the deck, a section at a time ---- */
+
+.codex__catalog {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.codex__deck {
+  margin: 0 0 10px;
+}
+
+.codex__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--control-line);
+}
+
+.codex__tab {
+  padding: 0 0 5px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--book-ink-soft);
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.codex__tab[aria-pressed="true"] {
+  border-bottom-color: var(--book-ink);
+  color: var(--book-ink);
+}
+
+.codex__tab:focus-visible {
+  outline: 2px solid var(--book-ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.codex__count {
+  margin-left: auto;
+  color: var(--book-ink-soft);
+  font-size: 12px;
+}
+
+.codex__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.codex__thumb {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(40, 20, 4, 0.3);
+}
+
+.codex__thumb[aria-pressed="true"] {
+  outline: 2px solid var(--book-ink);
+  outline-offset: 2px;
+}
+
+.codex__thumb:focus-visible {
+  outline: 2px solid var(--book-ink);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+.codex__credit {
+  margin: 12px 0 0;
+  color: var(--book-ink-soft);
+  font-size: 11.5px;
+}
+
+/* ---- facing pages: the card on the left, the deck on the right ---- */
+
+.codex[data-layout="facing-pages"] {
+  display: contents;
+}
+
+.codex[data-layout="facing-pages"] .codex__art {
+  width: 190px;
+}
+
+.codex[data-layout="facing-pages"] .codex__card {
+  grid-column: 1;
+  grid-row: 4;
+  margin-top: var(--book-space-2);
+}
+
+.codex[data-layout="facing-pages"] .codex__catalog {
+  grid-column: 2;
+  grid-row: 2 / 5;
+}
+
+/* The grid takes the room the page leaves it: six across, as large as
+   both the page's width and its height allow, never scrolling. */
+.codex[data-layout="facing-pages"] .codex__grid-frame {
+  min-height: 0;
+  flex: 1;
+  container-type: size;
+}
+
+.codex[data-layout="facing-pages"] .codex__grid {
+  grid-template-columns: repeat(
+    6,
+    min(calc((100cqw - 50px) / 6), calc((100cqh - 30px) / 4 / 1.5))
+  );
+  gap: 10px;
+}
+
+.codex[data-layout="facing-pages"] .codex__credit {
+  margin-top: 8px;
+}
+
+/* ---- one page: under one another ---- */
+
+.codex[data-layout="single-page"] .codex__card {
+  margin-bottom: var(--book-space-3);
+}
+
+.codex[data-layout="single-page"] .codex__art {
+  width: 120px;
+}

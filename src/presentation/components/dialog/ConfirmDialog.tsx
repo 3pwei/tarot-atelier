@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef } from "react";
+import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
 import { useModalDialog } from "@/presentation/components/dialog/useModalDialog";
 
 interface ConfirmDialogProps {
@@ -12,8 +13,9 @@ interface ConfirmDialogProps {
 }
 
 /**
- * Asks before an action that discards something. Cancel has the focus, so
- * Enter or Escape alone never discards.
+ * Asks before an action that discards something, on a sheet of the book's
+ * paper laid over the page. Cancel has the focus, so Enter or Escape alone
+ * never discards.
  */
 export function ConfirmDialog({
   title,
@@ -35,7 +37,7 @@ export function ConfirmDialog({
       }}
     >
       <div
-        className="confirm-dialog"
+        className="confirm-dialog paper-sheet"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -45,17 +47,12 @@ export function ConfirmDialog({
         <h2 id={titleId}>{title}</h2>
         <p id={messageId}>{message}</p>
         <div className="confirm-dialog__actions">
-          <button
-            ref={cancelRef}
-            type="button"
-            className="ghost-action"
-            onClick={onCancel}
-          >
+          <BookFloatButton ref={cancelRef} label="取消" onPress={onCancel}>
             取消
-          </button>
-          <button type="button" className="danger-action" onClick={onConfirm}>
+          </BookFloatButton>
+          <BookFloatButton label={confirmLabel} onPress={onConfirm}>
             {confirmLabel}
-          </button>
+          </BookFloatButton>
         </div>
       </div>
     </div>

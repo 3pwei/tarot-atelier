@@ -169,6 +169,35 @@ describe("page turns", () => {
     ).toBeInTheDocument();
   });
 
+  it("with facing pages, a riffle prints the page it lands on only on its last sheet", async () => {
+    screenOf(true);
+    window.history.replaceState(null, "", "/#contents");
+    renderBook();
+    await settle();
+    const records = screen.getByRole("button", { name: /^The Records，/u });
+    tap(records);
+    tap(records);
+
+    const sheets = document.querySelectorAll(".page-turn__sheet");
+    expect(sheets).toHaveLength(7);
+    const printed = document.querySelectorAll(".page-turn__sheet-back");
+    expect(printed).toHaveLength(1);
+    expect(sheets[6]).toContainElement(printed[0] as HTMLElement);
+    expect(printed[0]?.firstElementChild).not.toBeNull();
+    // The real leaf turns first, so its back is plain paper.
+    expect(document.querySelector(".page-turn__back")).toBeNull();
+    expect(document.querySelector(".page-turn__verso")).toBeInTheDocument();
+    expect(document.querySelector(".page-turn__flight")).toHaveAttribute(
+      "data-kind",
+      "riffle",
+    );
+
+    advance(riffleTimeline().totalMs);
+    expect(
+      screen.getByRole("heading", { name: "The Records" }),
+    ).toBeInTheDocument();
+  });
+
   it("lays a lit chapter out unseen, and shows that same page once the leaf lands", async () => {
     window.history.replaceState(null, "", "/#contents");
     renderBook();
