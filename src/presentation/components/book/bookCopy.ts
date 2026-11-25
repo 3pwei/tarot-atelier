@@ -32,6 +32,8 @@ export const BOOK_COPY = {
   anewLabel: "清除本次牌陣",
   cardReading: "Card Reading ›",
   cardReadingLabel: "看解讀",
+  /** Shares the finished table, beside "Card Reading". */
+  share: "Share",
   readingTitle: "Card Reading",
   toCards: "‹ The Cards",
   toCardsLabel: "回到牌陣",

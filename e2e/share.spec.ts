@@ -32,7 +32,6 @@ test("paints a share image of the finished table and downloads it where sharing 
   await expect(page.getByText("牌陣已完成")).toBeVisible();
   await openReading(page);
   const panel = readingPanel(page);
-  await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();
 
   await panel.getByRole("button", { name: "分享", exact: true }).click();

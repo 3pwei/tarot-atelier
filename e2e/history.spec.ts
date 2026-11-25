@@ -9,7 +9,6 @@ import {
   pickAll,
   reveal,
   openChapter,
-  readingPanel,
 } from "./support/spreadTable";
 
 // Deals and burns three cards; software-rendered CI browsers need headroom.
@@ -29,7 +28,6 @@ test("keeps a finished round with its reading, and deletes it on request", async
   for (const index of [1, 2, 3]) await reveal(page, index);
   await expect(page.getByText("牌陣已完成")).toBeVisible();
   await openReading(page);
-  await readingPanel(page).getByRole("button", { name: "產生解讀" }).click();
   await expect(page.getByText("AI 解讀", { exact: true })).toBeVisible();
 
   // It survives a reload, which starts the table afresh.

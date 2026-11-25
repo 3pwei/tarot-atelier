@@ -45,17 +45,20 @@
 .draw-table__reading-cue {
   display: flex;
   justify-content: center;
+  align-items: baseline;
+  gap: 32px;
   margin: 0 0 16px;
 }
 
 /* Once every card is revealed, "Card Reading" is lit from behind in the
-   contents' warm light, breathing slowly, to show the next step. */
-.draw-table__reading-cue .book-float {
+   contents' warm light, breathing slowly, to show the next step; "Share"
+   beside it stays plain. */
+.draw-table__reading-open {
   position: relative;
   isolation: isolate;
 }
 
-.draw-table__reading-cue .book-float::before {
+.draw-table__reading-open::before {
   content: "";
   position: absolute;
   z-index: -1;
@@ -71,9 +74,7 @@
 }
 
 /* Less motion leaves the light on, without breathing. */
-.draw-experience[data-motion="animated"]
-  .draw-table__reading-cue
-  .book-float::before {
+.draw-experience[data-motion="animated"] .draw-table__reading-open::before {
   animation: reading-cue-glow 2.4s ease-in-out infinite alternate;
 }
 
