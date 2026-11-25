@@ -79,6 +79,10 @@ describe("page turns", () => {
     const still = document.querySelector(".page-turn__still");
     expect(still).toHaveAttribute("inert");
     expect(still?.querySelector(".book-frontispiece")).not.toBeNull();
+    // The leaf's back is the chapter's left half, so the title meets as it lands.
+    const back = document.querySelector(".page-turn__back");
+    expect(back).toHaveTextContent("The Three Cards");
+    expect(document.querySelector(".page-turn__verso")).toBeNull();
     advance(SINGLE_TURN_MS);
     expect(document.querySelector(".page-turn__still")).toBeNull();
   });
@@ -116,6 +120,9 @@ describe("page turns", () => {
     expect(leaf).toHaveAttribute("aria-hidden", "true");
     expect(leaf).toHaveAttribute("inert");
     expect(document.querySelectorAll(".page-turn__sheet")).toHaveLength(0);
+    // On a phone there is no left page: the back shows the front's ink through.
+    expect(document.querySelector(".page-turn__verso")).toBeInTheDocument();
+    expect(document.querySelector(".page-turn__back")).toBeNull();
 
     advance(SINGLE_TURN_MS);
     expect(document.querySelector(".page-turn")).toBeNull();

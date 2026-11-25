@@ -49,6 +49,29 @@
   mask: none;
 }
 
+/* The leaf's back printed with the left page it becomes. A chapter spans
+   both pages, so its back holds the whole open book and shows the left half. */
+.page-turn__back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--book-paper);
+  transform: scaleX(-1);
+}
+
+.page-turn__back > .book-spread {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  max-height: none;
+}
+
+.page-turn__back > .book-spread::before {
+  display: none;
+}
+
 .page-turn__verso {
   position: absolute;
   inset: 0;
