@@ -42,6 +42,22 @@ export function LeafFace({ place, entries }: LeafFaceProps) {
   }
 }
 
+/**
+ * A place still, as facing pages show it: the front matter on both pages,
+ * a chapter or the appendix across them, heading only.
+ */
+export function SpreadFace({ place, entries }: LeafFaceProps) {
+  if (place.kind === "frontispiece" || place.kind === "contents") {
+    return (
+      <>
+        <FrontispiecePage onToContents={STILL} />
+        <ContentsPage entries={entries} onOpen={STILL} />
+      </>
+    );
+  }
+  return <LeafFace place={place} entries={entries} />;
+}
+
 function HeadingFace({ entry }: { readonly entry: ContentsEntry }) {
   const titleId = useId();
   return (

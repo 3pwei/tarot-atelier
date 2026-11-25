@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import type { BookRect } from "@/presentation/components/book/turning/opening";
 import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
 import {
@@ -11,6 +11,7 @@ import {
   openingMs,
   type OpeningCamera,
 } from "@/presentation/components/book/turning/opening";
+import { useAnimationsFinished } from "@/presentation/components/book/turning/useAnimationsFinished";
 import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
 
 /** Motes of light drifting up out of the pages, placed once. */
@@ -63,7 +64,15 @@ const VISIBLE = leafVisibility(LEAVES);
  * leaves riffle past and the camera leans in. It only plays; the book swaps
  * in the real pages when it ends.
  */
-export function OpeningScene({ from }: { readonly from: BookRect }) {
+interface OpeningSceneProps {
+  readonly from: BookRect;
+  /** Every part of the scene has played out. */
+  readonly onFinished: () => void;
+}
+
+export function OpeningScene({ from, onFinished }: OpeningSceneProps) {
+  const root = useRef<HTMLDivElement>(null);
+  useAnimationsFinished(root, openingMs(), onFinished);
   // Measured once: the scene lasts two seconds and never re-lays itself out.
   const [{ camera, book }] = useState<{
     readonly camera: OpeningCamera;
@@ -100,7 +109,7 @@ export function OpeningScene({ from }: { readonly from: BookRect }) {
   } as CSSProperties;
 
   return (
-    <div className="opening" style={style} inert aria-hidden="true">
+    <div ref={root} className="opening" style={style} inert aria-hidden="true">
       <div className="opening__desk" />
       {/* The glow stays where the book lay; it fades before the camera moves far. */}
       <div className="opening__glow">
