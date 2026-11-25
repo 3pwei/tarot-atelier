@@ -11,12 +11,12 @@ import {
 } from "@/presentation/components/book/turning/timing";
 import { AtelierServicesProvider } from "@/presentation/services/atelierServices";
 
-/** A phone that animates: no reduced motion, one page at a time. */
-function phoneScreen() {
+/** A screen that animates: no reduced motion; facing pages if wide. */
+function screenOf(facingPages: boolean) {
   vi.stubGlobal(
     "matchMedia",
     vi.fn((media: string) => ({
-      matches: false,
+      matches: facingPages && media.includes("min-width"),
       media,
       onchange: null,
       addEventListener: vi.fn(),
@@ -27,6 +27,9 @@ function phoneScreen() {
     })),
   );
 }
+
+/** A phone: one page at a time. */
+const phoneScreen = () => screenOf(false);
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
@@ -64,6 +67,22 @@ async function settle() {
 }
 
 describe("page turns", () => {
+  it("keeps the left page until the leaf lands on it, when pages face", async () => {
+    screenOf(true);
+    window.history.replaceState(null, "", "/#contents");
+    renderBook();
+    await settle();
+    const first = screen.getByRole("button", { name: /^The Three Cards，/u });
+    tap(first);
+    tap(first);
+
+    const still = document.querySelector(".page-turn__still");
+    expect(still).toHaveAttribute("inert");
+    expect(still?.querySelector(".book-frontispiece")).not.toBeNull();
+    advance(SINGLE_TURN_MS);
+    expect(document.querySelector(".page-turn__still")).toBeNull();
+  });
+
   it("plays the opening, then shows the frontispiece", async () => {
     renderBook();
     await settle();

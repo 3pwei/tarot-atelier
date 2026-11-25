@@ -11,6 +11,11 @@
   contain: strict;
 }
 
+/* The leaf and everything moving with it, laid over the right-hand page. */
+.page-turn__leaf {
+  position: absolute;
+}
+
 /* The page underneath only takes the fold's shadow, clipped to the paper. */
 .page-turn__under {
   position: absolute;
@@ -574,4 +579,16 @@
     opacity: 0;
     transform: translate(var(--drift-x), var(--drift-y)) scale(1);
   }
+}
+
+/* With facing pages, the left page the leaf travels onto, still until it
+   lands. It lies over the pages underneath and under the leaf. */
+.page-turn__still {
+  position: absolute;
+  clip-path: inset(0 50% 0 0);
+  pointer-events: none;
+}
+
+.page-turn__still::before {
+  display: none;
 }
