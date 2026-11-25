@@ -60,9 +60,13 @@
   outline: none;
 }
 
-.reading-panel .book-title {
+/* "Card Reading" is set in the same face as the "Card Reading" the reader
+   pressed to come here, not in the chapters' script. */
+.reading-panel .book-title:lang(en) {
   margin: 2px 0 4px;
-  font-size: 40px;
+  font-family: var(--book-serif);
+  font-size: 34px;
+  letter-spacing: 0.08em;
 }
 
 .reading-panel .book-flourish {
