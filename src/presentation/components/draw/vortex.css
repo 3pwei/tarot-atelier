@@ -5,20 +5,18 @@
   --sine-in: cubic-bezier(0.12, 0, 0.39, 0);
   position: absolute;
   inset: 0;
+  /* The widest rings reach past the table's top and sides. On the page a
+     card cut off there would show the edges of the area the wash is drawn
+     in, so cards fade out towards them instead. The foot stays clear: the
+     cards gather there. */
+  mask-image:
+    linear-gradient(to bottom, transparent, #000 18%),
+    linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  mask-composite: intersect;
 }
 
-/* The opening ritual, all centred on the pack. */
-.table-vortex__dim {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at calc(var(--table-pile-x) * 1%) calc(var(--table-pile-y) * 1%),
-    transparent calc(var(--slot-w) * 0.9),
-    rgba(4, 3, 10, 0.62) calc(var(--slot-w) * 3.2)
-  );
-  transition: opacity 600ms ease;
-}
-
+/* The opening ritual, all centred on the pack. The table is never dimmed
+   around it: a shade would show the edges of the area the wash is drawn in. */
 .table-vortex__breath,
 .table-vortex__ritual-ring {
   position: absolute;
@@ -45,14 +43,9 @@
   box-shadow: 0 0 12px rgba(255, 214, 140, 0.55);
 }
 
-.table-vortex[data-gathering] .table-vortex__dim,
 .table-vortex[data-gathering] .table-vortex__breath {
   opacity: 0;
   transition: opacity 600ms ease;
-}
-
-.draw-experience[data-motion="animated"] .table-vortex__dim {
-  animation: ritual-dim calc(var(--ritual-duration) * 0.8) ease-out backwards;
 }
 
 .draw-experience[data-motion="animated"] .table-vortex__breath {
@@ -577,12 +570,6 @@
   }
 }
 
-@keyframes ritual-dim {
-  from {
-    opacity: 0;
-  }
-}
-
 /* One breath: the light swells, then settles to a glow under the stream. */
 @keyframes ritual-breath {
   0% {
@@ -601,6 +588,8 @@
   }
 }
 
+/* The ring fades out well inside the table, so it never meets the edges of
+   the area the wash is drawn in. */
 @keyframes ritual-ring {
   0% {
     opacity: 0;
@@ -613,7 +602,7 @@
 
   100% {
     opacity: 0;
-    transform: scale(4.5);
+    transform: scale(2);
   }
 }
 

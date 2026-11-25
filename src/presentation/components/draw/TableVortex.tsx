@@ -86,9 +86,8 @@ export function TableVortex({ seed, gathering, backUrl }: TableVortexProps) {
       }
       aria-hidden="true"
     >
-      {/* The opening: the table dims, the pack breathes light, a ring of
-          light spreads out, and only then do the cards begin to flow. */}
-      <span className="table-vortex__dim" />
+      {/* The opening: the pack breathes light, a ring of light spreads
+          out, and only then do the cards begin to flow. */}
       <span className="table-vortex__breath" />
       <span className="table-vortex__ritual-ring" />
       <div className="table-vortex__whirl">
