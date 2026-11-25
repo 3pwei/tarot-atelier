@@ -169,6 +169,13 @@ export function AtelierBook() {
               box={leafBox}
               clip={facingPages ? openBook(leafBox) : leafBox}
               face={<LeafFace place={leafPlace(turn)} entries={entries} />}
+              back={
+                facingPages ? (
+                  <div className="book-spread">
+                    <SpreadFace place={backOnLeft(turn)} entries={entries} />
+                  </div>
+                ) : undefined
+              }
               onFinished={() => finishTurn(turn)}
             />
           </>
@@ -197,6 +204,14 @@ function stillOnLeft(turn: ActiveTurn): BookPlace {
     (plan.kind === "single" || plan.kind === "riffle") &&
     plan.direction === "forward";
   return forward ? turn.from : turn.to;
+}
+
+/**
+ * With facing pages, the left page printed on the leaf's back: forward, the
+ * page arriving; back, the page being left.
+ */
+function backOnLeft(turn: ActiveTurn): BookPlace {
+  return stillOnLeft(turn) === turn.from ? turn.to : turn.from;
 }
 
 /** The whole open book, from the right-hand page the leaf lies on. */

@@ -36,6 +36,12 @@ interface PageTurnProps {
   readonly clip: LeafBox;
   /** The leaf's printed side: the page leaving, or the one arriving. */
   readonly face: ReactNode;
+  /**
+   * The leaf's other side, with facing pages: the left page it becomes once
+   * it lands (or was, turning back). Without it, the back is paper with the
+   * front's ink faintly showing through.
+   */
+  readonly back?: ReactNode;
   /** The leaf, and any sheets, have come to rest. */
   readonly onFinished: () => void;
 }
@@ -64,6 +70,7 @@ export function PageTurn({
   box,
   clip,
   face,
+  back,
   onFinished,
 }: PageTurnProps) {
   const root = useRef<HTMLDivElement>(null);
@@ -169,9 +176,17 @@ export function PageTurn({
             className="page-turn__page"
             style={{ ...pageSize, ...curl("flapPage") }}
           >
-            {face}
-            {/* The back of a leaf: the front's ink shows through, faint and mirrored. */}
-            <div className="page-turn__verso" />
+            {back ? (
+              // Folded over, the leaf is a mirror image; mirrored again, its
+              // back reads the right way round.
+              <div className="page-turn__back">{back}</div>
+            ) : (
+              <>
+                {face}
+                {/* The back of a leaf: the front's ink shows through, faint and mirrored. */}
+                <div className="page-turn__verso" />
+              </>
+            )}
             <div className="page-turn__fold" style={curl("flapFold")}>
               <div
                 className="page-turn__shade page-turn__shade--flap"
