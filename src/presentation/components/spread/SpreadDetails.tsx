@@ -49,6 +49,9 @@ export function SpreadDetails({
           onQuestion={(text) =>
             dispatch({ type: "question", positionId: selected.id, text })
           }
+          onName={(name) =>
+            dispatch({ type: "position-name", positionId: selected.id, name })
+          }
           onRotate={(degrees) => handlers.rotate(selected.id, degrees)}
           onMove={(point) => handlers.move(selected.id, point)}
           onReorder={(index) =>

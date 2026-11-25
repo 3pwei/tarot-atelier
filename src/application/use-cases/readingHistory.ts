@@ -9,9 +9,10 @@ import {
   type ReadingRecord,
   type RecordedPosition,
 } from "@/domain/history/readingHistory";
-import { countCharacters } from "@/domain/spread/spread";
+import { countCharacters, normalizePositionName } from "@/domain/spread/spread";
 import {
   MAX_MAIN_QUESTION_LENGTH,
+  MAX_POSITION_NAME_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_SPREAD_POSITIONS,
   MAX_TEMPLATE_NAME_LENGTH,
@@ -21,15 +22,61 @@ import {
  * Version of the stored reading history. Bump it whenever the stored shape
  * changes and register a migration from the previous version.
  */
-export const READING_HISTORY_VERSION = 1;
+export const READING_HISTORY_VERSION = 2;
+
+type UnknownRecord = Readonly<Record<string, unknown>>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * v1 → v2: positions gained short names. Rounds recorded before them keep
+ * their questions and are known by number alone.
+ */
+function nameRecordedPositions(raw: UnknownRecord): UnknownRecord {
+  // Anything unreadable is left for validation to reject.
+  if (!Array.isArray(raw.records)) return { ...raw, version: 2 };
+  const records: readonly unknown[] = raw.records;
+  return {
+    ...raw,
+    version: 2,
+    records: records.map((record) => {
+      if (!isRecord(record) || !Array.isArray(record.positions)) return record;
+      const positions: readonly unknown[] = record.positions;
+      return {
+        ...record,
+        positions: positions.map((position) =>
+          isRecord(position) && !("name" in position)
+            ? { ...position, name: "" }
+            : position,
+        ),
+      };
+    }),
+  };
+}
 
 /**
  * Upgrades a raw history of version `n` (the key) to version `n + 1`. The
  * result is still fully validated.
  */
-type HistoryMigration = (raw: Readonly<Record<string, unknown>>) => unknown;
+type HistoryMigration = (raw: UnknownRecord) => UnknownRecord;
 const HISTORY_MIGRATIONS: Readonly<Record<number, HistoryMigration>> =
-  Object.freeze({});
+  Object.freeze({ 1: nameRecordedPositions });
+
+/** Applies every migration from the stored version up to the current one. */
+function upgradeHistory(raw: UnknownRecord): UnknownRecord {
+  let upgraded = raw;
+  while (
+    typeof upgraded.version === "number" &&
+    upgraded.version < READING_HISTORY_VERSION
+  ) {
+    const migrate = HISTORY_MIGRATIONS[upgraded.version];
+    if (!migrate) return upgraded;
+    upgraded = migrate(upgraded);
+  }
+  return upgraded;
+}
 
 const MAX_ID_LENGTH = 512;
 
@@ -50,6 +97,10 @@ const unit = z.number().min(0).max(1);
 
 const position = z.strictObject({
   index: z.number().int().min(1).max(MAX_SPREAD_POSITIONS),
+  name: text(MAX_POSITION_NAME_LENGTH).refine(
+    (name) => name === normalizePositionName(name).trim(),
+    { message: "Names are trimmed and on one line" },
+  ),
   question: text(MAX_QUESTION_LENGTH),
   x: unit,
   y: unit,
@@ -106,13 +157,8 @@ export type HistoryParse =
 
 /** Parses an untrusted stored history; unreadable records are dropped. */
 export function parseReadingHistory(raw: unknown): HistoryParse {
-  if (typeof raw !== "object" || raw === null) return { ok: false };
-  const value = raw as Readonly<Record<string, unknown>>;
-  const migrate =
-    typeof value.version === "number"
-      ? HISTORY_MIGRATIONS[value.version]
-      : undefined;
-  const parsed = storedHistory.safeParse(migrate ? migrate(value) : value);
+  if (!isRecord(raw)) return { ok: false };
+  const parsed = storedHistory.safeParse(upgradeHistory(raw));
   if (!parsed.success) return { ok: false };
   const history = parsed.data.records.flatMap((entry) => {
     const record = readRecord(entry);

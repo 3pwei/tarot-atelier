@@ -9,6 +9,7 @@ import {
   resultFor,
   validRequest,
 } from "@/application/reading/testing/readingDoubles";
+import { READING_SCHEMA_VERSION } from "@/domain/reading/types";
 
 const accepts = (value: unknown) =>
   readingRequestSchema.safeParse(value).success;
@@ -16,6 +17,30 @@ const accepts = (value: unknown) =>
 describe("readingRequestSchema", () => {
   it("accepts a request built from the domain", () => {
     expect(accepts(validRequest)).toBe(true);
+  });
+
+  it("accepts a position's short name, up to four characters", () => {
+    const [first] = validRequest.positions;
+    const named = (name: string) => ({
+      ...validRequest,
+      positions: [{ ...first, name }],
+    });
+    expect(accepts(named("過去"))).toBe(true);
+    expect(accepts(named("很久很久以前"))).toBe(false);
+    expect(accepts(named(" "))).toBe(false);
+  });
+
+  it("reads a 1.1.0 request and result as the current version", () => {
+    const request = readingRequestSchema.parse({
+      ...validRequest,
+      schemaVersion: "1.1.0",
+    });
+    expect(request.schemaVersion).toBe(READING_SCHEMA_VERSION);
+    const result = readingResultSchema.parse({
+      ...resultFor(validRequest),
+      schemaVersion: "1.1.0",
+    });
+    expect(result.schemaVersion).toBe(READING_SCHEMA_VERSION);
   });
 
   it("accepts a request without a main question or jumper", () => {

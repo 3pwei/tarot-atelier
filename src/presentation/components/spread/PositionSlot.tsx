@@ -11,6 +11,7 @@ import {
 import type { SpreadPosition, TablePoint } from "@/domain/spread/types";
 import { angleLabel } from "@/presentation/components/spread/useSlotPreview";
 import { useSlotGestures } from "@/presentation/components/spread/useSlotGestures";
+import { positionSummary } from "@/presentation/components/spread/positionLabels";
 
 export const KEY_STEP = 0.01;
 export const KEY_STEP_LARGE = 0.05;
@@ -140,6 +141,8 @@ export function PositionSlot({
     }
   }
 
+  const name = position.name.trim();
+
   return (
     <div
       ref={slotRef}
@@ -164,7 +167,7 @@ export function PositionSlot({
         className="spread-slot__handle"
         aria-pressed={selected}
         aria-describedby={hintId}
-        aria-label={`牌位 ${position.index}：${question || "尚未設定問題"}`}
+        aria-label={positionSummary(position)}
         onKeyDown={handleKeyDown}
       />
       {(selected || gestures.rotating) && arrangeable && (
@@ -203,6 +206,11 @@ export function PositionSlot({
       <div className="spread-slot__frame" aria-hidden="true">
         <span className="spread-slot__number">{position.index}</span>
       </div>
+      {name && (
+        <span className="spread-slot__name" aria-hidden="true">
+          {name}
+        </span>
+      )}
       {hasCards && <div className="spread-slot__cards">{children}</div>}
     </div>
   );

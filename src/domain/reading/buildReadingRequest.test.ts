@@ -54,6 +54,16 @@ describe("buildReadingRequest", () => {
     });
   });
 
+  it("names a position by its short name only when it has one", () => {
+    const spread = spreadOf([
+      { name: " 過去 ", question: "起因？", draw: { card: MAJOR(1) } },
+      { name: "", question: "現況？", draw: { card: MAJOR(2) } },
+    ]);
+    const [named, unnamed] = buildOk(spread, standardRegistry).positions;
+    expect(named?.name).toBe("過去");
+    expect(unnamed).not.toHaveProperty("name");
+  });
+
   it("orders positions by index, not by where they sit on the table", () => {
     const base = spreadOf([
       { question: "一", draw: { card: MAJOR(1) } },

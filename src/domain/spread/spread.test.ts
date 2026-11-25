@@ -17,6 +17,7 @@ import {
   reorderPosition,
   rotatePosition,
   setMainQuestion,
+  setPositionName,
   setPositionQuestion,
   suggestPlacement,
   validateSpread,
@@ -179,6 +180,31 @@ describe("spread limits", () => {
         ],
       }),
     ).toThrow(/unique/u);
+  });
+});
+
+describe("position names", () => {
+  it("starts unnamed and needs no name to be drawn", () => {
+    const spread = spreadOf(2);
+    expect(spread.positions.map((position) => position.name)).toEqual(["", ""]);
+    expect(isSpreadReady(spread)).toBe(true);
+  });
+
+  it("keeps a name on one line and at most four characters", () => {
+    const named = (name: string) =>
+      unwrap(setPositionName(spreadOf(1), "p1", name)).positions[0]?.name;
+    expect(named("過去")).toBe("過去");
+    expect(named("很久很久以前")).toBe("很久很久");
+    expect(named("近\n況")).toBe("近 況");
+    expect(named("  近況")).toBe("近況");
+    expect(named("🌙月亮")).toBe("🌙月亮");
+  });
+
+  it("reports an unknown position", () => {
+    expect(setPositionName(spreadOf(1), "nope", "過去")).toEqual({
+      ok: false,
+      code: "unknown-position",
+    });
   });
 });
 

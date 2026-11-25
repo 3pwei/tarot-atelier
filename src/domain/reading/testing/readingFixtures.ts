@@ -64,6 +64,7 @@ export function drawOf(spec: DrawSpec): DrawResult {
 }
 
 export interface PositionSpec {
+  readonly name?: string;
   readonly question: string;
   readonly draw?: DrawSpec;
 }
@@ -78,6 +79,7 @@ export function spreadOf(
     mainQuestion,
     positions: positions.map((position, order) => ({
       id: `p${order + 1}`,
+      ...(position.name !== undefined ? { name: position.name } : {}),
       question: position.question,
       x: (order + 1) / (positions.length + 1),
       y: 0.5,

@@ -2,6 +2,7 @@ import { designTokens } from "@/shared/design/tokens";
 import { ROLE_LABELS } from "@/presentation/components/cards/cardLabels";
 import {
   cardLabel,
+  positionCaption,
   type ShareCard,
   type SharedCard,
 } from "@/presentation/components/share/shareCard";
@@ -199,10 +200,11 @@ function drawPositions(
       y: box.y + box.height + 14,
       width: captionWidth,
     });
-    if (position.question) {
+    const caption = positionCaption(position);
+    if (caption) {
       context.fillStyle = INK_SOFT;
       context.font = font(21);
-      drawCentred(context, position.question, {
+      drawCentred(context, caption, {
         x: centre,
         y: box.y + box.height + 48,
         width: captionWidth,

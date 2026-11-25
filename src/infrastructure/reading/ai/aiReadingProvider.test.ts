@@ -18,7 +18,11 @@ const request: ReadingRequest = (() => {
   const build = buildReadingRequest(
     spreadOf(
       [
-        { question: "現在的狀態是什麼？", draw: { card: MAJOR(1) } },
+        {
+          name: "現在",
+          question: "現在的狀態是什麼？",
+          draw: { card: MAJOR(1) },
+        },
         {
           question: "阻礙在哪裡？",
           draw: {
@@ -78,10 +82,24 @@ describe("AiReadingProvider", () => {
     expect(data).toMatchObject({
       mainQuestion: "面試結果",
       positions: [
-        { index: 1, question: "現在的狀態是什麼？", card: { name: "魔術師" } },
+        {
+          index: 1,
+          name: "現在",
+          question: "現在的狀態是什麼？",
+          card: { name: "魔術師" },
+        },
         { index: 2, jumper: { name: "聖杯三" } },
       ],
     });
+  });
+
+  it("sends a position's short name only when it has one", async () => {
+    const { provider, prompts } = providerAnswering(() => draftFor(request));
+    await provider.interpret(request);
+    const data = JSON.parse(
+      prompts[0]?.user.split("\n").slice(1).join("\n") ?? "",
+    );
+    expect(data.positions[1]).not.toHaveProperty("name");
   });
 
   it("names no card IDs to the model", async () => {

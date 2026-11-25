@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { detectPositionRole } from "@/domain/reading/positionRole";
+import {
+  detectPositionRole,
+  positionRoleOf,
+} from "@/domain/reading/positionRole";
 import { BUILT_IN_TEMPLATES } from "@/domain/spread/templates";
 
 describe("detectPositionRole", () => {
@@ -39,5 +42,17 @@ describe("detectPositionRole", () => {
     expect(detectPositionRole("藏在底下的根源是什麼？")).toBe("past");
     expect(detectPositionRole("此刻的核心能量是什麼？")).toBe("present");
     expect(detectPositionRole("身邊的人如何影響這件事？")).toBe("others");
+  });
+});
+
+describe("positionRoleOf", () => {
+  it("reads the short name first, then the question", () => {
+    expect(positionRoleOf({ name: "阻礙", question: "我的內心？" })).toBe(
+      "obstacle",
+    );
+    expect(positionRoleOf({ name: "近況", question: "我的內心？" })).toBe(
+      "self",
+    );
+    expect(positionRoleOf({ question: "接下來呢？" })).toBe("future");
   });
 });

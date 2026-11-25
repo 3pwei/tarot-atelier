@@ -1,6 +1,7 @@
 import type { DrawResult } from "@/domain/deck/draw";
 import {
   MAX_MAIN_QUESTION_LENGTH,
+  MAX_POSITION_NAME_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_SPREAD_POSITIONS,
   MIN_QUESTION_LENGTH,
@@ -41,6 +42,8 @@ export type SpreadIssue =
 
 export interface PositionDraft {
   readonly id: string;
+  /** Empty or left out when the position has no short name. */
+  readonly name?: string;
   readonly question: string;
   readonly x: number;
   readonly y: number;
@@ -55,6 +58,17 @@ export function countCharacters(text: string): number {
 function truncateCharacters(text: string, limit: number): string {
   const characters = Array.from(text);
   return characters.length > limit ? characters.slice(0, limit).join("") : text;
+}
+
+/**
+ * A short name as it may be stored: on one line and at most
+ * `MAX_POSITION_NAME_LENGTH` characters. Inner spaces are kept as typed.
+ */
+export function normalizePositionName(name: string): string {
+  return truncateCharacters(
+    name.replace(/[\r\n]+/gu, " ").trimStart(),
+    MAX_POSITION_NAME_LENGTH,
+  );
 }
 
 export function clampCoordinate(value: number): number {
@@ -124,6 +138,7 @@ function createPosition(draft: PositionDraft, index: number): SpreadPosition {
   return Object.freeze({
     id: draft.id,
     index,
+    name: normalizePositionName(draft.name ?? ""),
     question: truncateCharacters(draft.question, MAX_QUESTION_LENGTH),
     x: clampCoordinate(draft.x),
     y: clampCoordinate(draft.y),
@@ -273,6 +288,18 @@ export function setPositionQuestion(
   return updatePosition(spread, positionId, (position) => ({
     ...position,
     question: truncateCharacters(question, MAX_QUESTION_LENGTH),
+  }));
+}
+
+/** Stores the name as typed, on one line and capped at the limit. */
+export function setPositionName(
+  spread: Spread,
+  positionId: string,
+  name: string,
+): SpreadUpdate {
+  return updatePosition(spread, positionId, (position) => ({
+    ...position,
+    name: normalizePositionName(name),
   }));
 }
 

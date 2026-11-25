@@ -108,6 +108,22 @@
   user-select: none;
 }
 
+/* The short name sits under the position, read the right way up. */
+.spread-slot__name {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 0.3rem);
+  left: 50%;
+  color: var(--color-moon);
+  font-size: clamp(0.7rem, calc(var(--slot-w) * 0.24), 0.95rem);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+  user-select: none;
+}
+
 .spread-slot[data-missing-question] .spread-slot__frame {
   border-color: rgba(255, 154, 60, 0.75);
   color: #ffb877;

@@ -21,7 +21,7 @@ const saved: SpreadTemplate = {
   id: "my-own",
   name: "斜放三張",
   builtIn: false,
-  positions: [{ question: "?", x: 0.5, y: 0.5, rotation: 0 }],
+  positions: [{ name: "", question: "?", x: 0.5, y: 0.5, rotation: 0 }],
 };
 
 describe("chapterTitle", () => {

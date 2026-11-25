@@ -1,7 +1,7 @@
 import type { Deck } from "@/domain/deck/deck";
 import type { TarotSuit } from "@/domain/deck/types";
 import {
-  detectPositionRole,
+  positionRoleOf,
   type PositionRole,
 } from "@/domain/reading/positionRole";
 import {
@@ -142,7 +142,7 @@ function primaryReading(
       orientation: phrases.orientationLabels[read.mode],
       theme,
     });
-  const roleName = detectPositionRole(position.question);
+  const roleName = positionRoleOf(position);
   const role = phrases.roles[roleName];
   const positionAngles = anglesForRole(
     read.entry.core || otherAngles.length === 0

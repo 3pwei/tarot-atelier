@@ -17,6 +17,7 @@ import {
   fixtureSpread,
 } from "@/domain/history/testing/historyFixtures";
 import { roundKeyOf } from "@/domain/spread/round";
+import { setPositionName } from "@/domain/spread/spread";
 
 const RECORDED_AT = new Date("2026-11-20T02:10:00.000Z");
 
@@ -89,6 +90,26 @@ describe("round identity", () => {
 });
 
 describe("recording a round", () => {
+  it("keeps each position's short name, trimmed", () => {
+    const [first] = threeCards.positions;
+    const renamed = setPositionName(threeCards, first!.id, "過去 ");
+    if (!renamed.ok) throw new Error(renamed.code);
+    const record = recordRound({
+      id: "r1",
+      spread: renamed.spread,
+      deckId: FIXTURE_DECK_ID,
+      recordedAt: RECORDED_AT,
+    });
+    expect(record?.positions.map((position) => position.name)).toEqual([
+      "過去",
+      "",
+      "",
+    ]);
+    expect(
+      record && recordedSpread(record)?.positions.map((p) => p.name),
+    ).toEqual(["過去", "", ""]);
+  });
+
   it("keeps the questions, positions and cards as they were", () => {
     const record = recordRound({
       id: "r1",
@@ -105,6 +126,7 @@ describe("recording a round", () => {
     });
     expect(record?.positions[1]).toEqual({
       index: 2,
+      name: "",
       question: "阻礙",
       x: 0.5,
       y: 0.5,
