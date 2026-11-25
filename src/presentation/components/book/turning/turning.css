@@ -143,10 +143,39 @@
   background: linear-gradient(90deg, #fff4d8, #c9a46c 60%, #7a5528);
 }
 
+/* The leaf in flight, over the sheets still to turn. */
+.page-turn__flight {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+/* In a riffle the sheets turn after the leaf, so on the left they lie over
+   it: the leaf sinks beneath them as it lands (and rises from under them
+   turning back, when it is the last to lift). */
+.page-turn__flight[data-kind="riffle"] {
+  animation: page-turn-leaf-settle var(--leaf-ms) var(--leaf-delay) linear both;
+}
+
+.page-turn__flight[data-kind="riffle"][data-direction="back"] {
+  animation-direction: reverse;
+}
+
+@keyframes page-turn-leaf-settle {
+  0%,
+  99.9% {
+    z-index: 2;
+  }
+  100% {
+    z-index: 0;
+  }
+}
+
 /* ---- riffle: opaque blank sheets, one after another ---- */
 .page-turn__sheets {
   position: absolute;
   inset: 0;
+  z-index: 1;
   perspective: 1600px;
   perspective-origin: 0 50%;
 }
@@ -174,6 +203,24 @@
 
 .page-turn__sheet[data-direction="back"] {
   animation-direction: reverse;
+}
+
+/* The last sheet's back, printed with the left page the riffle lands on.
+   Turned over with the sheet, it faces the reader and reads the right way
+   round; it sits a hair behind the sheet, so it is in front once flipped. */
+.page-turn__sheet:has(.page-turn__sheet-back) {
+  transform-style: preserve-3d;
+}
+
+.page-turn__sheet-back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--book-paper);
+  backface-visibility: hidden;
+  transform: translateZ(-1px) rotateY(180deg);
 }
 
 .page-turn__sheet i {
