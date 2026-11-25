@@ -18,7 +18,12 @@ On a wide screen a chapter was one tall page across both halves of the open book
 - **The reading is a leaf turn away.** On facing pages, `Card Reading ›` asks the chapter to `turnLeaf("forward")`. This is a new `usePageTurns` turn whose `from` and `to` are the same place. While it turns, `leafTurning` is true and the chapter keeps showing the table. The render that lifts the leaf away also shows the reading, so no frame falls between them.
   - The leaf carries what the pages will show, so it lands with text on it rather than blank paper. `turnLeaf` takes `LeafPrints`: still copies of the whole page being left and the page arriving.
   - `ReadingPages.show` hands the chapter a `PrintedSpread` that draws any spread of the reading still. The chapter wraps it in its running head and page, and `PrintedHalf` shows the half each side of the leaf needs.
-  - The live table is never copied, so its side of a turn stays blank paper.
+  - The live table cannot be drawn twice, so it is copied by cloning its DOM (`ClonedPage`). The chapter clones its page as it is left for the reading, and the turn back carries that copy.
+- **A chapter is ready before the leaf lands on it.** Lighting a contents entry lays that live page out unseen beneath the contents (`useArrivingPage`: `.book-place[data-unseen]`, inert and hidden).
+  - The leaf turning there prints clones of it, so it lands with the table on it. The page itself is the same instance once shown, so nothing mounts at landing.
+  - The page is laid out at the first tap, and its copy is frozen while the leaf turns: doing either mid-turn halved the frame rate.
+  - A turn with no entry lit (keyboard Enter, a link, the browser's back button) still lands blank, as before.
+  - At 4× CPU throttle, the single turn ran at about 26 fps on desktop against 30–34 before, with less main-thread blocking; mobile was unchanged at about 43 fps.
   - The running head reads "… · Card Reading" and offers `‹ The Cards` (回到牌陣), which turns back.
   - Focus goes to the title after each turn, as after any turn. Under reduced motion, the reading swaps at once.
 - **Long readings run on.** The reading is laid out in two CSS columns (`column-fill: auto`) inside a window of one spread. `ReadingSpread` counts the spreads its columns run to (`spreadCount`, measured by `ResizeObserver` and `MutationObserver`) and shows one spread at a time with `‹ Previous` / `Next ›`.

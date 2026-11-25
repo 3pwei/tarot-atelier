@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 export type PageSide = "left" | "right";
 export type PageWidth = "page" | "spread";
@@ -10,6 +10,7 @@ interface BookPageProps {
   readonly labelledBy: string;
   readonly folio?: number;
   readonly children: ReactNode;
+  readonly ref?: Ref<HTMLElement>;
 }
 
 /** One sheet of paper: its content, then the page number at the foot. */
@@ -19,9 +20,11 @@ export function BookPage({
   labelledBy,
   folio,
   children,
+  ref,
 }: BookPageProps) {
   return (
     <section
+      ref={ref}
       className="book-page"
       data-side={side}
       data-wide={width === "spread" || undefined}

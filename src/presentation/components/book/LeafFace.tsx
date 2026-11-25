@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import type { BookPlace } from "@/presentation/components/book/bookPlace";
 import type { ContentsEntry } from "@/presentation/components/book/contents";
 import { ContentsPage } from "@/presentation/components/book/ContentsPage";
@@ -66,7 +66,8 @@ export function PaperFace() {
   return <div className="leaf-paper" />;
 }
 
-export type PageHalf = "left" | "right";
+/** Which part of a page a leaf shows: one half of a wide page, or all of it. */
+export type PageHalf = "left" | "right" | "whole";
 
 /**
  * One half of a still copy of a page that spans the open book: what a leaf
@@ -85,4 +86,19 @@ export function PrintedHalf({
       {page}
     </div>
   );
+}
+
+/**
+ * A still copy of a live page, cloned from its DOM: a table or codex can be
+ * printed on a leaf this way without a second live instance of it.
+ */
+export function ClonedPage({ source }: { readonly source: Node }) {
+  const holder = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = holder.current;
+    if (!element) return;
+    element.replaceChildren(source.cloneNode(true));
+    return () => element.replaceChildren();
+  }, [source]);
+  return <div ref={holder} className="cloned-page" />;
 }

@@ -60,3 +60,17 @@ export function reveal(index: number, role = "主牌") {
 export function openReading() {
   fireEvent.click(screen.getByRole("button", { name: "看解讀" }));
 }
+
+/**
+ * Reveals every card on positions 1 to `count`, a jumper included where
+ * the deck drew one (the chance is real when randomness is not injected).
+ */
+export function revealAll(count: number) {
+  for (let index = 1; index <= count; index += 1) {
+    reveal(index);
+    const jumper = screen.queryByRole("button", {
+      name: `以火焰揭示牌位 ${index} 跳牌`,
+    });
+    if (jumper) fireEvent.click(jumper);
+  }
+}

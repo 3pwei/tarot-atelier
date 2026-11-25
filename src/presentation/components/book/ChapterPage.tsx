@@ -7,6 +7,7 @@ import type { TableLayout } from "@/presentation/components/draw/tableLayout";
 import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
 import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
 import { BookPage } from "@/presentation/components/book/BookPage";
+import { ClonedPage } from "@/presentation/components/book/LeafFace";
 import {
   runningHeadFor,
   type ContentsEntry,
@@ -61,8 +62,14 @@ export function ChapterPage({
   // The reading's spreads as still copies of this page, for the leaf that
   // turns between them; the table, live, is never copied.
   const printed = useRef<PrintedSpread>(undefined);
-  const printedPage = (page: number | undefined) => {
-    const spread = page === undefined ? undefined : printed.current?.(page);
+  // The table, live, cannot be drawn twice: it is cloned as it is left for
+  // the reading, and that copy is what the leaf back to it carries.
+  const page = useRef<HTMLElement>(null);
+  const tableCopy = useRef<Node>(undefined);
+  const printedPage = (spreadPage: number | undefined) => {
+    if (spreadPage === undefined)
+      return tableCopy.current && <ClonedPage source={tableCopy.current} />;
+    const spread = printed.current?.(spreadPage);
     return spread === undefined ? undefined : (
       <BookPage
         side="right"
@@ -83,6 +90,8 @@ export function ChapterPage({
     printedSpread?: PrintedSpread,
   ) => {
     if (printedSpread) printed.current = printedSpread;
+    if (turnedTo === undefined)
+      tableCopy.current = page.current?.cloneNode(true);
     turnLeaf((next ?? -1) > (turnedTo ?? -1) ? "forward" : "back", {
       leaving: printedPage(turnedTo),
       arriving: printedPage(next),
@@ -105,6 +114,7 @@ export function ChapterPage({
 
   return (
     <BookPage
+      ref={page}
       side="right"
       width="spread"
       labelledBy={titleId}

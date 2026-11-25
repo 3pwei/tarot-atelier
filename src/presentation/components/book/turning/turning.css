@@ -636,12 +636,26 @@
   flex: 1;
 }
 
-.leaf-half > .book-page {
-  width: 200%;
+/* A copy cloned from a live page stands where a rendered one would. */
+.leaf-half .cloned-page {
+  display: contents;
+}
+
+.leaf-half > .book-page,
+.leaf-half > .cloned-page > .book-page {
   flex: none;
+  width: 100%;
   animation: none;
 }
 
-.leaf-half[data-half="right"] > .book-page {
+.leaf-half[data-half="left"] > .book-page,
+.leaf-half[data-half="left"] > .cloned-page > .book-page,
+.leaf-half[data-half="right"] > .book-page,
+.leaf-half[data-half="right"] > .cloned-page > .book-page {
+  width: 200%;
+}
+
+.leaf-half[data-half="right"] > .book-page,
+.leaf-half[data-half="right"] > .cloned-page > .book-page {
   margin-left: -100%;
 }

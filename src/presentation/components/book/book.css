@@ -546,3 +546,22 @@
   outline: 2px solid var(--book-ink);
   outline-offset: 2px;
 }
+
+/* ---- the places in the book ---- */
+
+/* Each place's pages, set straight into the book as if unwrapped. */
+.book-place {
+  display: contents;
+}
+
+/* A page a leaf is turning to, laid out unseen exactly where it will lie:
+   the leaf carries a copy of it, and it shows the moment the leaf lifts. */
+.book-place[data-unseen] {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: inherit;
+  visibility: hidden;
+  pointer-events: none;
+}

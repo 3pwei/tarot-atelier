@@ -82,6 +82,10 @@ test("Card Reading turns a leaf to the reading, which runs on to the next spread
   await expectNoVerticalScroll(page);
 
   await page.getByRole("button", { name: "回到牌陣" }).click();
-  await expect(page.locator(".spread-board")).toBeVisible();
+  // The live table, not the copy of it the turning leaf carries.
+  await expect(
+    page.locator(".book-place:not([data-unseen]) .spread-board"),
+  ).toBeVisible();
+  await expect(page.locator(".page-turn")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "看解讀" })).toBeVisible();
 });

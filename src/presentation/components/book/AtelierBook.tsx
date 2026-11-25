@@ -25,10 +25,13 @@ import type { ContentsEntry } from "@/presentation/components/book/contents";
 import { ContentsPage } from "@/presentation/components/book/ContentsPage";
 import { FrontispiecePage } from "@/presentation/components/book/FrontispiecePage";
 import {
+  ClonedPage,
   LeafFace,
   LeftPageFace,
   PrintedHalf,
+  type PageHalf,
 } from "@/presentation/components/book/LeafFace";
+import { useArrivingPage } from "@/presentation/components/book/turning/useArrivingPage";
 import { RecordsPage } from "@/presentation/components/book/RecordsPage";
 import type { BookRect } from "@/presentation/components/book/turning/opening";
 import { OpeningScene } from "@/presentation/components/book/turning/OpeningScene";
@@ -88,6 +91,11 @@ export function AtelierBook() {
   const root = useRef<HTMLElement>(null);
   const spread = useRef<HTMLDivElement>(null);
   const [closedBook, setClosedBook] = useState<BookRect>();
+  // The entry lit on this visit to the contents, where a turn may go next.
+  const [intent, setIntent] = useState<{
+    readonly place: BookPlace;
+    readonly from: BookPlace;
+  }>();
   // A deep-linked chapter lays its spread out only once the contents load.
   const layoutKey = `${hashFor(shown) || shown.kind}:${entries ? "ready" : "loading"}`;
   const leafBox = useLeafBox(spread, facingPages, layoutKey);
@@ -121,6 +129,33 @@ export function AtelierBook() {
   // turn's first frame paints only the leaf; the page it uncovers is printed
   // under the leaf, and the new place mounts once the leaf has landed.
   const underneath = turn ? pageUnderneath(turn) : shown;
+  const arrivingPage = useArrivingPage({
+    shown,
+    turn,
+    intended: intent && intent.from === shown ? intent.place : undefined,
+    isLivePage: isEntryPlace,
+  });
+  // What a leaf shows of a live page it turns to: a copy of it, laid out
+  // unseen beneath; until that is ready, blank paper.
+  const arrivingCopy = (pagePlace: BookPlace, half: PageHalf) => {
+    const { copy } = arrivingPage;
+    return copy && samePlace(copy.place, pagePlace) ? (
+      <PrintedHalf
+        key={copy.version}
+        page={<ClonedPage source={copy.page} />}
+        half={half}
+      />
+    ) : undefined;
+  };
+  const rightHalf: PageHalf = facingPages ? "right" : "whole";
+  // The page shown, and the one a turn arrives at, mounted unseen; keyed by
+  // place, so the arriving page stays the same instance once shown.
+  const pages = [
+    { place: underneath, unseen: false },
+    ...(arrivingPage.staged
+      ? [{ place: arrivingPage.staged, unseen: true }]
+      : []),
+  ];
   const actions: PageActions = {
     turnTo,
     open: (book) => {
@@ -135,6 +170,7 @@ export function AtelierBook() {
     back: () => turnTo(placeBefore(place)),
     turnLeaf,
     leafTurning,
+    light: (lit: BookPlace) => setIntent({ place: lit, from: shown }),
     sound: { on: sound.pageSounds, onToggle: sound.toggle },
   };
 
@@ -146,13 +182,24 @@ export function AtelierBook() {
       data-arrival={arrival}
       aria-label={BOOK_COPY.bookLabel}
     >
-      <PlacePages
-        place={underneath}
-        entries={entries}
-        actions={actions}
-        facingPages={facingPages}
-        spreadRef={spread}
-      />
+      {pages.map(({ place: pagePlace, unseen }) => (
+        <div
+          key={hashFor(pagePlace) || pagePlace.kind}
+          ref={unseen ? arrivingPage.holder : undefined}
+          className="book-place"
+          data-unseen={unseen || undefined}
+          inert={unseen || undefined}
+          aria-hidden={unseen || undefined}
+        >
+          <PlacePages
+            place={pagePlace}
+            entries={entries}
+            actions={actions}
+            facingPages={facingPages}
+            {...(unseen ? {} : { spreadRef: spread })}
+          />
+        </div>
+      ))}
       {turn?.plan.kind === "open" && closedBook && (
         <OpeningScene
           from={closedBook}
@@ -197,11 +244,13 @@ export function AtelierBook() {
                 {turn.prints ? (
                   <PrintedHalf page={turn.prints.arriving} half="left" />
                 ) : (
-                  <LeftPageFace
-                    place={turn.to}
-                    entries={entries}
-                    soundOn={sound.pageSounds}
-                  />
+                  (arrivingCopy(turn.to, "left") ?? (
+                    <LeftPageFace
+                      place={turn.to}
+                      entries={entries}
+                      soundOn={sound.pageSounds}
+                    />
+                  ))
                 )}
               </div>
             )}
@@ -214,12 +263,14 @@ export function AtelierBook() {
                 turn.prints ? (
                   <PrintedHalf page={leafPrint(turn)} half="right" />
                 ) : (
-                  <LeafFace
-                    place={leafPlace(turn)}
-                    entries={entries}
-                    soundOn={sound.pageSounds}
-                    lit={turn.to}
-                  />
+                  (arrivingCopy(leafPlace(turn), rightHalf) ?? (
+                    <LeafFace
+                      place={leafPlace(turn)}
+                      entries={entries}
+                      soundOn={sound.pageSounds}
+                      lit={turn.to}
+                    />
+                  ))
                 )
               }
               {...(turn.plan.direction === "forward"
@@ -227,11 +278,13 @@ export function AtelierBook() {
                     under: turn.prints ? (
                       <PrintedHalf page={turn.prints.arriving} half="right" />
                     ) : (
-                      <LeafFace
-                        place={turn.to}
-                        entries={entries}
-                        soundOn={sound.pageSounds}
-                      />
+                      (arrivingCopy(turn.to, rightHalf) ?? (
+                        <LeafFace
+                          place={turn.to}
+                          entries={entries}
+                          soundOn={sound.pageSounds}
+                        />
+                      ))
                     ),
                   }
                 : {})}
@@ -240,11 +293,13 @@ export function AtelierBook() {
                     back: turn.prints ? (
                       <PrintedHalf page={backPrint(turn)} half="left" />
                     ) : (
-                      <LeftPageFace
-                        place={backOnLeft(turn)}
-                        entries={entries}
-                        soundOn={sound.pageSounds}
-                      />
+                      (arrivingCopy(backOnLeft(turn), "left") ?? (
+                        <LeftPageFace
+                          place={backOnLeft(turn)}
+                          entries={entries}
+                          soundOn={sound.pageSounds}
+                        />
+                      ))
                     ),
                   }
                 : {})}
@@ -314,6 +369,8 @@ interface PageActions {
   /** Turns one leaf within the page shown (see `usePageTurns`). */
   readonly turnLeaf: (direction: TurnDirection, prints: LeafPrints) => void;
   readonly leafTurning: boolean;
+  /** A contents entry was lit: its page is laid out, ready to turn to. */
+  readonly light: (place: BookPlace) => void;
   readonly sound: { readonly on: boolean; readonly onToggle: () => void };
 }
 
@@ -337,7 +394,8 @@ interface PlacePagesProps {
   readonly entries: readonly ContentsEntry[] | undefined;
   readonly actions: PageActions;
   readonly facingPages: boolean;
-  readonly spreadRef: RefObject<HTMLDivElement | null>;
+  /** The live page's spread, measured for the leaf; none while unseen. */
+  readonly spreadRef?: RefObject<HTMLDivElement | null>;
 }
 
 /** The pages for one place in the book, live and usable. */
@@ -348,7 +406,7 @@ function PlacePages({
   facingPages,
   spreadRef: spread,
 }: PlacePagesProps) {
-  const { turnTo, open, back, turnLeaf, leafTurning, sound } = actions;
+  const { turnTo, open, back, turnLeaf, leafTurning, light, sound } = actions;
   const entry = entries && entryFor(place, entries);
   switch (place.kind) {
     case "cover":
@@ -365,6 +423,7 @@ function PlacePages({
           <ContentsPage
             {...(entries ? { entries } : {})}
             onOpen={turnTo}
+            onLight={light}
             sound={sound}
           />
         </div>

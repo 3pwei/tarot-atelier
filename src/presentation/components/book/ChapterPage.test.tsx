@@ -10,7 +10,7 @@ import type { LeafPrints } from "@/presentation/components/book/turning/usePageT
 import {
   openReading,
   ready,
-  reveal,
+  revealAll,
   shuffleAndPick,
 } from "@/presentation/components/testing/playTable";
 import { AtelierServicesProvider } from "@/presentation/services/atelierServices";
@@ -81,7 +81,7 @@ function renderChapter() {
 async function finishTable() {
   await ready();
   await shuffleAndPick();
-  [1, 2, 3].forEach((index) => reveal(index));
+  revealAll(3);
   await screen.findByText("牌陣已完成", undefined, { timeout: 5000 });
 }
 
@@ -115,7 +115,7 @@ describe("ChapterPage on facing pages", { timeout: 15_000 }, () => {
     ).toHaveFocus();
   });
 
-  it("prints the reading on the leaf, but never a copy of the live table", async () => {
+  it("prints the pages on the leaf: the reading drawn still, the table cloned", async () => {
     const { prints, land } = renderChapter();
     await finishTable();
     openReading();
@@ -123,13 +123,14 @@ describe("ChapterPage on facing pages", { timeout: 15_000 }, () => {
     fireEvent.click(screen.getByRole("button", { name: "回到牌陣" }));
 
     const [toReading, toCards] = prints;
-    expect(toReading?.leaving).toBeUndefined();
-    expect(toCards?.arriving).toBeUndefined();
     // The reading's page, whole: running head, title and reading.
-    render(<>{toReading?.arriving}</>);
-    const copy = document.body.lastElementChild;
-    expect(copy).toHaveTextContent("The Three Cards · Card Reading");
-    expect(copy).toHaveTextContent("塔羅解讀僅供娛樂");
-    expect(toCards?.leaving).toBeDefined();
+    const { container: reading } = render(<>{toReading?.arriving}</>);
+    expect(reading).toHaveTextContent("The Three Cards · Card Reading");
+    expect(reading).toHaveTextContent("塔羅解讀僅供娛樂");
+    // The live table is cloned as it is left, and that copy turns back.
+    const { container: table } = render(<>{toCards?.arriving}</>);
+    expect(table.querySelector(".cloned-page .draw-experience")).not.toBeNull();
+    expect(table).toHaveTextContent("牌陣已完成");
+    expect(toReading?.leaving).toBeDefined();
   });
 });
