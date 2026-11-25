@@ -34,13 +34,14 @@
 .draw-table[data-layout="single-page"] .table-hint {
   order: 6;
 }
-/* The questions, then the way to the reading, and the reading last of all. */
-.draw-table[data-layout="single-page"] .spread-details {
-  order: 7;
-}
+/* Once the cards are revealed, the way to the reading lies right under the
+   table, in view; the questions follow, and the reading comes last of all. */
 .draw-table[data-layout="single-page"] .draw-table__reading-cue {
+  order: 7;
+  margin: 8px 0 24px;
+}
+.draw-table[data-layout="single-page"] .spread-details {
   order: 8;
-  margin: 16px 0 0;
 }
 .draw-table[data-layout="single-page"] .reading-panel {
   order: 9;

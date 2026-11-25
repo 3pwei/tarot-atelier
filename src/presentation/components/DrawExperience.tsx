@@ -198,11 +198,23 @@ export function DrawExperience({
   // opens under the table.
   const readingPage =
     layout === "facing-pages" ? readingPages?.page : undefined;
+  // Opened on one page, the reading lies at the foot of the page: the view
+  // follows it there, and it takes the focus from the cue that opened it.
+  const readingPanel = useRef<HTMLElement>(null);
   const readingOpen =
     layout === "single-page" &&
     spreadRevealed &&
     roundKey !== undefined &&
     readingRound === roundKey;
+  useEffect(() => {
+    const panel = readingPanel.current;
+    if (!readingOpen || !panel) return;
+    panel.focus({ preventScroll: true });
+    panel.scrollIntoView?.({
+      behavior: motionMode === "animated" ? "smooth" : "auto",
+      block: "start",
+    });
+  }, [readingOpen, motionMode]);
   // One spread of the reading on facing pages, live or as a still copy.
   const readingOnPages = (
     page: number,
@@ -430,6 +442,7 @@ export function DrawExperience({
               )}
               {readingOpen && (
                 <ReadingPanel
+                  ref={readingPanel}
                   session={reading}
                   revealed={spreadRevealed}
                   source={readingProvider.source}

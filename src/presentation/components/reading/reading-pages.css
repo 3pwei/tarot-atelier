@@ -56,6 +56,10 @@
   line-height: 1.6;
 }
 
+.reading-panel:focus {
+  outline: none;
+}
+
 .reading-panel .book-title {
   margin: 2px 0 4px;
   font-size: 40px;

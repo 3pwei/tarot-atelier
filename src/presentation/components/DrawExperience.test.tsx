@@ -308,6 +308,17 @@ describe("DrawExperience spread table", () => {
     expect(screen.queryByRole("button", { name: "看解讀" })).toBeNull();
   });
 
+  it("takes the focus to the reading it opens at the foot of the page", async () => {
+    renderTable();
+    await ready();
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+
+    openReading();
+    expect(screen.getByRole("region", { name: "解讀" })).toHaveFocus();
+  });
+
   it("reads the finished spread offline, labelled as a sample", async () => {
     renderTable();
     await ready();
