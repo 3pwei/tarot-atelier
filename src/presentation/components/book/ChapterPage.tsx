@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ConfirmDialog } from "@/presentation/components/dialog/ConfirmDialog";
 import { DrawExperience } from "@/presentation/components/DrawExperience";
-import type { TableLayout } from "@/presentation/components/draw/tableLayout";
+import type { PageLayout } from "@/presentation/components/book/pageLayout";
 import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
 import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
 import { BookPage } from "@/presentation/components/book/BookPage";
@@ -22,7 +22,7 @@ import type { PrintedSpread } from "@/presentation/components/reading/ReadingSpr
 interface ChapterPageProps {
   readonly entry: ContentsEntry;
   readonly templateId: string;
-  readonly layout: TableLayout;
+  readonly layout: PageLayout;
   /** Turns one leaf within the chapter, between its table and reading. */
   readonly turnLeaf: (direction: TurnDirection, prints: LeafPrints) => void;
   /** That leaf is turning: the pages keep what they show until it lands. */
@@ -74,6 +74,7 @@ export function ChapterPage({
       <BookPage
         side="right"
         width="spread"
+        layout={layout}
         labelledBy={printedTitleId}
         folio={entry.page}
       >
@@ -117,6 +118,7 @@ export function ChapterPage({
       ref={page}
       side="right"
       width="spread"
+      layout={layout}
       labelledBy={titleId}
       folio={entry.page}
     >

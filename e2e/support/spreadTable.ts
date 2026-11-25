@@ -94,10 +94,31 @@ export function readingPanel(page: Page): Locator {
   return page.getByRole("region", { name: "解讀" });
 }
 
-/** The records live in the book's appendix, not on the table. */
+/** The records live in the book's appendix, printed on its pages. */
 export async function openRecords(page: Page) {
   await page.goto("/#records");
-  await expect(page.getByRole("dialog", { name: /歷史紀錄/u })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "The Records" }),
+  ).toBeVisible();
+}
+
+/** The rounds kept on this device, as the records list them. */
+export function recordList(page: Page): Locator {
+  return page.getByRole("list", { name: "歷史紀錄" });
+}
+
+/**
+ * Opens a round from the list: beside it on facing pages, or a leaf on from
+ * it on a phone. Waits until the round's page is the one shown.
+ */
+export async function openRecord(page: Page, mainQuestion: string) {
+  await recordList(page)
+    .getByRole("button", { name: new RegExp(mainQuestion, "u") })
+    .click();
+  await expect(page.locator(".page-turn")).toHaveCount(0);
+  await expect(
+    page.getByRole("article").getByRole("heading", { name: mainQuestion }),
+  ).toBeVisible();
 }
 
 /** Dealing needs a main question; asks one and waits until play can start. */

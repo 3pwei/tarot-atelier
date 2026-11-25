@@ -1,0 +1,254 @@
+/* The records printed on the book's pages: the list of rounds, set like the contents, and one round with its cards and reading. */
+
+.records {
+  margin-top: var(--book-space-2);
+  color: var(--book-ink);
+  font-family: var(--book-text);
+}
+
+/* ---- the list ---- */
+
+.record-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.record-list__entry {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 6px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--book-ink);
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The round open beside the list glows, as a lit contents entry does. */
+.record-list__entry[data-lit] {
+  background: radial-gradient(
+    ellipse at 40% 50%,
+    rgba(255, 206, 110, 0.9),
+    rgba(255, 180, 70, 0.45) 45%,
+    rgba(255, 180, 70, 0) 75%
+  );
+}
+
+.record-list__entry:focus-visible {
+  outline: 2px solid var(--book-ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.record-list__when {
+  width: 96px;
+  flex: none;
+  color: var(--book-ink-soft);
+  font-family: var(--book-serif);
+  font-size: 13px;
+}
+
+.record-list__question {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-list__dots {
+  min-width: 16px;
+  flex: 1;
+  border-bottom: 2px dotted rgba(61, 42, 24, 0.4);
+  transform: translateY(-4px);
+}
+
+.record-list__status {
+  flex: none;
+  color: var(--book-ink-soft);
+  font-size: 12px;
+}
+
+.record-list__empty {
+  margin: 8px 0;
+  color: var(--book-ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.records__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 20px;
+  margin-top: 16px;
+  color: var(--book-ink-soft);
+  font-size: 12px;
+}
+
+.records__foot p {
+  margin: 0;
+}
+
+.records__foot .book-float {
+  font-size: 14px;
+}
+
+/* ---- one round ---- */
+
+.record__meta {
+  margin: 0;
+  color: var(--book-ink-soft);
+  font-size: 12.5px;
+}
+
+.record__question {
+  margin: 2px 0 8px;
+  font-size: 19px;
+  font-weight: 400;
+}
+
+.record__question:focus {
+  outline: none;
+}
+
+.record__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.record__position {
+  width: 68px;
+  text-align: center;
+}
+
+.record__faces {
+  position: relative;
+  display: block;
+}
+
+.record__face {
+  display: block;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(40, 20, 4, 0.3);
+}
+
+/* A jumper lies across its position's card, as on the table. */
+.record__face--jumper {
+  position: absolute;
+  inset: 18% -18% -6% 18%;
+  transform: rotate(14deg);
+}
+
+.record__caption {
+  display: grid;
+  margin-top: 4px;
+  color: var(--book-ink-soft);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.record__position-name {
+  color: var(--book-ink);
+  font-size: 12px;
+}
+
+.record__actions,
+.record__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 20px;
+  margin: 4px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--control-line);
+}
+
+.record__confirm p {
+  width: 100%;
+  margin: 0;
+  font-size: 13px;
+}
+
+.record__actions .book-float,
+.record__confirm .book-float {
+  font-size: 15px;
+}
+
+.record__actions .book-float:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.record__no-reading {
+  color: var(--book-ink-soft);
+  font-size: 14px;
+}
+
+.record__reading {
+  margin-top: 4px;
+}
+
+/* How reading it again is going, in the page's ink. */
+.record :is(.history-reading-status, .reading-issues, .reading-fallback) {
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+  color: var(--book-ink-soft);
+  background: none;
+  font-size: 12.5px;
+}
+
+.record .history-reading-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.record .history-reading-status .ghost-action {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  color: var(--book-ink);
+  background: none;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* ---- facing pages: the list on the left, the round on the right ---- */
+
+.records[data-layout="facing-pages"] {
+  display: contents;
+}
+
+.records[data-layout="facing-pages"] .records__list {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  grid-column: 1;
+  grid-row: 4;
+  margin-top: var(--book-space-1);
+}
+
+.records[data-layout="facing-pages"] .records__foot {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.records[data-layout="facing-pages"] .records__record {
+  min-height: 0;
+  grid-column: 2;
+  grid-row: 2 / 5;
+}

@@ -46,7 +46,7 @@ import {
 import { SpreadDetails } from "@/presentation/components/spread/SpreadDetails";
 import { SpreadToolbar } from "@/presentation/components/spread/SpreadToolbar";
 import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
-import type { TableLayout } from "@/presentation/components/draw/tableLayout";
+import type { PageLayout } from "@/presentation/components/book/pageLayout";
 import {
   ReadingSpread,
   type PrintedSpread,
@@ -79,7 +79,7 @@ interface DrawExperienceProps {
    */
   readonly onUnfinishedChange?: (unfinished: boolean) => void;
   /** One page under another, or two facing pages that never scroll. */
-  readonly layout?: TableLayout;
+  readonly layout?: PageLayout;
   /** With facing pages, the reading's own spreads after the table's. */
   readonly readingPages?: ReadingPages;
 }

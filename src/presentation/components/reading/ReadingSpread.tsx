@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
+import type { PageWidth } from "@/presentation/components/book/BookPage";
 import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
 import {
   spreadCount,
@@ -33,6 +34,11 @@ export interface ReadingPages {
 export type PrintedSpread = (page: number) => ReactNode;
 
 interface ReadingSpreadProps {
+  /**
+   * How wide one of its spreads is: both facing pages, in two columns, or
+   * one page, in one. Defaults to both.
+   */
+  readonly width?: PageWidth;
   readonly page: number;
   readonly onPage: (page: number) => void;
   readonly children: ReactNode;
@@ -42,7 +48,12 @@ interface ReadingSpreadProps {
  * A reading set in two columns across the open book, never scrolled: what
  * does not fit runs on to the next spread, a leaf turn away.
  */
-export function ReadingSpread({ page, onPage, children }: ReadingSpreadProps) {
+export function ReadingSpread({
+  width = "spread",
+  page,
+  onPage,
+  children,
+}: ReadingSpreadProps) {
   const flow = useRef<HTMLDivElement>(null);
   const [count, setCount] = useState(1);
 
@@ -89,7 +100,7 @@ export function ReadingSpread({ page, onPage, children }: ReadingSpreadProps) {
   }, [shown]);
 
   return (
-    <div className="reading-spread">
+    <div className="reading-spread" data-width={width}>
       <div
         ref={spreadWindow}
         className="reading-spread__window"

@@ -185,17 +185,22 @@ describe("AtelierBook", () => {
     expect(
       await screen.findByRole("heading", { name: "The Codex of Cards" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("78 張定義")).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "單卡檢視" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("22 張")).toBeInTheDocument();
   });
 
-  it("opens the records, and closing them returns to the contents", async () => {
+  it("opens the records printed on the page, and Back returns to the contents", async () => {
     window.history.replaceState(null, "", "/#records");
     renderBook();
 
     expect(
-      await screen.findByRole("dialog", { name: /歷史紀錄/u }),
+      await screen.findByRole("heading", { name: "The Records" }),
     ).toBeInTheDocument();
-    tap(screen.getByRole("button", { name: "關閉" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByText(/還沒有紀錄/u)).toBeInTheDocument();
+    tap(screen.getByRole("button", { name: "回到目錄" }));
     expect(
       await screen.findByRole("heading", { name: "Contents" }),
     ).toBeInTheDocument();

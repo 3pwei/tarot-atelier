@@ -29,6 +29,11 @@
   );
 }
 
+/* Across one page only: one column a spread. */
+.reading-spread[data-width="page"] .reading-spread__flow {
+  column-count: 1;
+}
+
 .reading-spread__turns {
   display: flex;
   min-height: 24px;
@@ -100,6 +105,7 @@
 /* Notes: the disclaimer and any notice, small and soft. */
 .reading-panel
   :is(
+    .reading-issues,
     .reading-disclaimer,
     .reading-professional,
     .reading-fallback,

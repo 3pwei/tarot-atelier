@@ -46,7 +46,7 @@ export function CardViewer({
       }}
     >
       <div
-        className="card-viewer__panel"
+        className="card-viewer__panel paper-sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

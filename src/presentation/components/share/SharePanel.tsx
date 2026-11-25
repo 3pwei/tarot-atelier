@@ -1,5 +1,6 @@
 "use client";
 
+import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
 import { useEffect, useId, useMemo, useState } from "react";
 import type { Sharer } from "@/application/ports/sharer";
 import type { DeckRegistry } from "@/domain/deck/deckRegistry";
@@ -130,21 +131,19 @@ export function SharePanel({ record, registry, services }: SharePanelProps) {
       </label>
 
       <div className="share-panel__actions">
-        <button
-          type="button"
-          className="reading-generate"
+        <BookFloatButton
+          label={SHARE_COPY.shareImage}
           disabled={shown?.status !== "ready"}
-          onClick={() => void shareImage()}
+          onPress={() => void shareImage()}
         >
           {SHARE_COPY.shareImage}
-        </button>
-        <button
-          type="button"
-          className="ghost-action ghost-action--gold"
-          onClick={() => void copyText()}
+        </BookFloatButton>
+        <BookFloatButton
+          label={SHARE_COPY.copyText}
+          onPress={() => void copyText()}
         >
           {SHARE_COPY.copyText}
-        </button>
+        </BookFloatButton>
       </div>
       <p className="share-panel__status" role="status">
         {message}
