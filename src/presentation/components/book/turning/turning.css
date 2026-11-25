@@ -6,7 +6,9 @@
   position: absolute;
   z-index: 30;
   pointer-events: none;
-  /* One clip for the whole leaf: its torn edge, drawn once, never per frame. */
+  /* A layer of its own, so adding it never repaints the book around it. */
+  will-change: transform;
+  /* The leaf never strays off the open book. */
   overflow: hidden;
   contain: strict;
 }
@@ -42,34 +44,29 @@
   will-change: transform;
 }
 
-/* The leaf is a still copy: no fade, no scroll, no second torn-edge mask. */
+/* The leaf is a still copy: no fade, no scroll. It keeps the page's torn
+   edge, painted once into the leaf's layer, so nothing changes as it lands. */
 .page-turn .book-page {
   animation: none;
   overflow: hidden;
-  mask: none;
 }
 
-/* The leaf's back printed with the left page it becomes. A chapter spans
-   both pages, so its back holds the whole open book and shows the left half. */
+/* The leaf's back printed with the left page it becomes, or was. */
 .page-turn__back {
   position: absolute;
   inset: 0;
+  display: flex;
   overflow: hidden;
   background: var(--book-paper);
   transform: scaleX(-1);
 }
 
-.page-turn__back > .book-spread {
+/* Turning forward, the page the leaf uncovers, printed under it. */
+.page-turn__under-page {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 200%;
-  height: 100%;
-  max-height: none;
-}
-
-.page-turn__back > .book-spread::before {
-  display: none;
+  inset: 0;
+  display: flex;
+  background: var(--book-paper);
 }
 
 .page-turn__verso {
@@ -219,12 +216,18 @@
   animation: opening-out 250ms calc(var(--opening-total) - 250ms) ease-in both;
 }
 
+/* Only holds the scene while it measures where to end. */
+.opening-frame {
+  display: contents;
+}
+
 .opening__camera {
   position: absolute;
   inset: 0;
   will-change: transform;
-  transform: scale(var(--opening-from-scale))
-    translate(var(--opening-from-x), var(--opening-from-y));
+  transform-origin: 0 0;
+  transform: translate(var(--opening-from-x), var(--opening-from-y))
+    scale(var(--opening-from-scale-x), var(--opening-from-scale-y));
   animation: opening-camera var(--opening-camera-ms) var(--opening-camera-at)
     cubic-bezier(0.55, 0.05, 0.25, 1) both;
 }
@@ -339,10 +342,6 @@
   border-radius: 3px 8px 8px 3px;
 }
 
-.opening__face[data-two-sided] {
-  backface-visibility: visible;
-}
-
 .opening__face--back {
   transform: rotateY(180deg);
   border-radius: 8px 3px 3px 8px;
@@ -364,11 +363,13 @@
     inset 0 0 6px rgba(30, 10, 0, 0.8);
 }
 
+/* The live frontispiece, still, on the back of the leaf that turns. */
 .opening__face--frontispiece {
-  background:
-    var(--opening-plate) center / auto 90% no-repeat,
-    linear-gradient(270deg, rgba(60, 35, 10, 0.38), rgba(60, 35, 10, 0) 9%),
-    linear-gradient(180deg, var(--book-paper), var(--book-paper-deep));
+  display: flex;
+}
+
+.opening__face--frontispiece .book-page {
+  animation: none;
 }
 
 .opening__face--cover {
@@ -386,13 +387,12 @@
 }
 
 .opening__contents {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  padding-top: 14%;
-  font-family: var(--book-script);
-  font-size: calc(var(--opening-width) * 0.15);
-  color: var(--book-ink);
+  display: flex;
+}
+
+/* The still contents: no fade in, as it is already there. */
+.opening__contents .book-page {
+  animation: none;
 }
 
 /* Light: rays behind, a rim along the pages, a flood when the cover lifts. */
@@ -501,8 +501,8 @@
 
 @keyframes opening-camera {
   from {
-    transform: scale(var(--opening-from-scale))
-      translate(var(--opening-from-x), var(--opening-from-y));
+    transform: translate(var(--opening-from-x), var(--opening-from-y))
+      scale(var(--opening-from-scale-x), var(--opening-from-scale-y));
   }
   to {
     transform: none;
@@ -604,14 +604,26 @@
   }
 }
 
-/* With facing pages, the left page the leaf travels onto, still until it
-   lands. It lies over the pages underneath and under the leaf. */
+/* Turning back with facing pages, the left page arriving, lying under the
+   leaf as it lifts off. */
 .page-turn__still {
   position: absolute;
-  clip-path: inset(0 50% 0 0);
+  z-index: 29;
+  display: flex;
   pointer-events: none;
 }
 
-.page-turn__still::before {
-  display: none;
+.page-turn__still .book-page {
+  animation: none;
+}
+
+/* Blank paper on a leaf, under it or on its back (see LeafFace). */
+.leaf-paper {
+  flex: 1;
+  border-radius: 4px 10px 10px 4px;
+  background:
+    linear-gradient(90deg, rgba(60, 35, 10, 0.3), rgba(60, 35, 10, 0) 9%),
+    linear-gradient(180deg, var(--book-paper), var(--book-paper-deep));
+  box-shadow: inset 0 0 40px rgba(70, 30, 4, 0.5);
+  mask: var(--book-page-edge) 0 0 / 100% 100% no-repeat;
 }

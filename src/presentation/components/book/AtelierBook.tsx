@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -22,7 +23,10 @@ import { CodexPage } from "@/presentation/components/book/CodexPage";
 import type { ContentsEntry } from "@/presentation/components/book/contents";
 import { ContentsPage } from "@/presentation/components/book/ContentsPage";
 import { FrontispiecePage } from "@/presentation/components/book/FrontispiecePage";
-import { LeafFace, SpreadFace } from "@/presentation/components/book/LeafFace";
+import {
+  LeafFace,
+  LeftPageFace,
+} from "@/presentation/components/book/LeafFace";
 import { RecordsPage } from "@/presentation/components/book/RecordsPage";
 import type { BookRect } from "@/presentation/components/book/turning/opening";
 import { OpeningScene } from "@/presentation/components/book/turning/OpeningScene";
@@ -31,7 +35,10 @@ import {
   PageTurn,
   type LeafBox,
 } from "@/presentation/components/book/turning/PageTurn";
-import { useLeafBox } from "@/presentation/components/book/turning/useLeafBox";
+import {
+  leafBoxOf,
+  useLeafBox,
+} from "@/presentation/components/book/turning/useLeafBox";
 import { useFacingPages } from "@/presentation/components/book/turning/useFacingPages";
 import {
   usePageTurns,
@@ -79,6 +86,11 @@ export function AtelierBook() {
   // A deep-linked chapter lays its spread out only once the contents load.
   const layoutKey = `${hashFor(shown) || shown.kind}:${entries ? "ready" : "loading"}`;
   const leafBox = useLeafBox(spread, facingPages, layoutKey);
+  // The opening ends exactly on the live page beneath it.
+  const measurePage = useCallback(
+    () => (spread.current ? leafBoxOf(spread.current, facingPages) : undefined),
+    [facingPages],
+  );
   const arrived = useRef(false);
 
   // A link to a spread that was deleted opens the contents instead.
@@ -100,11 +112,10 @@ export function AtelierBook() {
     visible?.focus({ preventScroll: true });
   }, [shown]);
 
-  // While a page turns, the page it uncovers (or covers) lies underneath.
-  // A chapter's title shows only once the turn ends, and its table is heavy
-  // to paint: until the leaf lands, blank paper lies there.
+  // While a leaf turns, the page being left stays exactly as it is, so the
+  // turn's first frame paints only the leaf; the page it uncovers is printed
+  // under the leaf, and the new place mounts once the leaf has landed.
   const underneath = turn ? pageUnderneath(turn) : shown;
-  const stillUnderneath = turn !== undefined && isEntryPlace(underneath);
   const actions: PageActions = {
     turnTo,
     open: (book) => {
@@ -128,20 +139,34 @@ export function AtelierBook() {
       data-arrival={arrival}
       aria-label={BOOK_COPY.bookLabel}
     >
-      {stillUnderneath && entries ? (
-        <div ref={spread} className="book-spread">
-          <LeafFace place={underneath} entries={entries} />
-        </div>
-      ) : (
-        <PlacePages
-          place={underneath}
-          entries={entries}
-          actions={actions}
-          spreadRef={spread}
-        />
-      )}
+      <PlacePages
+        place={underneath}
+        entries={entries}
+        actions={actions}
+        spreadRef={spread}
+      />
       {turn?.plan.kind === "open" && closedBook && (
-        <OpeningScene from={closedBook} onFinished={() => finishTurn(turn)} />
+        <OpeningScene
+          from={closedBook}
+          measurePage={measurePage}
+          contents={
+            entries && (
+              <LeafFace
+                place={CONTENTS}
+                entries={entries}
+                soundOn={sound.pageSounds}
+              />
+            )
+          }
+          frontispiece={
+            <LeftPageFace
+              place={FRONTISPIECE}
+              entries={entries ?? []}
+              soundOn={sound.pageSounds}
+            />
+          }
+          onFinished={() => finishTurn(turn)}
+        />
       )}
       {leafBox && (
         // Ready before any turn: parsing keyframes never delays the first frame.
@@ -152,15 +177,20 @@ export function AtelierBook() {
         leafBox &&
         (turn.plan.kind === "single" || turn.plan.kind === "riffle") && (
           <>
-            {facingPages && (
-              // The page the leaf travels onto stays until the leaf lands.
+            {facingPages && turn.plan.direction === "back" && (
+              // Turning back, the page arriving on the left is already there
+              // as the leaf lifts off it.
               <div
-                className="book-spread page-turn__still"
-                style={openBook(leafBox)}
+                className="page-turn__still"
+                style={leftPage(leafBox)}
                 inert
                 aria-hidden="true"
               >
-                <SpreadFace place={stillOnLeft(turn)} entries={entries} />
+                <LeftPageFace
+                  place={turn.to}
+                  entries={entries}
+                  soundOn={sound.pageSounds}
+                />
               </div>
             )}
             <PageTurn
@@ -168,14 +198,36 @@ export function AtelierBook() {
               direction={turn.plan.direction}
               box={leafBox}
               clip={facingPages ? openBook(leafBox) : leafBox}
-              face={<LeafFace place={leafPlace(turn)} entries={entries} />}
-              back={
-                facingPages ? (
-                  <div className="book-spread">
-                    <SpreadFace place={backOnLeft(turn)} entries={entries} />
-                  </div>
-                ) : undefined
+              face={
+                <LeafFace
+                  place={leafPlace(turn)}
+                  entries={entries}
+                  soundOn={sound.pageSounds}
+                  lit={turn.to}
+                />
               }
+              {...(turn.plan.direction === "forward"
+                ? {
+                    under: (
+                      <LeafFace
+                        place={turn.to}
+                        entries={entries}
+                        soundOn={sound.pageSounds}
+                      />
+                    ),
+                  }
+                : {})}
+              {...(facingPages
+                ? {
+                    back: (
+                      <LeftPageFace
+                        place={backOnLeft(turn)}
+                        entries={entries}
+                        soundOn={sound.pageSounds}
+                      />
+                    ),
+                  }
+                : {})}
               onFinished={() => finishTurn(turn)}
             />
           </>
@@ -184,26 +236,10 @@ export function AtelierBook() {
   );
 }
 
-/** Forward, the new page waits under the leaf; back, the leaf covers the old. */
+/** A leaf turns over the page being left; the opening scene fades off the new one. */
 function pageUnderneath(turn: ActiveTurn): BookPlace {
   const { plan } = turn;
-  if (plan.kind === "single" || plan.kind === "riffle") {
-    return plan.direction === "forward" ? turn.to : turn.from;
-  }
-  return turn.to;
-}
-
-/**
- * With facing pages, the left page during a turn: forward, the page being
- * left stays until the leaf covers it; back, the page arriving is already
- * there as the leaf lifts off it.
- */
-function stillOnLeft(turn: ActiveTurn): BookPlace {
-  const { plan } = turn;
-  const forward =
-    (plan.kind === "single" || plan.kind === "riffle") &&
-    plan.direction === "forward";
-  return forward ? turn.from : turn.to;
+  return plan.kind === "single" || plan.kind === "riffle" ? turn.from : turn.to;
 }
 
 /**
@@ -211,17 +247,21 @@ function stillOnLeft(turn: ActiveTurn): BookPlace {
  * page arriving; back, the page being left.
  */
 function backOnLeft(turn: ActiveTurn): BookPlace {
-  return stillOnLeft(turn) === turn.from ? turn.to : turn.from;
+  const { plan } = turn;
+  const forward =
+    (plan.kind === "single" || plan.kind === "riffle") &&
+    plan.direction === "forward";
+  return forward ? turn.to : turn.from;
 }
 
 /** The whole open book, from the right-hand page the leaf lies on. */
 function openBook(leaf: LeafBox): LeafBox {
-  return {
-    left: leaf.left - leaf.width,
-    top: leaf.top,
-    width: leaf.width * 2,
-    height: leaf.height,
-  };
+  return { ...leaf, left: leaf.left - leaf.width, width: leaf.width * 2 };
+}
+
+/** The left-hand page, facing the one the leaf lies on. */
+function leftPage(leaf: LeafBox): LeafBox {
+  return { ...leaf, left: leaf.left - leaf.width };
 }
 
 /** The page printed on the leaf that turns: the one leaving, or arriving. */

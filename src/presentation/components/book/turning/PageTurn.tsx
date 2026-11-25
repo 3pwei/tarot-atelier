@@ -42,6 +42,11 @@ interface PageTurnProps {
    * front's ink faintly showing through.
    */
   readonly back?: ReactNode;
+  /**
+   * Turning forward, the page the leaf uncovers. The page being left stays
+   * underneath untouched, so the turn starts without repainting it.
+   */
+  readonly under?: ReactNode;
   /** The leaf, and any sheets, have come to rest. */
   readonly onFinished: () => void;
 }
@@ -71,6 +76,7 @@ export function PageTurn({
   clip,
   face,
   back,
+  under,
   onFinished,
 }: PageTurnProps) {
   const root = useRef<HTMLDivElement>(null);
@@ -120,6 +126,7 @@ export function PageTurn({
         }}
       >
         <div className="page-turn__under">
+          {under && <div className="page-turn__under-page">{under}</div>}
           <div className="page-turn__fold" style={curl("underFold")}>
             <div
               className="page-turn__shade page-turn__shade--under"

@@ -22,6 +22,8 @@ interface ContentsPageProps {
     readonly on: boolean;
     readonly onToggle: () => void;
   };
+  /** The entry lit when the page appears, as on a still copy of it. */
+  readonly initiallyLit?: BookPlace;
 }
 
 const SECTION_LABEL: Readonly<Record<ContentsSection, string>> = {
@@ -33,10 +35,17 @@ const SECTION_LABEL: Readonly<Record<ContentsSection, string>> = {
  * Page two. A tap lights an entry and a second tap on it turns there, so a
  * stray touch never whisks the reader away; keyboard Enter turns at once.
  */
-export function ContentsPage({ entries, onOpen, sound }: ContentsPageProps) {
+export function ContentsPage({
+  entries,
+  onOpen,
+  sound,
+  initiallyLit,
+}: ContentsPageProps) {
   const titleId = useId();
   const hintId = useId();
-  const [lit, setLit] = useState<string>();
+  const [lit, setLit] = useState(
+    initiallyLit ? hashFor(initiallyLit) : undefined,
+  );
 
   const press = (entry: ContentsEntry, event: MouseEvent) => {
     const key = hashFor(entry.place);

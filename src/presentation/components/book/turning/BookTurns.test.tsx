@@ -67,7 +67,7 @@ async function settle() {
 }
 
 describe("page turns", () => {
-  it("keeps the left page until the leaf lands on it, when pages face", async () => {
+  it("turns over the page being left, untouched, with blank paper beneath", async () => {
     screenOf(true);
     window.history.replaceState(null, "", "/#contents");
     renderBook();
@@ -76,14 +76,36 @@ describe("page turns", () => {
     tap(first);
     tap(first);
 
+    // The contents stay as they are; the leaf alone is new.
+    expect(first).toBeInTheDocument();
+    expect(document.querySelector(".page-turn__still")).toBeNull();
+    // The chapter beneath and on the leaf's back is blank until it lands.
+    const under = document.querySelector(".page-turn__under-page");
+    const back = document.querySelector(".page-turn__back");
+    expect(under).toBeInTheDocument();
+    expect(back).toBeInTheDocument();
+    expect(under).not.toHaveTextContent("The Three Cards");
+    expect(back).not.toHaveTextContent("The Three Cards");
+    expect(document.querySelector(".page-turn__verso")).toBeNull();
+
+    advance(SINGLE_TURN_MS);
+    expect(document.querySelector(".page-turn")).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "The Three Cards" }),
+    ).toBeInTheDocument();
+  });
+
+  it("turning back with facing pages, lays the frontispiece under the lifting leaf", async () => {
+    screenOf(true);
+    window.history.replaceState(null, "", "/#spread-three-card");
+    renderBook();
+    await settle();
+    tap(screen.getByRole("button", { name: "回到目錄" }));
+
     const still = document.querySelector(".page-turn__still");
     expect(still).toHaveAttribute("inert");
     expect(still?.querySelector(".book-frontispiece")).not.toBeNull();
-    // The leaf's back is the chapter's left half: blank until the turn ends.
-    const back = document.querySelector(".page-turn__back");
-    expect(back).toBeInTheDocument();
-    expect(back).not.toHaveTextContent("The Three Cards");
-    expect(document.querySelector(".page-turn__verso")).toBeNull();
+    expect(document.querySelector(".page-turn__under-page")).toBeNull();
     advance(SINGLE_TURN_MS);
     expect(document.querySelector(".page-turn__still")).toBeNull();
   });

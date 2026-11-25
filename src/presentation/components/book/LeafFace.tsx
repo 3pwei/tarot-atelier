@@ -1,6 +1,4 @@
-import { useId } from "react";
 import type { BookPlace } from "@/presentation/components/book/bookPlace";
-import { BookPage } from "@/presentation/components/book/BookPage";
 import type { ContentsEntry } from "@/presentation/components/book/contents";
 import { ContentsPage } from "@/presentation/components/book/ContentsPage";
 import { FrontispiecePage } from "@/presentation/components/book/FrontispiecePage";
@@ -8,6 +6,10 @@ import { FrontispiecePage } from "@/presentation/components/book/FrontispiecePag
 interface LeafFaceProps {
   readonly place: BookPlace;
   readonly entries: readonly ContentsEntry[];
+  /** The page-sound switch as the live contents show it. */
+  readonly soundOn: boolean;
+  /** The contents entry lit as the page turns, if any. */
+  readonly lit?: BookPlace;
 }
 
 const STILL = () => undefined;
@@ -18,41 +20,47 @@ const STILL = () => undefined;
  * pages turn: its title appears only on the page the turn ends at, and a
  * second live table is never drawn.
  */
-export function LeafFace({ place, entries }: LeafFaceProps) {
+export function LeafFace({ place, entries, soundOn, lit }: LeafFaceProps) {
   switch (place.kind) {
     case "frontispiece":
       return <FrontispiecePage onToContents={STILL} />;
     case "contents":
-      return <ContentsPage entries={entries} onOpen={STILL} />;
+      // Laid out exactly as the live page, switch and lit entry included,
+      // so nothing shifts as the leaf gives way to it.
+      return (
+        <ContentsPage
+          entries={entries}
+          onOpen={STILL}
+          sound={{ on: soundOn, onToggle: STILL }}
+          {...(lit ? { initiallyLit: lit } : {})}
+        />
+      );
     case "chapter":
     case "codex":
     case "records":
     case "cover":
-      return <BlankFace />;
+      return <PaperFace />;
   }
 }
 
 /**
- * A place still, as facing pages show it: the front matter on both pages,
- * a chapter or the appendix as blank paper across them.
+ * The left-hand page of a place, still, as facing pages show it: the
+ * frontispiece for the front matter; blank paper for a chapter or the
+ * appendix, which span both pages and show their title only once a turn ends.
  */
-export function SpreadFace({ place, entries }: LeafFaceProps) {
-  if (place.kind === "frontispiece" || place.kind === "contents") {
-    return (
-      <>
-        <FrontispiecePage onToContents={STILL} />
-        <ContentsPage entries={entries} onOpen={STILL} />
-      </>
-    );
-  }
-  return <LeafFace place={place} entries={entries} />;
+export function LeftPageFace({ place }: LeafFaceProps) {
+  return place.kind === "frontispiece" || place.kind === "contents" ? (
+    <FrontispiecePage onToContents={STILL} />
+  ) : (
+    <PaperFace />
+  );
 }
 
-function BlankFace() {
-  const titleId = useId();
-  return (
-    <BookPage side="right" labelledBy={titleId}>
-      <span id={titleId} hidden />
-    </BookPage>
-  );
+/**
+ * Blank paper, as light to paint as paper can be: no grain, one soft shade
+ * and no torn-edge mask. It only ever moves or hides under a moving leaf, and
+ * painting a full page there delayed the turn's first frame.
+ */
+function PaperFace() {
+  return <div className="leaf-paper" />;
 }

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  finalBookRect,
   hasFacingPages,
   leafVisibility,
   openingCamera,
@@ -35,68 +34,54 @@ describe("riffleTimeline", () => {
 });
 
 describe("openingCamera", () => {
-  /** A closed book centred on the screen, the cover's width by its art. */
-  function centred(width: number, height: number, bookWidth: number) {
-    const bookHeight = (bookWidth * 520) / 340;
-    return openingCamera(
-      { width, height },
-      {
-        left: (width - bookWidth) / 2,
-        top: (height - bookHeight) / 2,
-        width: bookWidth,
-        height: bookHeight,
-      },
-    );
-  }
-
-  it("leans in on a phone until one page fills the screen", () => {
-    const camera = centred(375, 812, 262);
-    expect(camera.facingPages).toBe(false);
-    expect(camera.bookWidth * camera.scale).toBeGreaterThanOrEqual(375);
-    expect(camera.bookHeight * camera.scale).toBeGreaterThanOrEqual(812);
-    // The left page's middle, half a book left of the spine, comes to the centre.
-    expect(camera.shiftX).toBeCloseTo(camera.bookWidth * camera.scale);
-    expect(camera.shiftY).toBeCloseTo(0);
-    // The desk follows only a little of the lean.
-    expect(camera.deskScale).toBeGreaterThan(1);
-    expect(camera.deskScale).toBeLessThan(camera.scale);
+  const closed = { left: 56, top: 206, width: 262, height: 400 };
+  /** Where a point of the final layout starts, under the camera's start. */
+  const start = (
+    camera: ReturnType<typeof openingCamera>,
+    x: number,
+    y: number,
+  ) => ({
+    x: camera.fromX + camera.fromScaleX * x,
+    y: camera.fromY + camera.fromScaleY * y,
   });
 
-  it("keeps both pages on the desk on a wide screen", () => {
-    const camera = centred(1280, 800, 314);
+  it("ends with the book's right-hand page on the live right-hand page, pages facing", () => {
+    const page = { left: 640, top: 20, width: 602, height: 760 };
+    const camera = openingCamera({ width: 1280, height: 800 }, closed, page);
     expect(camera.facingPages).toBe(true);
-    expect(2 * camera.bookWidth * camera.scale).toBeLessThan(1280);
-    expect(camera.bookHeight * camera.scale).toBeLessThan(800);
-    expect(camera.shiftX).toBeCloseTo((camera.bookWidth / 2) * camera.scale);
+    expect(camera.book).toEqual(page);
   });
 
-  it("starts from wherever the cover lay, not only the middle", () => {
-    const camera = openingCamera(
-      { width: 375, height: 812 },
-      { left: 50, top: 100, width: 262, height: 400 },
-    );
-    expect(camera.bookTop).toBe(100);
-    // The book sat above the middle: the camera brings it down to centre.
-    expect(camera.shiftY).toBeGreaterThan(0);
+  it("ends on a phone with the left-hand page, the frontispiece, on the one page shown", () => {
+    const page = { left: 0, top: 12, width: 390, height: 820 };
+    const camera = openingCamera({ width: 390, height: 844 }, closed, page);
+    expect(camera.facingPages).toBe(false);
+    expect(camera.book).toEqual({ ...page, left: 390 });
   });
-});
 
-describe("finalBookRect", () => {
-  it("is where the camera leaves the book: on a phone, the left page fills the screen", () => {
-    const viewport = { width: 375, height: 812 };
-    const camera = openingCamera(viewport, {
-      left: 56,
-      top: 206,
-      width: 262,
-      height: 400,
+  it("starts exactly on the closed book, whatever their shapes", () => {
+    const page = { left: 640, top: 20, width: 602, height: 760 };
+    const camera = openingCamera({ width: 1280, height: 800 }, closed, page);
+    const { book } = camera;
+    expect(start(camera, book.left, book.top)).toEqual({
+      x: closed.left,
+      y: closed.top,
     });
-    const rect = finalBookRect(camera, viewport);
-    // The closed book's left edge is the spine: the left page opens out from
-    // it, one book's width to the left, and spans the screen.
-    expect(rect.left - rect.width).toBeLessThanOrEqual(0);
-    expect(rect.left).toBeGreaterThanOrEqual(375);
-    expect(rect.top).toBeLessThanOrEqual(0);
-    expect(rect.top + rect.height).toBeGreaterThanOrEqual(812);
+    const corner = start(
+      camera,
+      book.left + book.width,
+      book.top + book.height,
+    );
+    expect(corner.x).toBeCloseTo(closed.left + closed.width);
+    expect(corner.y).toBeCloseTo(closed.top + closed.height);
+  });
+
+  it("leans the desk in far less than the book", () => {
+    const page = { left: 0, top: 12, width: 390, height: 820 };
+    const camera = openingCamera({ width: 390, height: 844 }, closed, page);
+    expect(camera.zoom).toBeGreaterThan(1);
+    expect(camera.deskScale).toBeGreaterThan(1);
+    expect(camera.deskScale).toBeLessThan(camera.zoom);
   });
 });
 
