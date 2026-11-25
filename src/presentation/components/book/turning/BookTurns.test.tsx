@@ -79,9 +79,10 @@ describe("page turns", () => {
     const still = document.querySelector(".page-turn__still");
     expect(still).toHaveAttribute("inert");
     expect(still?.querySelector(".book-frontispiece")).not.toBeNull();
-    // The leaf's back is the chapter's left half, so the title meets as it lands.
+    // The leaf's back is the chapter's left half: blank until the turn ends.
     const back = document.querySelector(".page-turn__back");
-    expect(back).toHaveTextContent("The Three Cards");
+    expect(back).toBeInTheDocument();
+    expect(back).not.toHaveTextContent("The Three Cards");
     expect(document.querySelector(".page-turn__verso")).toBeNull();
     advance(SINGLE_TURN_MS);
     expect(document.querySelector(".page-turn__still")).toBeNull();
