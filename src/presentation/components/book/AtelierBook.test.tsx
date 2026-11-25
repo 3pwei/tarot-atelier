@@ -79,7 +79,10 @@ describe("AtelierBook", () => {
     renderBook();
     tap(screen.getByRole("button", { name: "打開魔法書" }));
 
-    tap(await screen.findByRole("img", { name: /巫師站在高塔上/u }));
+    const plate = await screen.findByRole("img", { name: /巫師站在高塔上/u });
+    // Marked so Safari does not grey the whole page as it is tapped.
+    expect(plate.closest(".book-page")).toHaveAttribute("data-pressable");
+    tap(plate);
     expect(
       await screen.findByRole("button", { name: /^The Cross，/u }),
     ).toBeInTheDocument();

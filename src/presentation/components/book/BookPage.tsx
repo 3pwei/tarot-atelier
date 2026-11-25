@@ -46,6 +46,7 @@ export function BookPage({
         (width === "spread" && layout === "facing-pages") || undefined
       }
       aria-labelledby={labelledBy}
+      data-pressable={onPaperPress ? true : undefined}
       onClick={onPaperPress && pressedPaper(onPaperPress)}
     >
       {children}
