@@ -5,6 +5,7 @@ import type { TextStorage } from "@/application/ports/textStorage";
 export const RETIRED_TABLE_STORAGE_KEY = "tarot-atelier:spread-session";
 export const SPREAD_TEMPLATE_STORAGE_KEY = "tarot-atelier:spread-templates";
 export const READING_HISTORY_STORAGE_KEY = "tarot-atelier:reading-history";
+export const SOUND_PREFERENCE_STORAGE_KEY = "tarot-atelier:sound";
 
 /**
  * Browser `localStorage` adapter. Access can throw in private windows or when

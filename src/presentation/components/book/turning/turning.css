@@ -1,0 +1,629 @@
+/* Page turns: a leaf curling from its lower outer corner, blank sheets for a
+   riffle, and the book opening. Only transform and opacity move; the curl's
+   keyframes are generated per page size (curl.ts) and named on each layer. */
+
+.page-turn {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  /* A layer of its own, so adding it never repaints the book around it. */
+  will-change: transform;
+  /* The leaf never strays off the open book. */
+  overflow: hidden;
+  contain: strict;
+}
+
+/* The leaf and everything moving with it, laid over the right-hand page. */
+.page-turn__leaf {
+  position: absolute;
+}
+
+/* The page underneath only takes the fold's shadow, clipped to the paper. */
+.page-turn__under {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.page-turn__window {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* The leaf is painted once into its own layer, then only moved. */
+.page-turn__page {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* The leaf is a still copy: no fade, no scroll. It keeps the page's torn
+   edge, painted once into the leaf's layer, so nothing changes as it lands. */
+.page-turn .book-page {
+  animation: none;
+  overflow: hidden;
+}
+
+/* The leaf's back printed with the left page it becomes, or was. */
+.page-turn__back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+  background: var(--book-paper);
+  transform: scaleX(-1);
+}
+
+/* Turning forward, the page the leaf uncovers, printed under it. */
+.page-turn__under-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: var(--book-paper);
+}
+
+.page-turn__verso {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    var(--book-paper),
+    var(--book-paper-deep)
+  );
+  opacity: 0.86;
+}
+
+.page-turn__fold {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.page-turn__shade,
+.page-turn__rim {
+  position: absolute;
+  top: calc(var(--curl-reach) * -1);
+  height: calc(var(--curl-reach) * 2);
+  opacity: 0;
+}
+
+.page-turn__shade {
+  width: 100px;
+  will-change: transform, opacity;
+  left: 0;
+  transform-origin: 0 50%;
+}
+
+.page-turn__shade--keep {
+  background: linear-gradient(
+    90deg,
+    rgba(20, 8, 0, 0.42),
+    rgba(20, 8, 0, 0.12) 45%,
+    transparent
+  );
+}
+
+.page-turn__shade--flap {
+  background: linear-gradient(
+    90deg,
+    rgba(30, 14, 0, 0.38),
+    rgba(255, 246, 220, 0.22) 22%,
+    rgba(255, 246, 220, 0.06) 55%,
+    rgba(30, 14, 0, 0.16)
+  );
+}
+
+.page-turn__shade--under {
+  left: -100px;
+  transform-origin: 100% 50%;
+  background: linear-gradient(
+    270deg,
+    rgba(10, 4, 0, 0.55),
+    rgba(10, 4, 0, 0.18) 40%,
+    transparent
+  );
+}
+
+/* The leaf's thickness, seen along the fold while it stands up. */
+.page-turn__rim {
+  left: 0;
+  width: 3px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, #fff4d8, #c9a46c 60%, #7a5528);
+}
+
+/* ---- riffle: opaque blank sheets, one after another ---- */
+.page-turn__sheets {
+  position: absolute;
+  inset: 0;
+  perspective: 1600px;
+  perspective-origin: 0 50%;
+}
+
+.page-turn__sheets-3d {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.page-turn__sheet {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  will-change: transform;
+  border-radius: 3px 8px 8px 3px;
+  background:
+    var(--book-grain),
+    linear-gradient(90deg, rgba(60, 35, 10, 0.3), rgba(60, 35, 10, 0) 9%),
+    linear-gradient(180deg, var(--book-paper), var(--book-paper-deep));
+  box-shadow: inset 0 0 40px rgba(70, 30, 4, 0.5);
+  animation: page-turn-sheet var(--sheet-ms) var(--sheet-delay)
+    cubic-bezier(0.45, 0.05, 0.3, 1) both;
+}
+
+.page-turn__sheet[data-direction="back"] {
+  animation-direction: reverse;
+}
+
+.page-turn__sheet i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #2a1606;
+  opacity: 0;
+  animation: page-turn-sheet-shade var(--sheet-ms) var(--sheet-delay) linear
+    both;
+}
+
+.page-turn__sheet[data-direction="back"] i {
+  animation-direction: reverse;
+}
+
+@keyframes page-turn-sheet {
+  from {
+    transform: translateZ(var(--z-right)) rotateY(0deg);
+  }
+  to {
+    transform: translateZ(var(--z-left)) rotateY(-180deg);
+  }
+}
+
+@keyframes page-turn-sheet-shade {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ---- opening the book ---- */
+.opening {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  background: #1a0d05;
+  /* The real pages wait underneath; the scene fades off them at its end. */
+  animation: opening-out 250ms calc(var(--opening-total) - 250ms) ease-in both;
+}
+
+/* Only holds the scene while it measures where to end. */
+.opening-frame {
+  display: contents;
+}
+
+.opening__camera {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  transform-origin: 0 0;
+  transform: translate(var(--opening-from-x), var(--opening-from-y))
+    scale(var(--opening-from-scale-x), var(--opening-from-scale-y));
+  animation: opening-camera var(--opening-camera-ms) var(--opening-camera-at)
+    cubic-bezier(0.55, 0.05, 0.25, 1) both;
+}
+
+.opening__desk {
+  position: absolute;
+  inset: 0;
+  background: var(--desk-portrait) center / cover no-repeat;
+  transform-origin: var(--opening-origin-x) var(--opening-origin-y);
+  will-change: transform;
+  animation: opening-desk var(--opening-camera-ms) var(--opening-camera-at)
+    cubic-bezier(0.55, 0.05, 0.25, 1) both;
+}
+
+@media (min-aspect-ratio: 1/1) {
+  .opening__desk {
+    background-image: var(--desk-landscape);
+  }
+}
+
+.opening__glow {
+  position: absolute;
+  left: var(--opening-closed-left);
+  top: var(--opening-closed-top);
+  width: var(--opening-closed-width);
+  height: var(--opening-closed-height);
+  pointer-events: none;
+}
+
+.opening__book {
+  position: absolute;
+  left: var(--opening-left);
+  top: var(--opening-top);
+  width: var(--opening-width);
+  height: var(--opening-height);
+  perspective: calc(1800px * var(--opening-zoom));
+  perspective-origin: 0% 50%;
+}
+
+.opening__3d {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: opening-wake 600ms ease-in-out both;
+}
+
+.opening__shadow {
+  position: absolute;
+  inset: 6px -8px -10px 4px;
+  border-radius: 8px;
+  box-shadow: 10px 14px 26px rgba(8, 3, 0, 0.6);
+}
+
+.opening__block,
+.opening__left-block {
+  position: absolute;
+  background: repeating-linear-gradient(
+    180deg,
+    #e9d6a8 0 1px,
+    #c9ac72 1px 2.4px
+  );
+}
+
+.opening__block {
+  inset: 4px -6px -6px 6px;
+  border-radius: 2px 6px 6px 2px;
+}
+
+/* Once open, the left half lies on the desk too. */
+.opening__left {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 100%;
+  opacity: 0;
+  animation: opening-appear 250ms 1050ms ease-out both;
+}
+
+.opening__left-block {
+  inset: 4px 6px -6px -6px;
+  border-radius: 6px 2px 2px 6px;
+}
+
+.opening__left-shadow {
+  position: absolute;
+  inset: 6px 0 -10px -6px;
+  border-radius: 8px;
+  box-shadow: 10px 14px 26px rgba(8, 3, 0, 0.6);
+}
+
+/* Drawn once when the scene mounts, under the glow, then only moved: a leaf
+   promoted only as it starts to turn costs a long frame mid-animation. */
+.opening__leaf {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: 0 50%;
+  will-change: transform;
+  /* Hidden outside its window: no fill, so the base visibility applies. */
+  visibility: hidden;
+  animation:
+    opening-leaf var(--leaf-ms) var(--leaf-delay)
+      cubic-bezier(0.45, 0.05, 0.3, 1) both,
+    opening-seen var(--leaf-show-ms) var(--leaf-show-at) step-end none;
+}
+
+.opening__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 3px 8px 8px 3px;
+}
+
+.opening__face--back {
+  transform: rotateY(180deg);
+  border-radius: 8px 3px 3px 8px;
+}
+
+.opening__face--paper,
+.opening__face--frontispiece {
+  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse at 30% 20%,
+      rgba(255, 248, 225, 0.55),
+      transparent 60%
+    ),
+    linear-gradient(90deg, rgba(60, 35, 10, 0.38), rgba(60, 35, 10, 0) 9%),
+    linear-gradient(180deg, var(--book-paper), var(--book-paper-deep));
+  box-shadow:
+    inset 0 0 40px rgba(70, 30, 4, 0.6),
+    inset 0 0 6px rgba(30, 10, 0, 0.8);
+}
+
+/* The live frontispiece, still, on the back of the leaf that turns. */
+.opening__face--frontispiece {
+  display: flex;
+}
+
+.opening__face--frontispiece .book-page {
+  animation: none;
+}
+
+.opening__face--cover {
+  border-radius: 4px 10px 10px 4px;
+  background: var(--opening-cover) center / 100% 100%;
+}
+
+.opening__face--endpaper {
+  border-radius: 10px 4px 4px 10px;
+  background: radial-gradient(ellipse at 40% 40%, #5a2410, #2f1006 75%);
+  box-shadow:
+    inset 0 0 0 7px #3a1408,
+    inset 0 0 0 8.5px #c99a45,
+    inset 0 0 30px rgba(0, 0, 0, 0.6);
+}
+
+.opening__contents {
+  display: flex;
+}
+
+/* The still contents: no fade in, as it is already there. */
+.opening__contents .book-page {
+  animation: none;
+}
+
+/* Light: rays behind, a rim along the pages, a flood when the cover lifts. */
+.opening__rays,
+.opening__halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.opening__rays {
+  width: calc(var(--opening-closed-width) * 3.2);
+  margin: calc(var(--opening-closed-width) * -1.6);
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 214, 130, 0) 0 7deg,
+    rgba(255, 214, 130, 0.22) 9deg,
+    rgba(255, 214, 130, 0) 12deg
+  );
+  mask: radial-gradient(circle, #000 12%, transparent 62%);
+  animation: opening-rays 2400ms ease-out both;
+}
+
+.opening__halo {
+  width: calc(var(--opening-closed-width) * 2.4);
+  margin: calc(var(--opening-closed-width) * -1.2);
+  background: radial-gradient(
+    circle,
+    rgba(255, 220, 140, 0.75),
+    rgba(255, 180, 80, 0.25) 35%,
+    transparent 65%
+  );
+  animation: opening-halo 2300ms ease-out both;
+}
+
+.opening__rim {
+  position: absolute;
+  inset: 2px -7px -7px 5px;
+  border-radius: 3px 8px 8px 3px;
+  box-shadow:
+    0 0 6px 2px #ffd27a,
+    0 0 22px 6px rgba(255, 200, 100, 0.7),
+    0 0 60px 14px rgba(255, 180, 80, 0.45);
+  opacity: 0;
+  animation: opening-rim 1100ms ease-in-out both;
+}
+
+.opening__flood {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px 8px 8px 3px;
+  transform: translateZ(12px);
+  background: radial-gradient(
+    ellipse at 10% 50%,
+    #fff6dc,
+    rgba(255, 214, 130, 0.85) 35%,
+    rgba(255, 190, 90, 0) 80%
+  );
+  opacity: 0;
+  animation: opening-flood 1200ms 600ms ease-out both;
+}
+
+.opening__gutter {
+  position: absolute;
+  top: 2%;
+  bottom: 2%;
+  left: -10px;
+  width: 20px;
+  transform: translateZ(30px);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(40, 18, 4, 0.45) 50%,
+    transparent
+  );
+  opacity: 0;
+  animation: opening-appear 350ms 750ms ease-out both;
+}
+
+.opening__mote {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6d8, #ffcc66 45%, transparent 70%);
+  opacity: 0;
+  animation: opening-mote 1600ms var(--delay) ease-out both;
+}
+
+@keyframes opening-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes opening-desk {
+  to {
+    transform: scale(var(--opening-desk-scale));
+  }
+}
+
+@keyframes opening-camera {
+  from {
+    transform: translate(var(--opening-from-x), var(--opening-from-y))
+      scale(var(--opening-from-scale-x), var(--opening-from-scale-y));
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes opening-seen {
+  from,
+  to {
+    visibility: visible;
+  }
+}
+
+@keyframes opening-leaf {
+  from {
+    transform: translateZ(var(--z-right)) rotateY(0deg);
+  }
+  to {
+    transform: translateZ(var(--z-left)) rotateY(-180deg);
+  }
+}
+
+@keyframes opening-wake {
+  60% {
+    transform: translateZ(14px);
+  }
+}
+
+@keyframes opening-appear {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes opening-rays {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(25deg);
+  }
+}
+
+@keyframes opening-halo {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  25% {
+    opacity: 0.9;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+@keyframes opening-rim {
+  35% {
+    opacity: 0.7;
+  }
+  55% {
+    opacity: 0.4;
+  }
+  80% {
+    opacity: 1;
+  }
+}
+
+@keyframes opening-flood {
+  20% {
+    opacity: 1;
+  }
+}
+
+@keyframes opening-mote {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift-x), var(--drift-y)) scale(1);
+  }
+}
+
+/* Turning back with facing pages, the left page arriving, lying under the
+   leaf as it lifts off. */
+.page-turn__still {
+  position: absolute;
+  z-index: 29;
+  display: flex;
+  pointer-events: none;
+}
+
+.page-turn__still .book-page {
+  animation: none;
+}
+
+/* Blank paper on a leaf, under it or on its back (see LeafFace). */
+.leaf-paper {
+  flex: 1;
+  border-radius: 4px 10px 10px 4px;
+  background:
+    linear-gradient(90deg, rgba(60, 35, 10, 0.3), rgba(60, 35, 10, 0) 9%),
+    linear-gradient(180deg, var(--book-paper), var(--book-paper-deep));
+  box-shadow: inset 0 0 40px rgba(70, 30, 4, 0.5);
+  mask: var(--book-page-edge) 0 0 / 100% 100% no-repeat;
+}

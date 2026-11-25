@@ -1,6 +1,7 @@
 import { useId, useState, type MouseEvent } from "react";
 import type { BookPlace } from "@/presentation/components/book/bookPlace";
 import { hashFor } from "@/presentation/components/book/bookPlace";
+import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
 import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
 import { BookPage } from "@/presentation/components/book/BookPage";
 import type {
@@ -16,6 +17,13 @@ interface ContentsPageProps {
   /** Undefined until the library has been read on this device. */
   readonly entries?: readonly ContentsEntry[];
   readonly onOpen: (place: BookPlace) => void;
+  /** The page-sound switch sits on the contents, where every visit passes. */
+  readonly sound?: {
+    readonly on: boolean;
+    readonly onToggle: () => void;
+  };
+  /** The entry lit when the page appears, as on a still copy of it. */
+  readonly initiallyLit?: BookPlace;
 }
 
 const SECTION_LABEL: Readonly<Record<ContentsSection, string>> = {
@@ -27,10 +35,17 @@ const SECTION_LABEL: Readonly<Record<ContentsSection, string>> = {
  * Page two. A tap lights an entry and a second tap on it turns there, so a
  * stray touch never whisks the reader away; keyboard Enter turns at once.
  */
-export function ContentsPage({ entries, onOpen }: ContentsPageProps) {
+export function ContentsPage({
+  entries,
+  onOpen,
+  sound,
+  initiallyLit,
+}: ContentsPageProps) {
   const titleId = useId();
   const hintId = useId();
-  const [lit, setLit] = useState<string>();
+  const [lit, setLit] = useState(
+    initiallyLit ? hashFor(initiallyLit) : undefined,
+  );
 
   const press = (entry: ContentsEntry, event: MouseEvent) => {
     const key = hashFor(entry.place);
@@ -45,7 +60,22 @@ export function ContentsPage({ entries, onOpen }: ContentsPageProps) {
 
   return (
     <BookPage side="right" labelledBy={titleId} folio={CONTENTS_FOLIO}>
-      <RunningHead label={BOOK_COPY.contentsHead} />
+      <RunningHead
+        label={BOOK_COPY.contentsHead}
+        action={
+          sound && (
+            <BookFloatButton
+              label={BOOK_COPY.soundLabel}
+              pressed={sound.on}
+              onPress={sound.onToggle}
+            >
+              <span lang="en">
+                {sound.on ? BOOK_COPY.soundOn : BOOK_COPY.soundOff}
+              </span>
+            </BookFloatButton>
+          )
+        }
+      />
       <PageTitle id={titleId} title={BOOK_COPY.contentsTitle} language="en" />
       {entries ? (
         <ul className="book-contents" aria-describedby={hintId}>

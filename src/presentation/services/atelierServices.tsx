@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
+import type { PageSound } from "@/application/ports/pageSound";
 import type { ReadingProvider } from "@/application/ports/readingProvider";
 import type {
   ReadingHistoryStorage,
   RetiredTableStorage,
+  SoundPreferenceStorage,
   SpreadTemplateStorage,
 } from "@/application/ports/textStorage";
 import type { DeckRegistry } from "@/domain/deck/deckRegistry";
@@ -23,6 +25,8 @@ export interface AtelierServices {
   /** Where earlier versions kept the table; cleared on load. */
   readonly retiredTableStorage: RetiredTableStorage;
   readonly share: ShareServices;
+  readonly pageSound: PageSound;
+  readonly soundPreferenceStorage: SoundPreferenceStorage;
 }
 
 const AtelierServicesContext = createContext<AtelierServices | undefined>(
