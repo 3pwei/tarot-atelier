@@ -243,6 +243,12 @@
   }
 }
 
+/* A page that turns on a tap anywhere: Safari would grey the whole page as
+   it is tapped, a flash just as the leaf starts to turn. */
+.book-page[data-pressable] {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* A page that turned into view is already in place: it does not fade in. */
 .atelier-book[data-arrival="turned"] .book-page {
   animation: none;
