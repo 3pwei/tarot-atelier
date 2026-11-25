@@ -1044,7 +1044,7 @@ describe("DrawExperience on facing pages", () => {
     );
   });
 
-  it("turns to the reading's own pages from Card Reading, every section open", async () => {
+  it("turns to the reading's own pages from Card Reading, printed in full", async () => {
     await finishedTable();
     openReading();
 
@@ -1052,6 +1052,10 @@ describe("DrawExperience on facing pages", () => {
     expect(document.querySelector(".draw-table__play")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
+    // Printed, not folded: each position headed by its short name.
     expect(document.querySelector(".reading-panel details")).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: /^牌位 1：過去/u }),
+    ).toBeInTheDocument();
   });
 });

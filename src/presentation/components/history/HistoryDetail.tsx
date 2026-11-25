@@ -114,7 +114,7 @@ export function HistoryDetail({
           </p>
           <p className="reading-disclaimer">{READING_COPY.disclaimer}</p>
           <ProfessionalNote topics={topics} />
-          <ReadingSections result={reading} display="collapsible" />
+          <ReadingSections result={reading} />
         </section>
       ) : (
         <p className="history-detail__no-reading">{HISTORY_COPY.noReading}</p>

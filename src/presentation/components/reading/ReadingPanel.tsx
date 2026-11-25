@@ -13,6 +13,7 @@ import {
   ProfessionalNote,
   ReadingSections,
 } from "@/presentation/components/reading/ReadingSections";
+import { PrintedReading } from "@/presentation/components/reading/PrintedReading";
 import type { ReadingSession } from "@/presentation/components/reading/useReadingSession";
 import { SHARE_COPY } from "@/presentation/components/share/shareLabels";
 
@@ -159,14 +160,29 @@ export function ReadingPanel({
 
           <ProfessionalNote topics={topics} />
 
-          {result ? (
-            <ReadingSections
+          {result && layout.kind === "pages" ? (
+            <PrintedReading
               result={result}
-              display={layout.kind === "pages" ? "open" : "collapsible"}
+              positionNames={positionNamesOf(build)}
             />
+          ) : null}
+          {result && layout.kind === "panel" ? (
+            <ReadingSections result={result} />
           ) : null}
         </>
       )}
     </section>
+  );
+}
+
+/** The short names of the positions read, by number. */
+function positionNamesOf(
+  build: ReadingSession["build"],
+): ReadonlyMap<number, string> {
+  if (!build.ok) return new Map();
+  return new Map(
+    build.request.positions.flatMap((position) =>
+      position.name ? [[position.index, position.name] as const] : [],
+    ),
   );
 }

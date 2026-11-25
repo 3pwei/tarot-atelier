@@ -53,7 +53,12 @@ test("a chapter sets its table on the left page and its notes on the right, neve
 test("Card Reading turns a leaf to the reading, which runs on to the next spread", async ({
   page,
 }) => {
-  await answerReadings(page, { kind: "reading" });
+  // The sample reading, which is long enough to run on past one spread.
+  await answerReadings(page, {
+    kind: "refusal",
+    status: 429,
+    reason: "daily-limit",
+  });
   await openChapter(page, "circle");
   await askMainQuestion(page, "這段時間的方向？");
   await deckPile(page).click();
@@ -67,10 +72,11 @@ test("Card Reading turns a leaf to the reading, which runs on to the next spread
   ).toBeFocused();
   await expect(page.locator(".spread-board")).toHaveCount(0);
   await page.getByRole("button", { name: "產生解讀" }).click();
-  await expect(page.getByText("AI 解讀", { exact: true })).toBeVisible();
+  await expect(page.getByText("範例解牌，不是 AI")).toBeVisible();
   await expectNoVerticalScroll(page);
 
-  // Eight positions do not fit two columns: the rest is a leaf turn away.
+  // Eight positions of the sample do not fit one spread: the rest is a leaf
+  // turn away.
   await page.getByRole("button", { name: "下一頁" }).click();
   await expect(page.getByRole("button", { name: "上一頁" })).toBeVisible();
   await expectNoVerticalScroll(page);

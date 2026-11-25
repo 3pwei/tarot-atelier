@@ -21,9 +21,12 @@ On a wide screen a chapter was one tall page across both halves of the open book
 - **Long readings run on.** The reading is laid out in two CSS columns (`column-fill: auto`) inside a window of one spread. `ReadingSpread` counts the spreads its columns run to (`spreadCount`, measured by `ResizeObserver` and `MutationObserver`) and shows one spread at a time with `‹ Previous` / `Next ›`.
   - Each of these is a leaf turn too.
   - The spread turned to takes the focus and is named "解讀 第 n／m 頁".
-- **The reading is printed, not panelled.** `ReadingPanel` takes `layout: { kind: "pages", heading }`. It wears `.paper-surface`, leads with the page's own title, and passes `display="open"` to `ReadingSections`, so every section is open (`section[data-open]` with an `h3`, not `details`).
-  - `reading-pages.css` sets it in the page's ink at 14px. The AI/sample badge and the disclaimer stay visible.
-  - The panel under the table on a phone is unchanged (`display="collapsible"`).
+- **The reading is printed, not panelled.** `ReadingPanel` takes `layout: { kind: "pages", heading }`, wears `.paper-surface` and leads with the page's own title. In place of the folding `ReadingSections`, it renders `PrintedReading`, set as in the approved mock-up:
+  - Each position is headed by its number, short name, card and orientation, over one paragraph that joins the card's symbolism to its meaning here. A jumper adds one softer line.
+  - The position questions are not repeated; they are on the table's pages, a leaf back. The whole-spread sections follow.
+  - The type is one text face: 15px headings, 14px body at 1.6, 12px notes. A heading never stays alone at the foot of a column.
+  - The source badge, disclaimer and the compact Regenerate / Share line sit under the title, ruled off from the reading.
+  - The panel under the table on a phone is unchanged.
 - **`SpreadSetup` is gone.** Its question field and library moved into the notes group, which both layouts share.
 
 ## Consequences

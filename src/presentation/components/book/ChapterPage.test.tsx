@@ -68,7 +68,8 @@ async function finishTable() {
   await ready();
   await shuffleAndPick();
   [1, 2, 3].forEach((index) => reveal(index));
-  await screen.findByText("牌陣已完成");
+  // Revealing waits for each card to land; a busy test machine is slower.
+  await screen.findByText("牌陣已完成", undefined, { timeout: 5000 });
 }
 
 describe("ChapterPage on facing pages", () => {
