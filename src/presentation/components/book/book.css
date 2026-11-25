@@ -212,14 +212,32 @@
   .book-spread[data-focus] > .book-page[data-side] {
     display: flex;
   }
-  .book-spread > .book-page[data-side="left"] {
+  /* Every page, wherever it lies: a still copy on a turning leaf is laid
+     out exactly like the live page it gives way to. */
+  .book-page[data-side] {
     padding: 40px 50px 18px;
   }
-  .book-spread > .book-page[data-side="right"] {
-    padding: 40px 50px 18px;
-  }
-  .book-page[data-wide] {
-    padding: 34px 48px 18px;
+  /* A page spanning the open book still lies across its spine: the same
+     shade the two facing pages make where they meet, laid over the page so
+     scrolling never moves it. */
+  .book-spread:has(> .book-page[data-wide])::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50% - 70px);
+    width: 140px;
+    background: linear-gradient(
+      90deg,
+      rgba(70, 30, 4, 0),
+      rgba(70, 30, 4, 0.22) 36%,
+      rgba(45, 20, 3, 0.55) 48%,
+      rgba(30, 12, 0, 0.78) 50%,
+      rgba(45, 20, 3, 0.55) 52%,
+      rgba(70, 30, 4, 0.22) 64%,
+      rgba(70, 30, 4, 0)
+    );
+    pointer-events: none;
   }
   .book-only-narrow {
     display: none;

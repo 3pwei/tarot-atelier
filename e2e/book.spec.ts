@@ -12,6 +12,8 @@ test("the book opens from its cover to the frontispiece and the contents", async
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "打開魔法書" }).click();
+  // The opening scene ends on still copies of these pages, then gives way.
+  await expect(page.locator(".opening")).toHaveCount(0);
   await expect(
     page.getByRole("img", { name: /巫師站在高塔上/u }),
   ).toBeVisible();

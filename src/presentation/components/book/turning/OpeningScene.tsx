@@ -1,10 +1,14 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
-import type { BookRect } from "@/presentation/components/book/turning/opening";
-import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
 import {
-  finalBookRect,
+  useCallback,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import type { BookRect } from "@/presentation/components/book/turning/opening";
+import {
   leafVisibility,
   OPENING,
   openingCamera,
@@ -30,13 +34,12 @@ const MOTES = Array.from({ length: 16 }, (_, index) => {
 
 interface Leaf {
   readonly front: string;
-  /** A blank sheet is paper on both sides: one face, seen from either. */
-  readonly back?: string;
+  readonly back: string;
   readonly delayMs: number;
   readonly durationMs: number;
 }
 
-/** The cover, the blank leaves, then the leaf whose back is the frontispiece. */
+/** The cover, then the one leaf whose back is the frontispiece. */
 const LEAVES: readonly Leaf[] = [
   {
     front: "cover",
@@ -44,68 +47,113 @@ const LEAVES: readonly Leaf[] = [
     delayMs: OPENING.coverAtMs,
     durationMs: OPENING.coverMs,
   },
-  ...Array.from({ length: OPENING.sheets }, (_, index) => ({
-    front: "paper",
-    delayMs: OPENING.riffleAtMs + index * OPENING.sheetGapMs,
-    durationMs: OPENING.sheetMs,
-  })),
   {
     front: "paper",
     back: "frontispiece",
-    delayMs: OPENING.riffleAtMs + OPENING.sheets * OPENING.sheetGapMs,
-    durationMs: OPENING.lastSheetMs,
+    delayMs: OPENING.leafAtMs,
+    durationMs: OPENING.leafMs,
   },
 ];
 
 const VISIBLE = leafVisibility(LEAVES);
 
-/**
- * The book waking up: light leaks from its pages, the cover swings open,
- * leaves riffle past and the camera leans in. It only plays; the book swaps
- * in the real pages when it ends.
- */
 interface OpeningSceneProps {
   readonly from: BookRect;
+  /**
+   * Where the live page lies (the right-hand one with facing pages). The
+   * real pages are already laid out beneath the scene when it reads this.
+   */
+  readonly measurePage: () => BookRect | undefined;
+  /** A still copy of the contents, for the right-hand page. */
+  readonly contents: ReactNode;
+  /** A still copy of the frontispiece, on the back of the leaf that turns. */
+  readonly frontispiece: ReactNode;
   /** Every part of the scene has played out. */
   readonly onFinished: () => void;
 }
 
-export function OpeningScene({ from, onFinished }: OpeningSceneProps) {
+/**
+ * The book waking up: light leaks from its pages, the cover swings open,
+ * one leaf turns and the camera leans in. It ends exactly on the live pages
+ * beneath it, which it only covers; the book swaps them in when it ends.
+ */
+export function OpeningScene({
+  from,
+  measurePage,
+  contents,
+  frontispiece,
+  onFinished,
+}: OpeningSceneProps) {
+  const [camera, setCamera] = useState<OpeningCamera>();
+  // Read as the scene mounts, before the first paint, once the real pages
+  // beneath are laid out: its first frame is already right.
+  const measure = useCallback(
+    (frame: HTMLDivElement | null) => {
+      if (!frame || camera) return;
+      const page = measurePage();
+      if (!page) {
+        onFinished();
+        return;
+      }
+      const viewport = { width: window.innerWidth, height: window.innerHeight };
+      setCamera(openingCamera(viewport, from, page));
+    },
+    [camera, from, measurePage, onFinished],
+  );
+  return (
+    <div ref={measure} className="opening-frame">
+      {camera && (
+        <OpeningStage
+          camera={camera}
+          contents={contents}
+          frontispiece={frontispiece}
+          onFinished={onFinished}
+        />
+      )}
+    </div>
+  );
+}
+
+interface OpeningStageProps {
+  readonly camera: OpeningCamera;
+  readonly contents: ReactNode;
+  readonly frontispiece: ReactNode;
+  readonly onFinished: () => void;
+}
+
+function OpeningStage({
+  camera,
+  contents,
+  frontispiece,
+  onFinished,
+}: OpeningStageProps) {
   const root = useRef<HTMLDivElement>(null);
   useAnimationsFinished(root, openingMs(), onFinished);
-  // Measured once: the scene lasts two seconds and never re-lays itself out.
-  const [{ camera, book }] = useState<{
-    readonly camera: OpeningCamera;
-    readonly book: BookRect;
-  }>(() => {
-    const viewport = { width: window.innerWidth, height: window.innerHeight };
-    const opening = openingCamera(viewport, from);
-    return { camera: opening, book: finalBookRect(opening, viewport) };
-  });
+  const { closed, book } = camera;
   const base = `${PUBLIC_BASE_PATH}/book`;
   const style = {
     // Where the closed book lay, for the glow and the desk's lean.
-    "--opening-closed-left": `${camera.bookLeft}px`,
-    "--opening-closed-top": `${camera.bookTop}px`,
-    "--opening-closed-width": `${camera.bookWidth}px`,
-    "--opening-closed-height": `${camera.bookHeight}px`,
-    // The book is laid out where it ends, and starts scaled down onto the closed one.
+    "--opening-closed-left": `${closed.left}px`,
+    "--opening-closed-top": `${closed.top}px`,
+    "--opening-closed-width": `${closed.width}px`,
+    "--opening-closed-height": `${closed.height}px`,
+    // The book is laid out where it ends, and starts squeezed onto the closed one.
     "--opening-left": `${book.left}px`,
     "--opening-top": `${book.top}px`,
     "--opening-width": `${book.width}px`,
     "--opening-height": `${book.height}px`,
-    "--opening-zoom": camera.scale,
-    "--opening-from-scale": 1 / camera.scale,
-    "--opening-from-x": `${-camera.shiftX}px`,
-    "--opening-from-y": `${-camera.shiftY}px`,
+    "--opening-zoom": camera.zoom,
+    "--opening-from-scale-x": camera.fromScaleX,
+    "--opening-from-scale-y": camera.fromScaleY,
+    "--opening-from-x": `${camera.fromX}px`,
+    "--opening-from-y": `${camera.fromY}px`,
     "--opening-desk-scale": camera.deskScale,
-    "--opening-origin-x": `${camera.bookLeft + camera.bookWidth / 2}px`,
-    "--opening-origin-y": `${camera.bookTop + camera.bookHeight / 2}px`,
+    "--opening-origin-x": `${closed.left + closed.width / 2}px`,
+    "--opening-origin-y": `${closed.top + closed.height / 2}px`,
     "--opening-camera-at": `${OPENING.cameraAtMs}ms`,
     "--opening-camera-ms": `${OPENING.cameraMs}ms`,
     "--opening-total": `${openingMs()}ms`,
     "--opening-cover": `url("${base}/cover.webp")`,
-    "--opening-plate": `url("${base}/frontispiece.webp")`,
   } as CSSProperties;
 
   return (
@@ -126,9 +174,8 @@ export function OpeningScene({ from, onFinished }: OpeningSceneProps) {
             <div className="opening__left-block" />
           </div>
           <div className="opening__3d">
-            <div className="opening__face opening__face--paper opening__contents">
-              <span lang="en">{BOOK_COPY.contentsTitle}</span>
-            </div>
+            {/* The live contents page, still, where the real one lies. */}
+            <div className="opening__face opening__contents">{contents}</div>
             {[...LEAVES].reverse().map((leaf, reversedIndex) => {
               const index = LEAVES.length - 1 - reversedIndex;
               return (
@@ -150,7 +197,9 @@ export function OpeningScene({ from, onFinished }: OpeningSceneProps) {
                   />
                   <div
                     className={`opening__face opening__face--back opening__face--${leaf.back}`}
-                  />
+                  >
+                    {leaf.back === "frontispiece" && frontispiece}
+                  </div>
                 </div>
               );
             })}

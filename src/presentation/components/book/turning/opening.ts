@@ -1,22 +1,15 @@
 /**
- * Opening the book: the cover glows, swings open, blank leaves riffle past,
- * and the camera leans in. On a phone it stops with the frontispiece filling
+ * Opening the book: the cover glows and swings open, one leaf turns over to
+ * the frontispiece, and the camera leans in. On a phone it stops with the frontispiece filling
  * the screen; on a wide screen the open book stays on the desk.
  */
 
 export const OPENING = {
   coverAtMs: 550,
   coverMs: 600,
-  /**
-   * Blank leaves before the one whose back is the frontispiece. Each is a
-   * layer the size of the open page: a few, spaced out, read as many.
-   */
-  sheets: 6,
-  riffleAtMs: 900,
-  sheetGapMs: 110,
-  sheetMs: 420,
-  /** The last leaf, the frontispiece's, lands a little more slowly. */
-  lastSheetMs: 550,
+  /** The one leaf after the cover, whose back is the frontispiece. */
+  leafAtMs: 950,
+  leafMs: 700,
   cameraAtMs: 550,
   cameraMs: 1500,
 } as const;
@@ -37,41 +30,31 @@ export interface BookRect {
 export interface OpeningCamera {
   /** The two pages of a spread face each other, on the desk. */
   readonly facingPages: boolean;
-  readonly bookLeft: number;
-  readonly bookTop: number;
-  readonly bookWidth: number;
-  readonly bookHeight: number;
-  /** How far the camera leans in. */
-  readonly scale: number;
-  /** How far the camera slides, so the left page (or the spread) comes to the middle. */
-  readonly shiftX: number;
-  readonly shiftY: number;
+  /** Where the closed book lies when it is tapped. */
+  readonly closed: BookRect;
+  /**
+   * Where the open book's right-hand page ends: exactly on the live page it
+   * gives way to, so nothing moves or changes size when the scene fades off.
+   */
+  readonly book: BookRect;
+  /**
+   * The camera's start, from where the book ends: it is laid out at its final
+   * size and starts squeezed onto the closed one, so its leaves are drawn once
+   * at the size they end at. Each axis scales on its own, because a cover and
+   * an open page are not the same shape.
+   */
+  readonly fromScaleX: number;
+  readonly fromScaleY: number;
+  readonly fromX: number;
+  readonly fromY: number;
+  /** How far the camera leans in, overall. */
+  readonly zoom: number;
   /**
    * The desk leans in far less than the book: scaling a whole screen of wood
    * several times over is more than a phone's GPU can composite smoothly,
    * and once the page fills the screen the desk is out of sight anyway.
    */
   readonly deskScale: number;
-}
-
-/**
- * The open book's final rectangle, where the camera leaves it. The scene lays
- * the book out at this size and starts it scaled down onto the closed book,
- * so its leaves are drawn once at the size they end at, never several times
- * larger than the screen.
- */
-export function finalBookRect(
-  camera: OpeningCamera,
-  viewport: Viewport,
-): BookRect {
-  const centreX = viewport.width / 2;
-  const centreY = viewport.height / 2;
-  return {
-    left: centreX + camera.shiftX + camera.scale * (camera.bookLeft - centreX),
-    top: centreY + camera.shiftY + camera.scale * (camera.bookTop - centreY),
-    width: camera.bookWidth * camera.scale,
-    height: camera.bookHeight * camera.scale,
-  };
 }
 
 /** How much of the camera's lean the desk follows. */
@@ -89,55 +72,39 @@ export function hasFacingPages({ width, height }: Viewport): boolean {
 }
 
 /**
- * Where the camera ends; it starts on the closed book, exactly where the
- * cover page laid it out, so nothing jumps when the scene takes over.
+ * The camera from the closed book to the live page. With facing pages the
+ * book's right-hand page lands on the live right-hand page; on a phone its
+ * left-hand page, the frontispiece, lands on the one page shown.
  */
 export function openingCamera(
   viewport: Viewport,
-  book: BookRect,
+  closed: BookRect,
+  page: BookRect,
 ): OpeningCamera {
   const facingPages = hasFacingPages(viewport);
-  const base = {
-    facingPages,
-    bookLeft: book.left,
-    bookTop: book.top,
-    bookWidth: book.width,
-    bookHeight: book.height,
-  };
-  // The camera scales about the screen's middle; aim it at the book's spine.
-  const spineX = book.left - viewport.width / 2;
-  const middleY = book.top + book.height / 2 - viewport.height / 2;
-  if (facingPages) {
-    const scale = Math.min(
-      (viewport.width * 0.8) / (2 * book.width),
-      (viewport.height * 0.82) / book.height,
-    );
-    return {
-      ...base,
-      scale,
-      shiftX: -spineX * scale,
-      shiftY: -middleY * scale,
-      deskScale: deskScaleFor(scale),
-    };
-  }
-  // Edge to edge: the page's paper margins run off the sides, the plate stays whole.
-  const scale =
-    Math.max(viewport.width / book.width, viewport.height / book.height) * 1.02;
-  const leftPageMiddle = spineX - book.width / 2;
+  const book = facingPages ? page : { ...page, left: page.left + page.width };
+  const fromScaleX = closed.width / book.width;
+  const fromScaleY = closed.height / book.height;
+  const zoom = Math.sqrt(
+    (book.width / closed.width) * (book.height / closed.height),
+  );
   return {
-    ...base,
-    scale,
-    shiftX: -leftPageMiddle * scale,
-    shiftY: -middleY * scale,
-    deskScale: deskScaleFor(scale),
+    facingPages,
+    closed,
+    book,
+    fromScaleX,
+    fromScaleY,
+    fromX: closed.left - fromScaleX * book.left,
+    fromY: closed.top - fromScaleY * book.top,
+    zoom,
+    deskScale: deskScaleFor(zoom),
   };
 }
 
 /** When the last leaf has landed and the camera has stopped. */
 export function openingMs(): number {
-  const lastStart = OPENING.riffleAtMs + OPENING.sheets * OPENING.sheetGapMs;
   return Math.max(
-    lastStart + OPENING.lastSheetMs,
+    OPENING.leafAtMs + OPENING.leafMs,
     OPENING.cameraAtMs + OPENING.cameraMs,
   );
 }
