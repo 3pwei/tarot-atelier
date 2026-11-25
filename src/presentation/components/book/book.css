@@ -141,6 +141,7 @@
   padding: 26px var(--book-page-inline) 14px;
   border-radius: 4px 10px 10px 4px;
   background:
+    var(--book-page-spine, none),
     var(--book-grain),
     radial-gradient(
       ellipse at 30% 20%,
@@ -218,26 +219,20 @@
     padding: 40px 50px 18px;
   }
   /* A page spanning the open book still lies across its spine: the same
-     shade the two facing pages make where they meet, laid over the page so
-     scrolling never moves it. */
-  .book-spread:has(> .book-page[data-wide])::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc(50% - 70px);
-    width: 140px;
-    background: linear-gradient(
-      90deg,
-      rgba(70, 30, 4, 0),
-      rgba(70, 30, 4, 0.22) 36%,
-      rgba(45, 20, 3, 0.55) 48%,
-      rgba(30, 12, 0, 0.78) 50%,
-      rgba(45, 20, 3, 0.55) 52%,
-      rgba(70, 30, 4, 0.22) 64%,
-      rgba(70, 30, 4, 0)
-    );
-    pointer-events: none;
+     shade the two facing pages make where they meet, printed on the paper
+     under whatever lies on it. */
+  .book-page[data-wide] {
+    --book-page-spine: linear-gradient(
+        90deg,
+        rgba(70, 30, 4, 0),
+        rgba(70, 30, 4, 0.22) 36%,
+        rgba(45, 20, 3, 0.55) 48%,
+        rgba(30, 12, 0, 0.78) 50%,
+        rgba(45, 20, 3, 0.55) 52%,
+        rgba(70, 30, 4, 0.22) 64%,
+        rgba(70, 30, 4, 0)
+      )
+      50% 0 / 140px 100% no-repeat;
   }
   .book-only-narrow {
     display: none;
