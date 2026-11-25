@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type {
   CardReading,
   ReadingResult,
@@ -24,33 +25,69 @@ function CardBlock({
   );
 }
 
+/**
+ * How sections are shown: folded away but the first, in a panel read on one
+ * long page; or every one open, on the book's pages.
+ */
+export type SectionDisplay = "collapsible" | "open";
+
+interface SectionProps {
+  readonly display: SectionDisplay;
+  /** Unfolded from the start, when sections fold. */
+  readonly initiallyOpen: boolean;
+  readonly summary: ReactNode;
+  readonly children: ReactNode;
+}
+
+/** One section of a reading, folding or open as the display has it. */
+function Section({ display, initiallyOpen, summary, children }: SectionProps) {
+  if (display === "open") {
+    return (
+      <section className="reading-section" data-open>
+        <h3 className="reading-section__summary">{summary}</h3>
+        {children}
+      </section>
+    );
+  }
+  return (
+    <details className="reading-section" open={initiallyOpen}>
+      <summary>{summary}</summary>
+      {children}
+    </details>
+  );
+}
+
 /** A reading's sections: each position, then the spread as a whole. */
 export function ReadingSections({
   result,
+  display,
 }: {
   readonly result: ReadingResult;
+  readonly display: SectionDisplay;
 }) {
   return (
     <div className="reading-result">
       {result.positions.map((position, order) => (
-        <details
+        <Section
           key={position.index}
-          className="reading-section"
-          open={order === 0}
+          display={display}
+          initiallyOpen={order === 0}
+          summary={
+            <>
+              <span className="reading-index" aria-hidden="true">
+                {position.index}
+              </span>
+              <span className="reading-section__title">
+                <span className="sr-only">牌位 {position.index}：</span>
+                {position.primary.cardName}
+                <small>{MEANING_LABELS[position.primary.meaningMode]}</small>
+              </span>
+              <span className="reading-section__question">
+                {position.question}
+              </span>
+            </>
+          }
         >
-          <summary>
-            <span className="reading-index" aria-hidden="true">
-              {position.index}
-            </span>
-            <span className="reading-section__title">
-              <span className="sr-only">牌位 {position.index}：</span>
-              {position.primary.cardName}
-              <small>{MEANING_LABELS[position.primary.meaningMode]}</small>
-            </span>
-            <span className="reading-section__question">
-              {position.question}
-            </span>
-          </summary>
           <CardBlock
             reading={position.primary}
             heading={READING_COPY.symbolism}
@@ -69,40 +106,49 @@ export function ReadingSections({
               <p>{position.jumper.interpretation}</p>
             </div>
           ) : null}
-        </details>
+        </Section>
       ))}
-      <details className="reading-section">
-        <summary>
+      <Section
+        display={display}
+        initiallyOpen={false}
+        summary={
           <span className="reading-section__title">
             {READING_COPY.synthesis}
           </span>
-        </summary>
+        }
+      >
         <p className="reading-section__body">{result.synthesis}</p>
-      </details>
-      <details className="reading-section">
-        <summary>
+      </Section>
+      <Section
+        display={display}
+        initiallyOpen={false}
+        summary={
           <span className="reading-section__title">
             {READING_COPY.reflections}
           </span>
-        </summary>
+        }
+      >
         <ul className="reading-list">
           {result.reflectionQuestions.map((question) => (
             <li key={question}>{question}</li>
           ))}
         </ul>
-      </details>
-      <details className="reading-section">
-        <summary>
+      </Section>
+      <Section
+        display={display}
+        initiallyOpen={false}
+        summary={
           <span className="reading-section__title">
             {READING_COPY.suggestions}
           </span>
-        </summary>
+        }
+      >
         <ul className="reading-list">
           {result.suggestions.map((suggestion) => (
             <li key={suggestion}>{suggestion}</li>
           ))}
         </ul>
-      </details>
+      </Section>
     </div>
   );
 }

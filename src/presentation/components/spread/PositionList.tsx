@@ -84,12 +84,14 @@ export function PositionList({
               </span>
               <span className="position-list__body">
                 <span className="sr-only">牌位 {position.index}：</span>
-                {position.name.trim() && (
-                  <span className="position-list__name">
-                    {position.name.trim()}
-                  </span>
-                )}
-                <strong>{question || MISSING_QUESTION_LABEL}</strong>
+                <span className="position-list__heading">
+                  {position.name.trim() && (
+                    <span className="position-list__name">
+                      {position.name.trim()}
+                    </span>
+                  )}
+                  <strong>{question || MISSING_QUESTION_LABEL}</strong>
+                </span>
                 {/* Until a card lies there, the line is read aloud only. */}
                 <small className={position.drawResult ? undefined : "sr-only"}>
                   {resultText(

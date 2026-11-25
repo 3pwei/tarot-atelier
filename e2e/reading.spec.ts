@@ -55,17 +55,19 @@ test("reads a finished spread with AI through the site's own endpoint", async ({
 
   await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();
-  const sections = panel.locator("details.reading-section");
+  const sections = panel.locator(".reading-section");
   await expect(sections).toHaveCount(3 + 3);
-  await expect(sections.first()).toHaveAttribute("open", "");
+  // Folding sections under the table; on the book's facing pages all open.
+  const folding = (await panel.getAttribute("data-layout")) === "panel";
+  if (folding) await expect(sections.first()).toHaveAttribute("open", "");
   // Exactly the main card's sentence: a jumper, if position 1 drew one,
   // says something else.
   await expect(
     sections.first().getByText(MOCK_PRIMARY_INTERPRETATION, { exact: true }),
   ).toBeVisible();
 
-  const synthesis = panel.locator("details", { hasText: "全局關聯" });
-  await synthesis.locator("summary").click();
+  const synthesis = sections.filter({ hasText: "全局關聯" });
+  if (folding) await synthesis.locator("summary").click();
   await expect(synthesis.getByText("模擬的 AI 全局關聯。")).toBeVisible();
 
   expect(received).toHaveLength(1);
@@ -91,7 +93,7 @@ test("falls back to a labelled sample when today's AI readings are used up", asy
   await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText(/今天的 AI 解讀額度已用完/u)).toBeVisible();
   await expect(panel.getByText("範例解牌，不是 AI")).toBeVisible();
-  await expect(panel.locator("details.reading-section")).toHaveCount(3 + 3);
+  await expect(panel.locator(".reading-section")).toHaveCount(3 + 3);
   await expect(panel.getByText("單牌象徵").first()).toBeVisible();
   expect(external).toEqual([]);
 });

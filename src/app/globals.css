@@ -13,7 +13,7 @@
 @import "../presentation/components/draw/card-viewer.css";
 @import "../presentation/components/dialog/dialog.css";
 @import "../presentation/components/controls/controls.css";
-@import "../presentation/components/spread/spread-setup.css";
+@import "../presentation/components/draw/table-layout.css";
 @import "../presentation/components/spread/spread-toolbar.css";
 @import "../presentation/components/spread/template-shelf.css";
 @import "../presentation/components/spread/spread-board.css";
@@ -25,6 +25,7 @@
 @import "../presentation/components/spread/position-list.css";
 @import "../presentation/components/reading/reading-panel.css";
 @import "../presentation/components/reading/reading-sections.css";
+@import "../presentation/components/reading/reading-pages.css";
 @import "../presentation/components/history/history-dialog.css";
 @import "../presentation/components/history/history-list.css";
 @import "../presentation/components/history/history-detail.css";

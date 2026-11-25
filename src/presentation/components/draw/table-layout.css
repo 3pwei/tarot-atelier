@@ -1,0 +1,214 @@
+/* How the table's two parts lie on the page: the play (toolbar, board, hint) and its notes (question, template shelf, footnotes, reading). */
+
+.draw-table__heading {
+  display: none;
+}
+
+/* One page: everything under one another, the question first. */
+.draw-table[data-layout="single-page"] {
+  display: flex;
+  flex-direction: column;
+}
+
+.draw-table[data-layout="single-page"]
+  :is(.draw-table__play, .draw-table__notes) {
+  display: contents;
+}
+
+.draw-table[data-layout="single-page"] .draw-table__question {
+  order: 1;
+}
+.draw-table[data-layout="single-page"] .spread-notice {
+  order: 2;
+}
+.draw-table[data-layout="single-page"] .draw-table__shelf {
+  order: 3;
+  margin-bottom: 16px;
+}
+.draw-table[data-layout="single-page"] .spread-toolbar {
+  order: 4;
+}
+.draw-table[data-layout="single-page"] .draw-table__stage {
+  order: 5;
+}
+.draw-table[data-layout="single-page"] .table-hint {
+  order: 6;
+}
+.draw-table[data-layout="single-page"] .draw-table__reading-cue {
+  order: 7;
+}
+.draw-table[data-layout="single-page"] .reading-panel {
+  order: 8;
+}
+.draw-table[data-layout="single-page"] .spread-details {
+  order: 9;
+}
+
+/* Facing pages (placed by the chapter page, see book.css): the play on the
+   left, the notes on the right, each fitting its page without scrolling. */
+.draw-table[data-layout="facing-pages"] .draw-table__play {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.draw-table[data-layout="facing-pages"] .draw-table__play .draw-table__stage {
+  min-height: 0;
+  flex: 1;
+  margin: 0;
+  padding: 12px 0;
+  /* The board takes as much of its page as its 3:2 allows. */
+  container-type: size;
+}
+
+.draw-table[data-layout="facing-pages"] .spread-board {
+  max-width: calc(100cqh * 3 / 2);
+}
+
+.draw-table[data-layout="facing-pages"] .table-hint {
+  margin: 0;
+}
+
+.draw-table[data-layout="facing-pages"] .draw-table__notes {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.draw-table[data-layout="facing-pages"] .draw-table__heading {
+  display: block;
+  margin: 0 0 4px;
+  color: var(--table-ink-soft);
+  font-family: var(--book-serif);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.draw-table[data-layout="facing-pages"] .draw-table__question {
+  width: 100%;
+  margin: 0 0 16px;
+}
+
+.draw-table[data-layout="facing-pages"] .draw-table__question input {
+  min-height: 2.1rem;
+  font-size: 1.05rem;
+  text-align: left;
+}
+
+.draw-table[data-layout="facing-pages"] .spread-notice {
+  min-height: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.draw-table[data-layout="facing-pages"] .draw-table__shelf {
+  margin-bottom: 16px;
+}
+
+.draw-table[data-layout="facing-pages"] .spread-details {
+  gap: 8px;
+}
+
+/* The footnotes, set close: one line for each question, one for its card. */
+.draw-table[data-layout="facing-pages"] .position-list {
+  gap: 0;
+  padding-top: 8px;
+}
+
+.draw-table[data-layout="facing-pages"] .position-list__item {
+  padding: 3px 4px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.draw-table[data-layout="facing-pages"] .position-list__body {
+  flex-wrap: nowrap;
+  flex-direction: column;
+  gap: 0;
+}
+
+.draw-table[data-layout="facing-pages"] .position-list__heading {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+}
+
+.draw-table[data-layout="facing-pages"]
+  :is(.position-list__body strong, .position-list__body small) {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draw-table[data-layout="facing-pages"] .position-list__body small {
+  font-size: 12.5px;
+}
+
+/* While arranging, the selected position's editor takes the footnotes' place. */
+.draw-experience[data-table-mode="arrange"]
+  .draw-table[data-layout="facing-pages"]
+  .position-list {
+  display: none;
+}
+
+.draw-table[data-layout="facing-pages"] .draw-table__reading-cue {
+  justify-content: flex-start;
+  margin: 16px 0 0;
+}
+
+/* The position editor shares the notes page with the shelf, so on facing
+   pages it is set close: the four placement numbers share one row. */
+.draw-table[data-layout="facing-pages"] .position-inspector {
+  gap: 8px;
+  padding: 10px 14px 12px;
+}
+
+.draw-table[data-layout="facing-pages"] .position-inspector__grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.draw-table[data-layout="facing-pages"] .position-inspector .field {
+  gap: 4px;
+}
+
+.draw-table[data-layout="facing-pages"] .position-inspector :is(input, select) {
+  min-height: 34px;
+  padding-block: 4px;
+}
+
+.draw-table[data-layout="facing-pages"] .position-inspector textarea {
+  min-height: 52px;
+  height: 52px;
+  padding-block: 6px;
+  resize: none;
+}
+
+.draw-table[data-layout="facing-pages"] .position-inspector .field > span {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The library's chips and its save action run on as one line of type. */
+.draw-table[data-layout="facing-pages"] .template-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.draw-table[data-layout="facing-pages"] .template-shelf__list {
+  display: contents;
+}
+
+.draw-table[data-layout="facing-pages"] .template-chip,
+.draw-table[data-layout="facing-pages"]
+  .template-shelf
+  :is(.preset-chip, .ghost-action) {
+  min-height: 32px;
+}

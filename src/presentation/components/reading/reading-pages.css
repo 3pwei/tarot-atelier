@@ -1,0 +1,250 @@
+/* A reading printed on the book's pages: two columns across the open book, every section open, set close; what does not fit runs on to the next spread. */
+
+.reading-spread {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+/* One spread of the flow shows; the rest waits to the right. */
+.reading-spread__window {
+  min-height: 0;
+  padding-top: 8px;
+  flex: 1;
+  overflow: clip;
+}
+
+.reading-spread__flow {
+  --reading-gap: 100px;
+  height: 100%;
+  column-count: 2;
+  column-fill: auto;
+  column-gap: var(--reading-gap);
+  transform: translateX(
+    calc(var(--reading-spread) * -1 * (100% + var(--reading-gap)))
+  );
+}
+
+.reading-spread__turns {
+  display: flex;
+  min-height: 24px;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.reading-spread__next {
+  margin-left: auto;
+}
+
+.reading-panel[data-layout="pages"] {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--book-ink);
+  font-family: var(--book-text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.reading-panel[data-layout="pages"] .book-title {
+  margin: 0;
+  font-size: 40px;
+}
+
+.reading-panel[data-layout="pages"] .book-flourish {
+  margin-bottom: 8px;
+}
+
+/* The page's own title names it; the panel's heading is read aloud only,
+   and its source label stands alone. */
+.reading-panel[data-layout="pages"] .reading-panel__head {
+  display: block;
+  margin: 0 0 6px;
+}
+
+.reading-panel[data-layout="pages"] .reading-panel__head h2 {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+}
+
+.reading-panel[data-layout="pages"]
+  :is(
+    .reading-disclaimer,
+    .reading-professional,
+    .reading-fallback,
+    .reading-stale,
+    .reading-status
+  ) {
+  margin: 0 0 8px;
+  color: var(--book-ink-soft);
+  font-size: 12px;
+}
+
+.reading-panel[data-layout="pages"] .reading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.reading-panel[data-layout="pages"] .reading-generate {
+  width: auto;
+  min-height: 32px;
+  box-shadow: none;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  padding: 4px 16px;
+  border: 1px solid var(--control-line-strong);
+  border-radius: 999px;
+  color: var(--book-ink);
+  background: var(--control-fill);
+  font: inherit;
+  cursor: pointer;
+}
+
+.reading-panel[data-layout="pages"] .reading-generate:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.reading-panel[data-layout="pages"] .reading-result {
+  display: block;
+}
+
+.reading-panel[data-layout="pages"] .reading-section {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.reading-panel[data-layout="pages"] .reading-section__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  margin: 0 0 2px;
+  break-after: avoid;
+  color: var(--book-ink);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.reading-panel[data-layout="pages"] .reading-index {
+  color: var(--book-ink-soft);
+  font-family: var(--book-serif);
+  font-weight: 400;
+}
+
+.reading-panel[data-layout="pages"] .reading-section__title small {
+  margin-left: 6px;
+  color: var(--book-ink-soft);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.reading-panel[data-layout="pages"] .reading-section__question {
+  flex-basis: 100%;
+  color: var(--book-ink-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.reading-panel[data-layout="pages"] .reading-card {
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.reading-panel[data-layout="pages"] .reading-card h4 {
+  margin: 0;
+  color: var(--book-ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  break-after: avoid;
+}
+
+.reading-panel[data-layout="pages"]
+  :is(.reading-card p, .reading-section__body) {
+  margin: 0;
+  padding: 0;
+  text-align: justify;
+}
+
+.reading-panel[data-layout="pages"] .reading-list {
+  gap: 0;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.reading-panel[data-layout="pages"] .reading-badge {
+  display: inline-block;
+  padding: 1px 10px;
+  border: 1px solid var(--control-line-strong);
+  border-radius: 999px;
+  color: var(--control-text);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+/* Printed in the page's own ink: the night panel's moonlight colours, gold
+   badges and loose leading give way to the book's close setting. */
+.reading-panel[data-layout="pages"]
+  :is(
+    .reading-section__title,
+    .reading-section__body,
+    .reading-card p,
+    .reading-list,
+    .reading-list li
+  ) {
+  color: var(--book-ink);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.reading-panel[data-layout="pages"] .reading-section__title {
+  font-size: 15px;
+}
+
+.reading-panel[data-layout="pages"] .reading-index {
+  display: inline;
+  width: auto;
+  aspect-ratio: auto;
+  background: none;
+  font-size: inherit;
+}
+
+.reading-panel[data-layout="pages"] .reading-index::after {
+  content: ".";
+}
+
+.reading-panel[data-layout="pages"] .reading-card--jumper {
+  margin-left: 0;
+  padding: 0 0 0 8px;
+  border-left: 1px solid var(--control-line-strong);
+  background: none;
+}
+
+.reading-panel[data-layout="pages"] .reading-generate:hover:not(:disabled) {
+  background: var(--control-field-fill);
+  transform: none;
+}
+
+.reading-panel[data-layout="pages"] .reading-actions .ghost-action {
+  min-height: 32px;
+  padding: 4px 14px;
+  border-color: var(--control-line);
+  color: var(--control-text);
+  font-size: inherit;
+}

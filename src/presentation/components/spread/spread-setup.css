@@ -1,8 +1,0 @@
-/* Above the board: the spread picker or template library, and the toolbar. */
-
-.spread-setup {
-  position: relative;
-  z-index: 5;
-  display: grid;
-  gap: 16px;
-}

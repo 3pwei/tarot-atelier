@@ -361,10 +361,72 @@
   margin-inline: calc(var(--book-page-inline) * -1);
 }
 
-@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
-  .book-chapter-table .draw-table__stage {
-    margin-inline: 0;
-  }
+/* Facing pages: a chapter is one sheet across the spine, set as two pages
+   that never scroll. The running head spans both; the title and the table
+   are on the left, the table's notes on the right. Its reading, when open,
+   runs across both. The table's own wrappers step aside so their parts
+   take these places (see draw/table-layout.css). */
+.book-page:has(> .book-chapter-table[data-layout="facing-pages"]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  /* Each page keeps its side margin either side of the spine. */
+  column-gap: 100px;
+  overflow: hidden;
+}
+
+.book-page:has(> .book-chapter-table[data-layout="facing-pages"]) > * {
+  min-width: 0;
+}
+
+.book-page:has(> .book-chapter-table[data-layout="facing-pages"])
+  > .book-running-head {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.book-page:has(> .book-chapter-table[data-layout="facing-pages"])
+  > .book-title {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.book-page:has(> .book-chapter-table[data-layout="facing-pages"])
+  > .book-flourish {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.book-page:has(> .book-chapter-table[data-layout="facing-pages"])
+  > .book-folio {
+  grid-column: 1 / -1;
+  grid-row: 5;
+}
+
+.book-chapter-table[data-layout="facing-pages"],
+.book-chapter-table[data-layout="facing-pages"] > .draw-experience,
+.book-chapter-table[data-layout="facing-pages"] .draw-table {
+  display: contents;
+}
+
+.book-chapter-table[data-layout="facing-pages"] .draw-table__play {
+  grid-column: 1;
+  grid-row: 4;
+}
+
+.book-chapter-table[data-layout="facing-pages"] .draw-table__notes {
+  grid-column: 2;
+  grid-row: 2 / 5;
+}
+
+.book-chapter-table[data-layout="facing-pages"] .draw-table__reading {
+  grid-column: 1 / -1;
+  grid-row: 2 / 5;
+  min-height: 0;
+}
+
+.book-chapter-table[data-layout="facing-pages"] .draw-table__stage {
+  margin-inline: 0;
 }
 
 /* ---- frontispiece ---- */

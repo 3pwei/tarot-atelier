@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { ReadingSource } from "@/domain/reading/types";
 import {
   FAILURE_MESSAGES,
@@ -24,7 +24,19 @@ interface ReadingPanelProps {
   readonly source: ReadingSource;
   /** Shares the finished round, with its reading if there is one. */
   readonly onShare: () => void;
+  /**
+   * `panel`: a night-sky panel under the table, its sections folding.
+   * `pages`: printed on the book's pages, every section open, after
+   * `heading`, the page's own title.
+   */
+  readonly layout?: ReadingLayout;
 }
+
+export type ReadingLayout =
+  | { readonly kind: "panel" }
+  | { readonly kind: "pages"; readonly heading: ReactNode };
+
+const PANEL: ReadingLayout = Object.freeze({ kind: "panel" });
 
 /**
  * The reading for a finished spread. It shows which deck and draws it
@@ -36,6 +48,7 @@ export function ReadingPanel({
   revealed,
   source,
   onShare,
+  layout = PANEL,
 }: ReadingPanelProps) {
   const titleId = useId();
   const { state, build, stale } = session;
@@ -45,10 +58,16 @@ export function ReadingPanel({
 
   return (
     <section
-      className="reading-panel night-surface"
+      className={
+        layout.kind === "pages"
+          ? "reading-panel paper-surface"
+          : "reading-panel night-surface"
+      }
+      data-layout={layout.kind}
       aria-labelledby={titleId}
       aria-busy={loading || undefined}
     >
+      {layout.kind === "pages" && layout.heading}
       <header className="reading-panel__head">
         <h2 id={titleId}>{READING_COPY.title}</h2>
         {/* Labelled once there is a reading, by where it actually came from. */}
@@ -140,7 +159,12 @@ export function ReadingPanel({
 
           <ProfessionalNote topics={topics} />
 
-          {result ? <ReadingSections result={result} /> : null}
+          {result ? (
+            <ReadingSections
+              result={result}
+              display={layout.kind === "pages" ? "open" : "collapsible"}
+            />
+          ) : null}
         </>
       )}
     </section>

@@ -49,6 +49,14 @@
   gap: 0 8px;
 }
 
+.position-list__heading {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0 8px;
+}
+
 .position-list__name {
   min-width: 2.6em;
   color: var(--table-ink);

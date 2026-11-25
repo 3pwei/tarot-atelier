@@ -44,6 +44,7 @@ import {
   usePageTurns,
   type ActiveTurn,
 } from "@/presentation/components/book/turning/usePageTurns";
+import type { TurnDirection } from "@/presentation/components/book/turning/turnPlan";
 import { useSoundPreference } from "@/presentation/components/book/turning/useSoundPreference";
 import { useBookLocation } from "@/presentation/components/book/useBookLocation";
 import { useContents } from "@/presentation/components/book/useContents";
@@ -69,7 +70,7 @@ export function AtelierBook() {
   const reducedMotion = useMotionMode() === "reduced";
   const { pageSound } = useAtelierServices();
   const sound = useSoundPreference();
-  const { shown, turn, arrival, finishTurn } = usePageTurns({
+  const { shown, turn, arrival, finishTurn, turnLeaf } = usePageTurns({
     place,
     turned,
     entries,
@@ -128,6 +129,7 @@ export function AtelierBook() {
       turnTo(FRONTISPIECE);
     },
     back: () => turnTo(placeBefore(place)),
+    turnLeaf,
     sound: { on: sound.pageSounds, onToggle: sound.toggle },
   };
 
@@ -143,6 +145,7 @@ export function AtelierBook() {
         place={underneath}
         entries={entries}
         actions={actions}
+        facingPages={facingPages}
         spreadRef={spread}
       />
       {turn?.plan.kind === "open" && closedBook && (
@@ -277,6 +280,8 @@ interface PageActions {
   readonly turnTo: (place: BookPlace) => void;
   readonly open: (book: DOMRect) => void;
   readonly back: () => void;
+  /** Turns one leaf within the page shown (see `usePageTurns`). */
+  readonly turnLeaf: (direction: TurnDirection) => Promise<void>;
   readonly sound: { readonly on: boolean; readonly onToggle: () => void };
 }
 
@@ -299,6 +304,7 @@ interface PlacePagesProps {
   readonly place: BookPlace;
   readonly entries: readonly ContentsEntry[] | undefined;
   readonly actions: PageActions;
+  readonly facingPages: boolean;
   readonly spreadRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -307,9 +313,10 @@ function PlacePages({
   place,
   entries,
   actions,
+  facingPages,
   spreadRef: spread,
 }: PlacePagesProps) {
-  const { turnTo, open, back, sound } = actions;
+  const { turnTo, open, back, turnLeaf, sound } = actions;
   const entry = entries && entryFor(place, entries);
   switch (place.kind) {
     case "cover":
@@ -337,6 +344,8 @@ function PlacePages({
             <ChapterPage
               entry={entry}
               templateId={place.templateId}
+              layout={facingPages ? "facing-pages" : "single-page"}
+              turnLeaf={turnLeaf}
               onBack={back}
             />
           </div>

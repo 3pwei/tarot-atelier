@@ -77,7 +77,10 @@ export async function reveal(page: Page, index: number) {
   ).toHaveCount(count, { timeout: 20_000 });
 }
 
-/** Once every card is revealed, "Card Reading" opens the reading under the table. */
+/**
+ * Once every card is revealed, "Card Reading" opens the reading: under the
+ * table on one page, or a leaf turn away on facing pages.
+ */
 export async function openReading(page: Page) {
   await page.getByRole("button", { name: "看解讀" }).click();
   await expect(page.locator(".reading-panel")).toBeVisible();

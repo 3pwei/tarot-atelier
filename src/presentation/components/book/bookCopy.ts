@@ -32,6 +32,18 @@ export const BOOK_COPY = {
   anewLabel: "清除本次牌陣",
   cardReading: "Card Reading ›",
   cardReadingLabel: "看解讀",
+  readingTitle: "Card Reading",
+  toCards: "‹ The Cards",
+  toCardsLabel: "回到牌陣",
+  nextPage: "Next ›",
+  nextPageLabel: "下一頁",
+  previousPage: "‹ Previous",
+  previousPageLabel: "上一頁",
+  /** Names the spread of a reading that lies open, for assistive tech. */
+  readingSpreadLabel: (spread: number, spreads: number) =>
+    `解讀 第 ${spread}／${spreads} 頁`,
+  questionHeading: "Question",
+  positionsHeading: "Questions",
   codexHeading: "The Codex of Cards",
   recordsHeading: "The Records",
 } as const;

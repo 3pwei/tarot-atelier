@@ -12,6 +12,7 @@ import {
 } from "@/presentation/components/book/turning/timing";
 import {
   planTurn,
+  type TurnDirection,
   type TurnPlan,
 } from "@/presentation/components/book/turning/turnPlan";
 
@@ -42,6 +43,13 @@ export interface PageTurns {
   readonly arrival: Arrival;
   /** Lands `turn` once its animations have played out. */
   readonly finishTurn: (turn: ActiveTurn) => void;
+  /**
+   * Turns one leaf within the place shown, as a chapter does between its
+   * table and its reading: the place stays, and the promise settles once the
+   * leaf has landed (at once with reduced motion, or mid-turn), when the
+   * page beneath may change.
+   */
+  readonly turnLeaf: (direction: TurnDirection) => Promise<void>;
 }
 
 /**
@@ -131,7 +139,47 @@ export function usePageTurns({
     [],
   );
 
-  return { shown: state.shown, turn, arrival: state.arrival, finishTurn };
+  // Turns within a place settle when they stop being the turn in progress.
+  const leafLandings = useRef(new Map<ActiveTurn, () => void>());
+  useEffect(() => {
+    if (!turn) return;
+    const landings = leafLandings.current;
+    return () => {
+      landings.get(turn)?.();
+      landings.delete(turn);
+    };
+  }, [turn]);
+
+  const latest = useRef({ state, reducedMotion });
+  useEffect(() => {
+    latest.current = { state, reducedMotion };
+  });
+  const turnLeaf = useCallback(
+    (direction: TurnDirection) =>
+      new Promise<void>((settle) => {
+        const { state: current, reducedMotion: still } = latest.current;
+        if (still || current.turn) {
+          settle();
+          return;
+        }
+        const leaf: ActiveTurn = {
+          plan: { kind: "single", direction },
+          from: current.shown,
+          to: current.shown,
+        };
+        leafLandings.current.set(leaf, settle);
+        setState((now) => (now.turn ? now : { ...now, turn: leaf }));
+      }),
+    [],
+  );
+
+  return {
+    shown: state.shown,
+    turn,
+    arrival: state.arrival,
+    finishTurn,
+    turnLeaf,
+  };
 }
 
 const NO_TURN: TurnPlan = Object.freeze({ kind: "none" });

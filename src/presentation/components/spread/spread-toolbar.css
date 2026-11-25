@@ -1,6 +1,9 @@
 /* Above the table: Edit and Anew as raised lettering; arranging adds a position and counts them. */
 
+/* Above the board, and above its cards when they stray. */
 .spread-toolbar {
+  position: relative;
+  z-index: 5;
   display: grid;
   gap: 8px;
 }
