@@ -1,13 +1,22 @@
 import { act, render } from "@testing-library/react";
 import { useRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { useAnimationsFinished } from "@/presentation/components/book/turning/useAnimationsFinished";
+import {
+  useAnimationsFinished,
+  type FinishedBy,
+} from "@/presentation/components/book/turning/useAnimationsFinished";
 
 const DURATION_MS = 500;
 
-function Turning({ onFinished }: { readonly onFinished: () => void }) {
+function Turning({
+  onFinished,
+  finishedBy,
+}: {
+  readonly onFinished: () => void;
+  readonly finishedBy?: FinishedBy;
+}) {
   const root = useRef<HTMLDivElement>(null);
-  useAnimationsFinished(root, DURATION_MS, onFinished);
+  useAnimationsFinished(root, DURATION_MS, onFinished, finishedBy);
   return <div ref={root} />;
 }
 
@@ -39,6 +48,18 @@ describe("useAnimationsFinished", () => {
     await act(async () => quick.end());
     expect(onFinished).not.toHaveBeenCalled();
     await act(async () => slow.end());
+    expect(onFinished).toHaveBeenCalledTimes(1);
+  });
+
+  it("can end with the root's own animation, not what settles inside it", async () => {
+    const fade = deferredAnimation();
+    const glow = deferredAnimation();
+    HTMLElement.prototype.getAnimations = (options?: GetAnimationsOptions) =>
+      options?.subtree ? [fade.animation, glow.animation] : [fade.animation];
+    const onFinished = vi.fn();
+    render(<Turning onFinished={onFinished} finishedBy="root" />);
+
+    await act(async () => fade.end());
     expect(onFinished).toHaveBeenCalledTimes(1);
   });
 

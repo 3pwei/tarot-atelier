@@ -128,7 +128,11 @@ function OpeningStage({
   onFinished,
 }: OpeningStageProps) {
   const root = useRef<HTMLDivElement>(null);
-  useAnimationsFinished(root, openingMs(), onFinished);
+  // The scene is over once it has faded off the real pages. The glow and the
+  // motes settle a little longer under the fade, unseen; waiting for them
+  // left an invisible scene over the frontispiece, and a tap there swapped
+  // to the contents without turning the page.
+  useAnimationsFinished(root, openingMs(), onFinished, "root");
   const { closed, book } = camera;
   const base = `${PUBLIC_BASE_PATH}/book`;
   const style = {
