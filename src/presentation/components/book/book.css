@@ -141,8 +141,7 @@
   padding: 26px var(--book-page-inline) 14px;
   border-radius: 4px 10px 10px 4px;
   background:
-    var(--book-page-spine, none),
-    var(--book-grain),
+    var(--book-page-spine, none), var(--book-grain),
     radial-gradient(
       ellipse at 30% 20%,
       rgba(255, 248, 225, 0.55),
