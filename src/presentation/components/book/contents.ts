@@ -34,7 +34,7 @@ export interface ContentsEntry {
   /** Roman numeral shown before the title, e.g. `III.` */
   readonly numeral: string;
   readonly title: string;
-  /** `en` when the title can be set in the script face; else the page's own. */
+  /** `en` when the title can be set in the English face; else the page's own. */
   readonly titleLanguage: TitleLanguage;
   readonly page: number;
   readonly section: ContentsSection;
@@ -93,7 +93,7 @@ export function contentsFor(
   return [...chapters, ...appendix];
 }
 
-/** Latin letters, digits, spaces and plain punctuation fit the script face. */
+/** Latin letters, digits, spaces and plain punctuation fit the English face. */
 const LATIN_TITLE = /^[\p{Script=Latin}\d\s'’.,&!?:;()-]+$/u;
 
 export function titleLanguageOf(title: string): TitleLanguage {

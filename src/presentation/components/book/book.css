@@ -6,7 +6,6 @@
   --book-paper: #efe0bd;
   --book-paper-deep: #e4cf9f;
   --book-gold: #e6c57a;
-  --book-script: "Pinyon Script", cursive;
   --book-serif: "IM Fell English", "Iansui", serif;
   --book-text: "Iansui", "Noto Serif TC", serif;
   --book-space-1: 8px;
@@ -288,8 +287,9 @@
 }
 
 .book-title:lang(en) {
-  font-family: var(--book-script);
-  font-size: clamp(40px, 11vw, 64px);
+  font-family: var(--book-serif);
+  font-size: clamp(30px, 8vw, 46px);
+  letter-spacing: 0.04em;
 }
 
 .book-title:focus {
@@ -504,7 +504,7 @@
   color: var(--book-ink-soft);
 }
 
-/* A reader's own spread may be named in Chinese, which the script face
+/* A reader's own spread may be named in Chinese, which the English face
    cannot set: titles take the hand-lettered face unless marked English. */
 .book-contents__title {
   font-family: var(--book-text);
@@ -514,8 +514,9 @@
 }
 
 .book-contents__title:lang(en) {
-  font-family: var(--book-script);
-  font-size: 30px;
+  font-family: var(--book-serif);
+  font-size: 24px;
+  letter-spacing: 0.03em;
 }
 
 .book-contents__dots {
