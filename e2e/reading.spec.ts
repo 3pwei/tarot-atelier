@@ -14,8 +14,8 @@ import {
   readingPanel,
 } from "./support/spreadTable";
 
-/** A reading's sections, folding under the table or printed on the pages. */
-const READING_SECTIONS = ".reading-section, .printed-reading__section";
+/** A printed reading's sections: each position, then the spread as a whole. */
+const READING_SECTIONS = ".printed-reading__section";
 
 // Deals and burns three cards before reading; software-rendered CI browsers need headroom.
 test.describe.configure({ timeout: 90_000 });
@@ -61,25 +61,13 @@ test("reads a finished spread with AI through the site's own endpoint", async ({
   await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();
   const sections = panel.locator(READING_SECTIONS);
   await expect(sections).toHaveCount(3 + 3);
-  // Folding sections under the table; printed on the book's facing pages.
-  const folding = (await panel.getAttribute("data-layout")) === "panel";
-  if (folding) {
-    await expect(sections.first()).toHaveAttribute("open", "");
-    // Exactly the main card's sentence: a jumper, if position 1 drew one,
-    // says something else.
-    await expect(
-      sections.first().getByText(MOCK_PRIMARY_INTERPRETATION, { exact: true }),
-    ).toBeVisible();
-  } else {
-    // Printed, the card's symbolism and its sentence make one paragraph,
-    // and a jumper has a paragraph of its own after it.
-    await expect(sections.first().locator("p").first()).toContainText(
-      MOCK_PRIMARY_INTERPRETATION,
-    );
-  }
+  // Printed, the card's symbolism and its sentence make one paragraph,
+  // and a jumper has a paragraph of its own after it.
+  await expect(sections.first().locator("p").first()).toContainText(
+    MOCK_PRIMARY_INTERPRETATION,
+  );
 
   const synthesis = sections.filter({ hasText: "全局關聯" });
-  if (folding) await synthesis.locator("summary").click();
   await expect(synthesis.getByText("模擬的 AI 全局關聯。")).toBeVisible();
 
   expect(received).toHaveLength(1);
@@ -107,7 +95,7 @@ test("falls back to a labelled sample when today's AI readings are used up", asy
   await expect(panel.getByText("範例解牌，不是 AI")).toBeVisible();
   const sections = panel.locator(READING_SECTIONS);
   await expect(sections).toHaveCount(3 + 3);
-  // The sample reads each card, folded under its label or printed.
+  // The sample reads each card.
   await expect(sections.first().locator("p").first()).not.toBeEmpty();
   expect(external).toEqual([]);
 });

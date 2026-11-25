@@ -34,7 +34,7 @@ On a wide screen a chapter was one tall page across both halves of the open book
   - The position questions are not repeated; they are on the table's pages, a leaf back. The whole-spread sections follow.
   - The type is one text face: 15px headings, 14px body at 1.6, 12px notes. A heading never stays alone at the foot of a column.
   - The source badge, disclaimer and the compact Regenerate / Share line sit under the title, ruled off from the reading.
-  - The panel under the table on a phone is unchanged.
+  - On a phone the reading still opens under the table, but printed the same way, in one column: the owner asked that it carry nothing of the old night-sky panel. `ReadingPanel` has no other look, and `ReadingSections` folds only in the records dialog.
 - **`SpreadSetup` is gone.** Its question field and library moved into the notes group, which both layouts share.
 
 ## Consequences

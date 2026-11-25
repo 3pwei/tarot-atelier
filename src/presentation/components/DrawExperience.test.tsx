@@ -319,7 +319,9 @@ describe("DrawExperience spread table", () => {
     fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
     expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
-    expect(screen.getAllByText("單牌象徵").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll(".printed-reading__section")).toHaveLength(
+      3 + 3,
+    );
   });
 
   it("records a finished round once, and adds its reading when generated", async () => {

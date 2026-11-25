@@ -40,9 +40,10 @@
   margin-left: auto;
 }
 
-/* The reading printed in the page's ink, set as the approved mock-up: one
-   text face; 15px headings, 14px body, 12px notes. */
-.reading-panel[data-layout="pages"] {
+/* The reading printed in the page's ink, on facing pages or under the table
+   on a phone, set as the approved mock-up: one text face; 15px headings,
+   14px body, 12px notes. */
+.reading-panel {
   display: block;
   margin: 0;
   padding: 0;
@@ -55,23 +56,23 @@
   line-height: 1.6;
 }
 
-.reading-panel[data-layout="pages"] .book-title {
+.reading-panel .book-title {
   margin: 2px 0 4px;
   font-size: 40px;
 }
 
-.reading-panel[data-layout="pages"] .book-flourish {
+.reading-panel .book-flourish {
   display: none;
 }
 
 /* The page's own title names it; the panel's heading is read aloud only,
    and its source label stands alone. */
-.reading-panel[data-layout="pages"] .reading-panel__head {
+.reading-panel .reading-panel__head {
   display: block;
   margin: 0 0 4px;
 }
 
-.reading-panel[data-layout="pages"] .reading-panel__head h2 {
+.reading-panel .reading-panel__head h2 {
   position: absolute;
   overflow: hidden;
   width: 1px;
@@ -79,7 +80,7 @@
   clip-path: inset(50%);
 }
 
-.reading-panel[data-layout="pages"] .reading-badge {
+.reading-panel .reading-badge {
   display: inline-block;
   padding: 0 8px;
   border: 1px solid var(--control-line-strong);
@@ -93,7 +94,7 @@
 }
 
 /* Notes: the disclaimer and any notice, small and soft. */
-.reading-panel[data-layout="pages"]
+.reading-panel
   :is(
     .reading-disclaimer,
     .reading-professional,
@@ -112,7 +113,7 @@
 }
 
 /* The controls end the opening matter, ruled off from the reading. */
-.reading-panel[data-layout="pages"] .reading-actions {
+.reading-panel .reading-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -122,8 +123,7 @@
   border-bottom: 1px solid var(--control-line);
 }
 
-.reading-panel[data-layout="pages"]
-  :is(.reading-generate, .reading-actions .ghost-action) {
+.reading-panel :is(.reading-generate, .reading-actions .ghost-action) {
   width: auto;
   min-height: 28px;
   padding: 2px 12px;
@@ -139,12 +139,12 @@
   cursor: pointer;
 }
 
-.reading-panel[data-layout="pages"] .reading-generate:hover:not(:disabled) {
+.reading-panel .reading-generate:hover:not(:disabled) {
   background: var(--control-field-fill);
   filter: none;
 }
 
-.reading-panel[data-layout="pages"] .reading-generate:disabled {
+.reading-panel .reading-generate:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }

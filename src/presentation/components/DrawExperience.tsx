@@ -215,7 +215,7 @@ export function DrawExperience({
         revealed={spreadRevealed}
         source={readingProvider.source}
         onShare={shareRound}
-        layout={{ kind: "pages", heading }}
+        heading={heading}
       />
     </ReadingSpread>
   );
@@ -434,6 +434,7 @@ export function DrawExperience({
                   revealed={spreadRevealed}
                   source={readingProvider.source}
                   onShare={shareRound}
+                  heading={<ReadingTitle />}
                 />
               )}
             </div>
@@ -482,3 +483,15 @@ function viewedCard(spread: Spread, deck: Deck, instanceId?: string) {
 
 /** A still copy's page turns lead nowhere. */
 const STILL_PAGE = () => undefined;
+
+/**
+ * The reading's title under the table on one page, set as on the reading's
+ * own page; the panel's heading names it for assistive tech.
+ */
+function ReadingTitle() {
+  return (
+    <p className="book-title" lang="en" aria-hidden="true">
+      {BOOK_COPY.readingTitle}
+    </p>
+  );
+}

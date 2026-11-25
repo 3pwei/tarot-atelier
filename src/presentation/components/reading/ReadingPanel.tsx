@@ -9,10 +9,7 @@ import {
   READING_COPY,
   SOURCE_COPY,
 } from "@/presentation/components/reading/readingLabels";
-import {
-  ProfessionalNote,
-  ReadingSections,
-} from "@/presentation/components/reading/ReadingSections";
+import { ProfessionalNote } from "@/presentation/components/reading/ReadingSections";
 import { PrintedReading } from "@/presentation/components/reading/PrintedReading";
 import type { ReadingSession } from "@/presentation/components/reading/useReadingSession";
 import { SHARE_COPY } from "@/presentation/components/share/shareLabels";
@@ -25,23 +22,13 @@ interface ReadingPanelProps {
   readonly source: ReadingSource;
   /** Shares the finished round, with its reading if there is one. */
   readonly onShare: () => void;
-  /**
-   * `panel`: a night-sky panel under the table, its sections folding.
-   * `pages`: printed on the book's pages, every section open, after
-   * `heading`, the page's own title.
-   */
-  readonly layout?: ReadingLayout;
+  /** The reading's title, printed first, as the page around it sets it. */
+  readonly heading: ReactNode;
 }
 
-export type ReadingLayout =
-  | { readonly kind: "panel" }
-  | { readonly kind: "pages"; readonly heading: ReactNode };
-
-const PANEL: ReadingLayout = Object.freeze({ kind: "panel" });
-
 /**
- * The reading for a finished spread. It shows which deck and draws it
- * reads, labels pre-written readings as such and always carries the
+ * The reading for a finished spread, printed on the book's page in its ink.
+ * It labels pre-written readings as such and always carries the
  * entertainment disclaimer.
  */
 export function ReadingPanel({
@@ -49,7 +36,7 @@ export function ReadingPanel({
   revealed,
   source,
   onShare,
-  layout = PANEL,
+  heading,
 }: ReadingPanelProps) {
   const titleId = useId();
   const { state, build, stale } = session;
@@ -59,16 +46,11 @@ export function ReadingPanel({
 
   return (
     <section
-      className={
-        layout.kind === "pages"
-          ? "reading-panel paper-surface"
-          : "reading-panel night-surface"
-      }
-      data-layout={layout.kind}
+      className="reading-panel paper-surface"
       aria-labelledby={titleId}
       aria-busy={loading || undefined}
     >
-      {layout.kind === "pages" && layout.heading}
+      {heading}
       <header className="reading-panel__head">
         <h2 id={titleId}>{READING_COPY.title}</h2>
         {/* Labelled once there is a reading, by where it actually came from. */}
@@ -160,14 +142,11 @@ export function ReadingPanel({
 
           <ProfessionalNote topics={topics} />
 
-          {result && layout.kind === "pages" ? (
+          {result ? (
             <PrintedReading
               result={result}
               positionNames={positionNamesOf(build)}
             />
-          ) : null}
-          {result && layout.kind === "panel" ? (
-            <ReadingSections result={result} />
           ) : null}
         </>
       )}
