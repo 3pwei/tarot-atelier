@@ -101,8 +101,8 @@ export function AtelierBook() {
   }, [shown]);
 
   // While a page turns, the page it uncovers (or covers) lies underneath.
-  // A chapter's table is heavy to paint: until the leaf lands, only its
-  // heading lies there, so the turn never waits on it.
+  // A chapter's title shows only once the turn ends, and its table is heavy
+  // to paint: until the leaf lands, blank paper lies there.
   const underneath = turn ? pageUnderneath(turn) : shown;
   const stillUnderneath = turn !== undefined && isEntryPlace(underneath);
   const actions: PageActions = {
