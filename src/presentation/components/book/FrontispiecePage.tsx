@@ -7,13 +7,25 @@ import { PUBLIC_BASE_PATH } from "@/shared/config/publicBasePath";
 
 interface FrontispiecePageProps {
   readonly onToContents: () => void;
+  /**
+   * Where the contents is a page away (a phone), a tap anywhere on the plate
+   * turns to it too. With facing pages it is already open beside it.
+   */
+  readonly onPaperPress?: () => void;
 }
 
 /** Page one: the plate, and the reminder that this is for reflection. */
-export function FrontispiecePage({ onToContents }: FrontispiecePageProps) {
+export function FrontispiecePage({
+  onToContents,
+  onPaperPress,
+}: FrontispiecePageProps) {
   const titleId = useId();
   return (
-    <BookPage side="left" labelledBy={titleId}>
+    <BookPage
+      side="left"
+      labelledBy={titleId}
+      {...(onPaperPress ? { onPaperPress } : {})}
+    >
       <h1 id={titleId} className="sr-only" tabIndex={-1} data-page-title>
         {BOOK_COPY.bookLabel}
       </h1>

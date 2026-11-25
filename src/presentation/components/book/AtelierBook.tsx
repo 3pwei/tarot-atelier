@@ -419,7 +419,10 @@ function PlacePages({
           className="book-spread"
           data-focus={place.kind === "frontispiece" ? "left" : "right"}
         >
-          <FrontispiecePage onToContents={() => turnTo(CONTENTS)} />
+          <FrontispiecePage
+            onToContents={() => turnTo(CONTENTS)}
+            {...(facingPages ? {} : { onPaperPress: () => turnTo(CONTENTS) })}
+          />
           <ContentsPage
             {...(entries ? { entries } : {})}
             onOpen={turnTo}
