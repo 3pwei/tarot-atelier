@@ -208,6 +208,10 @@
   font-size: 12.5px;
 }
 
+.record .reading-fallback {
+  color: var(--book-ink-alert);
+}
+
 .record .history-reading-status {
   display: flex;
   flex-wrap: wrap;

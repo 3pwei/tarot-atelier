@@ -3,6 +3,9 @@
 .atelier-book {
   --book-ink: #3d2a18;
   --book-ink-soft: #6b5238;
+  /* Red ink for a notice the reader must not miss, such as an AI reading
+     replaced by an example; at least 4.5:1 on every paper tone. */
+  --book-ink-alert: #8f2416;
   --book-paper: #efe0bd;
   --book-paper-deep: #e4cf9f;
   --book-gold: #e6c57a;
