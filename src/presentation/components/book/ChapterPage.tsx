@@ -15,13 +15,15 @@ import { PageTitle } from "@/presentation/components/book/PageTitle";
 import { EntryHead } from "@/presentation/components/book/EntryHead";
 import { RunningHead } from "@/presentation/components/book/RunningHead";
 import type { TurnDirection } from "@/presentation/components/book/turning/turnPlan";
+import type { LeafPrints } from "@/presentation/components/book/turning/usePageTurns";
+import type { PrintedSpread } from "@/presentation/components/reading/ReadingSpread";
 
 interface ChapterPageProps {
   readonly entry: ContentsEntry;
   readonly templateId: string;
   readonly layout: TableLayout;
   /** Turns one leaf within the chapter, between its table and reading. */
-  readonly turnLeaf: (direction: TurnDirection) => void;
+  readonly turnLeaf: (direction: TurnDirection, prints: LeafPrints) => void;
   /** That leaf is turning: the pages keep what they show until it lands. */
   readonly leafTurning: boolean;
   readonly onBack: () => void;
@@ -42,6 +44,7 @@ export function ChapterPage({
   onBack,
 }: ChapterPageProps) {
   const titleId = useId();
+  const printedTitleId = useId();
   const [unfinished, setUnfinished] = useState(false);
   const [confirming, setConfirming] = useState(false);
   // Which spread of the reading the reader turned to (none means the
@@ -55,13 +58,37 @@ export function ChapterPage({
   );
   const back = () => (unfinished ? setConfirming(true) : onBack());
 
-  const showReadingPage = useCallback(
-    (next: number | undefined) => {
-      turnLeaf((next ?? -1) > (turnedTo ?? -1) ? "forward" : "back");
-      setTurnedTo(next);
-    },
-    [turnedTo, turnLeaf],
-  );
+  // The reading's spreads as still copies of this page, for the leaf that
+  // turns between them; the table, live, is never copied.
+  const printed = useRef<PrintedSpread>(undefined);
+  const printedPage = (page: number | undefined) => {
+    const spread = page === undefined ? undefined : printed.current?.(page);
+    return spread === undefined ? undefined : (
+      <BookPage
+        side="right"
+        width="spread"
+        labelledBy={printedTitleId}
+        folio={entry.page}
+      >
+        <ReadingRunningHead entry={entry} onToCards={STILL} />
+        <div className="book-chapter-table" data-layout={layout}>
+          {spread}
+        </div>
+      </BookPage>
+    );
+  };
+
+  const showReadingPage = (
+    next: number | undefined,
+    printedSpread?: PrintedSpread,
+  ) => {
+    if (printedSpread) printed.current = printedSpread;
+    turnLeaf((next ?? -1) > (turnedTo ?? -1) ? "forward" : "back", {
+      leaving: printedPage(turnedTo),
+      arriving: printedPage(next),
+    });
+    setTurnedTo(next);
+  };
 
   const reading = layout === "facing-pages" && readingPage !== undefined;
 
@@ -84,16 +111,9 @@ export function ChapterPage({
       folio={entry.page}
     >
       {reading ? (
-        <RunningHead
-          label={`${runningHeadFor(entry)} · ${BOOK_COPY.readingTitle}`}
-          action={
-            <BookFloatButton
-              label={BOOK_COPY.toCardsLabel}
-              onPress={() => showReadingPage(undefined)}
-            >
-              <span lang="en">{BOOK_COPY.toCards}</span>
-            </BookFloatButton>
-          }
+        <ReadingRunningHead
+          entry={entry}
+          onToCards={() => showReadingPage(undefined)}
         />
       ) : (
         <>
@@ -119,6 +139,13 @@ export function ChapterPage({
                 language="en"
               />
             ),
+            printedHeading: (
+              <PageTitle
+                id={printedTitleId}
+                title={BOOK_COPY.readingTitle}
+                language="en"
+              />
+            ),
           }}
           onUnfinishedChange={handleUnfinished}
         />
@@ -135,3 +162,26 @@ export function ChapterPage({
     </BookPage>
   );
 }
+
+/** The reading's running head, with the way back to the cards. */
+function ReadingRunningHead({
+  entry,
+  onToCards,
+}: {
+  readonly entry: ContentsEntry;
+  readonly onToCards: () => void;
+}) {
+  return (
+    <RunningHead
+      label={`${runningHeadFor(entry)} · ${BOOK_COPY.readingTitle}`}
+      action={
+        <BookFloatButton label={BOOK_COPY.toCardsLabel} onPress={onToCards}>
+          <span lang="en">{BOOK_COPY.toCards}</span>
+        </BookFloatButton>
+      }
+    />
+  );
+}
+
+/** A still copy's controls do nothing. */
+const STILL = () => undefined;

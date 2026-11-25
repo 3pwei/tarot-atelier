@@ -6,6 +6,7 @@ import { chapter } from "@/presentation/components/book/bookPlace";
 import { ChapterPage } from "@/presentation/components/book/ChapterPage";
 import type { ContentsEntry } from "@/presentation/components/book/contents";
 import type { TurnDirection } from "@/presentation/components/book/turning/turnPlan";
+import type { LeafPrints } from "@/presentation/components/book/turning/usePageTurns";
 import {
   openReading,
   ready,
@@ -46,6 +47,7 @@ beforeEach(() => {
  */
 function renderChapter() {
   const turns: TurnDirection[] = [];
+  const prints: LeafPrints[] = [];
   let landLeaf: (() => void) | undefined;
 
   function Book() {
@@ -56,8 +58,9 @@ function renderChapter() {
         entry={ENTRY}
         templateId="three-card"
         layout="facing-pages"
-        turnLeaf={(direction) => {
+        turnLeaf={(direction, printed) => {
           turns.push(direction);
+          prints.push(printed);
           setLeafTurning(true);
         }}
         leafTurning={leafTurning}
@@ -72,7 +75,7 @@ function renderChapter() {
     </AtelierServicesProvider>,
   );
   const land = () => act(() => landLeaf?.());
-  return { turns, land };
+  return { turns, prints, land };
 }
 
 async function finishTable() {
@@ -110,5 +113,23 @@ describe("ChapterPage on facing pages", { timeout: 15_000 }, () => {
     expect(
       screen.getByRole("heading", { name: "The Three Cards" }),
     ).toHaveFocus();
+  });
+
+  it("prints the reading on the leaf, but never a copy of the live table", async () => {
+    const { prints, land } = renderChapter();
+    await finishTable();
+    openReading();
+    land();
+    fireEvent.click(screen.getByRole("button", { name: "回到牌陣" }));
+
+    const [toReading, toCards] = prints;
+    expect(toReading?.leaving).toBeUndefined();
+    expect(toCards?.arriving).toBeUndefined();
+    // The reading's page, whole: running head, title and reading.
+    render(<>{toReading?.arriving}</>);
+    const copy = document.body.lastElementChild;
+    expect(copy).toHaveTextContent("The Three Cards · Card Reading");
+    expect(copy).toHaveTextContent("塔羅解讀僅供娛樂");
+    expect(toCards?.leaving).toBeDefined();
   });
 });

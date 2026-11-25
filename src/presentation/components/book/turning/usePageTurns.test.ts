@@ -36,7 +36,7 @@ function renderTurns(options: Partial<PageTurnsOptions> = {}) {
 describe("usePageTurns turnLeaf", () => {
   it("turns one leaf over the place shown, until it lands", async () => {
     const { result } = renderTurns();
-    act(() => result.current.turnLeaf("forward"));
+    act(() => result.current.turnLeaf("forward", {}));
 
     expect(result.current.turn).toMatchObject({
       plan: { kind: "single", direction: "forward" },
@@ -55,7 +55,7 @@ describe("usePageTurns turnLeaf", () => {
 
   it("lands when the leaf's animations report it has finished", () => {
     const { result } = renderTurns();
-    act(() => result.current.turnLeaf("back"));
+    act(() => result.current.turnLeaf("back", {}));
     const leaf = result.current.turn;
     if (!leaf) throw new Error("no leaf turning");
 
@@ -65,7 +65,7 @@ describe("usePageTurns turnLeaf", () => {
 
   it("turns no leaf under reduced motion", () => {
     const { result } = renderTurns({ reducedMotion: true });
-    act(() => result.current.turnLeaf("forward"));
+    act(() => result.current.turnLeaf("forward", {}));
     expect(result.current.turn).toBeUndefined();
     expect(result.current.leafTurning).toBe(false);
   });

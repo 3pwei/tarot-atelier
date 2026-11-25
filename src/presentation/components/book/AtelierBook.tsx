@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
   type RefObject,
 } from "react";
 import { BookCover } from "@/presentation/components/book/BookCover";
@@ -26,6 +27,7 @@ import { FrontispiecePage } from "@/presentation/components/book/FrontispiecePag
 import {
   LeafFace,
   LeftPageFace,
+  PrintedHalf,
 } from "@/presentation/components/book/LeafFace";
 import { RecordsPage } from "@/presentation/components/book/RecordsPage";
 import type { BookRect } from "@/presentation/components/book/turning/opening";
@@ -43,6 +45,7 @@ import { useFacingPages } from "@/presentation/components/book/turning/useFacing
 import {
   usePageTurns,
   type ActiveTurn,
+  type LeafPrints,
 } from "@/presentation/components/book/turning/usePageTurns";
 import type { TurnDirection } from "@/presentation/components/book/turning/turnPlan";
 import { useSoundPreference } from "@/presentation/components/book/turning/useSoundPreference";
@@ -191,11 +194,15 @@ export function AtelierBook() {
                 inert
                 aria-hidden="true"
               >
-                <LeftPageFace
-                  place={turn.to}
-                  entries={entries}
-                  soundOn={sound.pageSounds}
-                />
+                {turn.prints ? (
+                  <PrintedHalf page={turn.prints.arriving} half="left" />
+                ) : (
+                  <LeftPageFace
+                    place={turn.to}
+                    entries={entries}
+                    soundOn={sound.pageSounds}
+                  />
+                )}
               </div>
             )}
             <PageTurn
@@ -204,16 +211,22 @@ export function AtelierBook() {
               box={leafBox}
               clip={facingPages ? openBook(leafBox) : leafBox}
               face={
-                <LeafFace
-                  place={leafPlace(turn)}
-                  entries={entries}
-                  soundOn={sound.pageSounds}
-                  lit={turn.to}
-                />
+                turn.prints ? (
+                  <PrintedHalf page={leafPrint(turn)} half="right" />
+                ) : (
+                  <LeafFace
+                    place={leafPlace(turn)}
+                    entries={entries}
+                    soundOn={sound.pageSounds}
+                    lit={turn.to}
+                  />
+                )
               }
               {...(turn.plan.direction === "forward"
                 ? {
-                    under: (
+                    under: turn.prints ? (
+                      <PrintedHalf page={turn.prints.arriving} half="right" />
+                    ) : (
                       <LeafFace
                         place={turn.to}
                         entries={entries}
@@ -224,7 +237,9 @@ export function AtelierBook() {
                 : {})}
               {...(facingPages
                 ? {
-                    back: (
+                    back: turn.prints ? (
+                      <PrintedHalf page={backPrint(turn)} half="left" />
+                    ) : (
                       <LeftPageFace
                         place={backOnLeft(turn)}
                         entries={entries}
@@ -269,6 +284,20 @@ function leftPage(leaf: LeafBox): LeafBox {
   return { ...leaf, left: leaf.left - leaf.width };
 }
 
+/** Within a place, the copy printed on the leaf's face: leaving, or arriving. */
+function leafPrint(turn: ActiveTurn): ReactNode {
+  return turn.plan.kind === "single" && turn.plan.direction === "forward"
+    ? turn.prints?.leaving
+    : turn.prints?.arriving;
+}
+
+/** Within a place, the copy printed on the leaf's back: arriving, or leaving. */
+function backPrint(turn: ActiveTurn): ReactNode {
+  return turn.plan.kind === "single" && turn.plan.direction === "forward"
+    ? turn.prints?.arriving
+    : turn.prints?.leaving;
+}
+
 /** The page printed on the leaf that turns: the one leaving, or arriving. */
 function leafPlace(turn: ActiveTurn): BookPlace {
   const { plan } = turn;
@@ -283,7 +312,7 @@ interface PageActions {
   readonly open: (book: DOMRect) => void;
   readonly back: () => void;
   /** Turns one leaf within the page shown (see `usePageTurns`). */
-  readonly turnLeaf: (direction: TurnDirection) => void;
+  readonly turnLeaf: (direction: TurnDirection, prints: LeafPrints) => void;
   readonly leafTurning: boolean;
   readonly sound: { readonly on: boolean; readonly onToggle: () => void };
 }

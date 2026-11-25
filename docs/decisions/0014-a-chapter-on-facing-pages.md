@@ -16,6 +16,9 @@ On a wide screen a chapter was one tall page across both halves of the open book
   - Neither page scrolls. The board fills the left page as far as its 3:2 shape allows; the stage is a size container.
 - **Arranging takes the notes page.** On facing pages, the main question is put away while a layout is edited. The spread library and position editor are set close: chips and the save action on one line, the four placement numbers in one row. With both, the page still fits at 1280×720.
 - **The reading is a leaf turn away.** On facing pages, `Card Reading ›` asks the chapter to `turnLeaf("forward")`. This is a new `usePageTurns` turn whose `from` and `to` are the same place. While it turns, `leafTurning` is true and the chapter keeps showing the table. The render that lifts the leaf away also shows the reading, so no frame falls between them.
+  - The leaf carries what the pages will show, so it lands with text on it rather than blank paper. `turnLeaf` takes `LeafPrints`: still copies of the whole page being left and the page arriving.
+  - `ReadingPages.show` hands the chapter a `PrintedSpread` that draws any spread of the reading still. The chapter wraps it in its running head and page, and `PrintedHalf` shows the half each side of the leaf needs.
+  - The live table is never copied, so its side of a turn stays blank paper.
   - The running head reads "… · Card Reading" and offers `‹ The Cards` (回到牌陣), which turns back.
   - Focus goes to the title after each turn, as after any turn. Under reduced motion, the reading swaps at once.
 - **Long readings run on.** The reading is laid out in two CSS columns (`column-fill: auto`) inside a window of one spread. `ReadingSpread` counts the spreads its columns run to (`spreadCount`, measured by `ResizeObserver` and `MutationObserver`) and shows one spread at a time with `‹ Previous` / `Next ›`.

@@ -11,6 +11,7 @@ import {
   pickAll,
   reveal,
   openChapter,
+  readingPanel,
 } from "./support/spreadTable";
 
 /** A reading's sections, folding under the table or printed on the pages. */
@@ -35,7 +36,7 @@ async function finishSpread(page: Page, answer: EndpointAnswer) {
   await openChapter(page);
   await askMainQuestion(page, "面試結果");
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
-  const panel = page.locator(".reading-panel");
+  const panel = readingPanel(page);
   await expect(page.getByRole("button", { name: "看解讀" })).toHaveCount(0);
 
   await deckPile(page).click();

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { BookPlace } from "@/presentation/components/book/bookPlace";
 import type { ContentsEntry } from "@/presentation/components/book/contents";
 import { ContentsPage } from "@/presentation/components/book/ContentsPage";
@@ -61,6 +62,27 @@ export function LeftPageFace({ place }: LeafFaceProps) {
  * and no torn-edge mask. It only ever moves or hides under a moving leaf, and
  * painting a full page there delayed the turn's first frame.
  */
-function PaperFace() {
+export function PaperFace() {
   return <div className="leaf-paper" />;
+}
+
+export type PageHalf = "left" | "right";
+
+/**
+ * One half of a still copy of a page that spans the open book: what a leaf
+ * shows on one side. Without a copy, blank paper.
+ */
+export function PrintedHalf({
+  page,
+  half,
+}: {
+  readonly page: ReactNode | undefined;
+  readonly half: PageHalf;
+}) {
+  if (page === undefined) return <PaperFace />;
+  return (
+    <div className="leaf-half" data-half={half}>
+      {page}
+    </div>
+  );
 }

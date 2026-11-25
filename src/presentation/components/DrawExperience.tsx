@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { ReadingRequester } from "@/application/use-cases/requestReading";
 import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type { RandomSource } from "@/domain/deck/draw";
@@ -41,6 +48,7 @@ import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
 import type { TableLayout } from "@/presentation/components/draw/tableLayout";
 import {
   ReadingSpread,
+  type PrintedSpread,
   type ReadingPages,
 } from "@/presentation/components/reading/ReadingSpread";
 import { tableAbilities } from "@/presentation/components/spread/tableMode";
@@ -195,9 +203,37 @@ export function DrawExperience({
     spreadRevealed &&
     roundKey !== undefined &&
     readingRound === roundKey;
+  // One spread of the reading on facing pages, live or as a still copy.
+  const readingOnPages = (
+    page: number,
+    heading: ReactNode,
+    onPage: (page: number) => void,
+  ) => (
+    <ReadingSpread page={page} onPage={onPage}>
+      <ReadingPanel
+        session={reading}
+        revealed={spreadRevealed}
+        source={readingProvider.source}
+        onShare={shareRound}
+        layout={{ kind: "pages", heading }}
+      />
+    </ReadingSpread>
+  );
+  // The still copy sits where the live one would, so it lays out the same.
+  const printedSpread: PrintedSpread = (page) => (
+    <div className="draw-experience">
+      <div className="draw-table paper-surface" data-layout="facing-pages">
+        <div className="draw-table__reading">
+          {readingOnPages(page, readingPages?.printedHeading, STILL_PAGE)}
+        </div>
+      </div>
+    </div>
+  );
+  const showReadingPage = (page: number | undefined) =>
+    readingPages?.show(page, printedSpread);
   const openReading = () =>
     layout === "facing-pages" && readingPages
-      ? readingPages.show(0)
+      ? showReadingPage(0)
       : setReadingRound(roundKey);
 
   const unfinished = arranging || (filled > 0 && !spreadRevealed);
@@ -255,15 +291,7 @@ export function DrawExperience({
       <div className="draw-table paper-surface" data-layout={layout}>
         {readingPage !== undefined && readingPages ? (
           <div className="draw-table__reading">
-            <ReadingSpread page={readingPage} onPage={readingPages.show}>
-              <ReadingPanel
-                session={reading}
-                revealed={spreadRevealed}
-                source={readingProvider.source}
-                onShare={shareRound}
-                layout={{ kind: "pages", heading: readingPages.heading }}
-              />
-            </ReadingSpread>
+            {readingOnPages(readingPage, readingPages.heading, showReadingPage)}
           </div>
         ) : (
           <>
@@ -451,3 +479,6 @@ function viewedCard(spread: Spread, deck: Deck, instanceId?: string) {
   const card = placed ? deck.getCard(placed.instance.cardId) : undefined;
   return placed && card ? { ...placed, card } : undefined;
 }
+
+/** A still copy's page turns lead nowhere. */
+const STILL_PAGE = () => undefined;

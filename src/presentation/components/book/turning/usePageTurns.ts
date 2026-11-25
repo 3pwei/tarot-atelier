@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { PageSound } from "@/application/ports/pageSound";
 import type { BookPlace } from "@/presentation/components/book/bookPlace";
 import { samePlace } from "@/presentation/components/book/bookPlace";
@@ -20,6 +26,18 @@ export interface ActiveTurn {
   readonly plan: TurnPlan;
   readonly from: BookPlace;
   readonly to: BookPlace;
+  /** Within a place, what its pages print before and after the leaf turns. */
+  readonly prints?: LeafPrints;
+}
+
+/**
+ * Still copies of a whole page (both halves of the open book), printed on
+ * a leaf turning within a place. One left out is blank paper, as a live
+ * table cannot be copied.
+ */
+export interface LeafPrints {
+  readonly leaving?: ReactNode;
+  readonly arriving?: ReactNode;
 }
 
 export interface PageTurnsOptions {
@@ -48,7 +66,7 @@ export interface PageTurns {
    * table and its reading. The place stays; nothing turns with reduced
    * motion or while another turn plays.
    */
-  readonly turnLeaf: (direction: TurnDirection) => void;
+  readonly turnLeaf: (direction: TurnDirection, prints: LeafPrints) => void;
   /**
    * A leaf is turning within the place shown. The page keeps what it showed
    * until this ends, then changes in the same frame the leaf is lifted away.
@@ -147,21 +165,25 @@ export function usePageTurns({
   useEffect(() => {
     reduced.current = reducedMotion;
   });
-  const turnLeaf = useCallback((direction: TurnDirection) => {
-    if (reduced.current) return;
-    setState((now) =>
-      now.turn
-        ? now
-        : {
-            ...now,
-            turn: {
-              plan: { kind: "single", direction },
-              from: now.shown,
-              to: now.shown,
+  const turnLeaf = useCallback(
+    (direction: TurnDirection, prints: LeafPrints) => {
+      if (reduced.current) return;
+      setState((now) =>
+        now.turn
+          ? now
+          : {
+              ...now,
+              turn: {
+                plan: { kind: "single", direction },
+                from: now.shown,
+                to: now.shown,
+                prints,
+              },
             },
-          },
-    );
-  }, []);
+      );
+    },
+    [],
+  );
 
   return {
     shown: state.shown,

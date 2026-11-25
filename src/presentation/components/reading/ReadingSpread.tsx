@@ -18,11 +18,19 @@ import {
 export interface ReadingPages {
   /** The spread of the reading lying open; none means the table. */
   readonly page: number | undefined;
-  /** Turns to a spread of the reading, or back to the table. */
-  readonly show: (page: number | undefined) => void;
+  /**
+   * Turns to a spread of the reading, or back to the table. `printed`
+   * draws any spread of the reading still, for the leaf that turns.
+   */
+  readonly show: (page: number | undefined, printed: PrintedSpread) => void;
   /** The reading's title, first in its flow. */
   readonly heading: ReactNode;
+  /** The title as a still copy prints it, never taking the focus. */
+  readonly printedHeading: ReactNode;
 }
+
+/** A still copy of one spread of the reading. */
+export type PrintedSpread = (page: number) => ReactNode;
 
 interface ReadingSpreadProps {
   readonly page: number;

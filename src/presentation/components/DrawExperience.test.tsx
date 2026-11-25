@@ -63,7 +63,12 @@ function TableOnPages({
     <DrawExperience
       {...props}
       layout="facing-pages"
-      readingPages={{ page, show: setPage, heading: <h2>Card Reading</h2> }}
+      readingPages={{
+        page,
+        show: (next) => setPage(next),
+        heading: <h2>Card Reading</h2>,
+        printedHeading: <h2>Card Reading</h2>,
+      }}
     />
   );
 }

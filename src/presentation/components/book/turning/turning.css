@@ -627,3 +627,21 @@
   box-shadow: inset 0 0 40px rgba(70, 30, 4, 0.5);
   mask: var(--book-page-edge) 0 0 / 100% 100% no-repeat;
 }
+
+/* Half of a still copy of a page spanning the open book (see PrintedHalf):
+   the copy keeps its full width, and the leaf shows the half it carries. */
+.leaf-half {
+  display: flex;
+  overflow: hidden;
+  flex: 1;
+}
+
+.leaf-half > .book-page {
+  width: 200%;
+  flex: none;
+  animation: none;
+}
+
+.leaf-half[data-half="right"] > .book-page {
+  margin-left: -100%;
+}
