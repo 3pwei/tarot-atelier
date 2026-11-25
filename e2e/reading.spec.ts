@@ -7,6 +7,7 @@ import {
 import {
   askMainQuestion,
   deckPile,
+  openReading,
   pickAll,
   reveal,
   openChapter,
@@ -32,14 +33,13 @@ async function finishSpread(page: Page, answer: EndpointAnswer) {
   await askMainQuestion(page, "面試結果");
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
   const panel = page.locator(".reading-panel");
-  await expect(
-    panel.getByRole("button", { name: "翻開所有牌後即可解讀" }),
-  ).toBeDisabled();
+  await expect(page.getByRole("button", { name: "看解讀" })).toHaveCount(0);
 
   await deckPile(page).click();
   await pickAll(page, 3);
   for (const index of [1, 2, 3]) await reveal(page, index);
   await expect(page.getByText("牌陣已完成")).toBeVisible();
+  await openReading(page);
   await panel.scrollIntoViewIfNeeded();
   return { panel, received };
 }

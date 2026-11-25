@@ -6,7 +6,7 @@ import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type { RandomSource } from "@/domain/deck/draw";
 import type { ReadingRecord } from "@/domain/history/readingHistory";
 import type { Deck } from "@/domain/deck/deck";
-import { findPlacedCard } from "@/domain/spread/round";
+import { findPlacedCard, roundKeyOf } from "@/domain/spread/round";
 import type { Spread, SpreadPosition } from "@/domain/spread/types";
 import { DealerDeck } from "@/presentation/components/draw/DealerDeck";
 import {
@@ -15,7 +15,6 @@ import {
 } from "@/presentation/components/spread/boardGeometry";
 import { BoardZoomControls } from "@/presentation/components/spread/BoardZoomControls";
 import { useShuffleGestures } from "@/presentation/components/draw/useShuffleGestures";
-import { HistoryDialog } from "@/presentation/components/history/HistoryDialog";
 import { useReadingHistory } from "@/presentation/components/history/useReadingHistory";
 import { useRoundRecorder } from "@/presentation/components/history/useRoundRecorder";
 import { ShareDialog } from "@/presentation/components/share/ShareDialog";
@@ -28,7 +27,10 @@ import { createRequestId as createReadingRequestId } from "@/presentation/compon
 import { useReadingServices } from "@/presentation/components/reading/useReadingServices";
 import { useReadingSession } from "@/presentation/components/reading/useReadingSession";
 import { ArrangeConfirmDialog } from "@/presentation/components/spread/ArrangeConfirmDialog";
-import { TableStatusBar } from "@/presentation/components/draw/TableStatusBar";
+import { TableHint } from "@/presentation/components/draw/TableHint";
+import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
+import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
+import { MainQuestionField } from "@/presentation/components/spread/MainQuestionField";
 import {
   SpreadBoard,
   visibleCenter,
@@ -93,13 +95,12 @@ export function DrawExperience({
     () => registry.get(STANDARD_DECK_ID) ?? registry.getSelected(),
     [registry],
   );
-  const { requester: readingRequester, recordServices: recordReadingServices } =
-    useReadingServices({
-      ...(readingRequesterOverride
-        ? { requester: readingRequesterOverride }
-        : {}),
-      createRequestId,
-    });
+  const { requester: readingRequester } = useReadingServices({
+    ...(readingRequesterOverride
+      ? { requester: readingRequesterOverride }
+      : {}),
+    createRequestId,
+  });
   const session = useSpreadSession(
     templateStorage,
     retiredTableStorage,
@@ -113,7 +114,6 @@ export function DrawExperience({
     [dispatch],
   );
   const history = useReadingHistory(historyStorage, announce);
-  const [showingHistory, setShowingHistory] = useState(false);
   const [sharing, setSharing] = useState<ReadingRecord>();
   const [inspected, setInspected] = useState<string>();
   const arrange = useArrangeMode({
@@ -171,6 +171,12 @@ export function DrawExperience({
   const spreadRevealed =
     filled > 0 && dealer.emptyCount === 0 && dealer.allRevealed;
 
+  // The reading opens on request, once per round: a new round closes it.
+  const [readingRound, setReadingRound] = useState<string>();
+  const roundKey = roundKeyOf(spread);
+  const readingOpen =
+    spreadRevealed && roundKey !== undefined && readingRound === roundKey;
+
   const unfinished = arranging || (filled > 0 && !spreadRevealed);
   useEffect(() => {
     onUnfinishedChange?.(unfinished);
@@ -220,13 +226,14 @@ export function DrawExperience({
       data-table-mode={arrange.mode}
       aria-busy={loading || undefined}
     >
-      <div className="draw-table">
-        <TableStatusBar
-          status={dealer.status}
-          remaining={dealer.remaining}
-          mainQuestion={spread.mainQuestion}
-          onMainQuestion={(text) => dispatch({ type: "main-question", text })}
-        />
+      <div className="draw-table paper-surface">
+        {/* The question comes first: dealing needs it. */}
+        <div className="draw-table__question">
+          <MainQuestionField
+            value={spread.mainQuestion}
+            onChange={(text) => dispatch({ type: "main-question", text })}
+          />
+        </div>
 
         <p className="spread-notice" role="status">
           {state.notice?.text}
@@ -250,7 +257,6 @@ export function DrawExperience({
             })
           }
           onClear={session.clear}
-          onOpenHistory={() => setShowingHistory(true)}
         />
 
         <div className="draw-table__stage spread-stage">
@@ -292,6 +298,27 @@ export function DrawExperience({
           />
         </div>
 
+        <TableHint status={dealer.status} remaining={dealer.remaining} />
+
+        {spreadRevealed && !arranging && !readingOpen && (
+          <div className="draw-table__reading-cue">
+            <BookFloatButton
+              label={BOOK_COPY.cardReadingLabel}
+              onPress={() => setReadingRound(roundKey)}
+            >
+              <span lang="en">{BOOK_COPY.cardReading}</span>
+            </BookFloatButton>
+          </div>
+        )}
+        {readingOpen && (
+          <ReadingPanel
+            session={reading}
+            revealed={spreadRevealed}
+            source={readingProvider.source}
+            onShare={shareRound}
+          />
+        )}
+
         <SpreadDetails
           positions={spread.positions}
           deck={deck}
@@ -304,39 +331,12 @@ export function DrawExperience({
           handlers={handlers}
           dispatch={dispatch}
         />
-
-        <ReadingPanel
-          session={reading}
-          revealed={spreadRevealed}
-          source={readingProvider.source}
-          onShare={shareRound}
-        />
-
-        <div className="draw-table__foot">
-          <span>
-            已抽 {filled} / {spread.positions.length} 個牌位
-          </span>
-          <span>牌陣庫和歷史紀錄保存在這台裝置</span>
-        </div>
       </div>
       {arrange.confirmation && (
         <ArrangeConfirmDialog
           confirmation={arrange.confirmation}
           onConfirm={arrange.confirm}
           onCancel={arrange.cancel}
-        />
-      )}
-      {showingHistory && (
-        <HistoryDialog
-          history={history.history}
-          registry={registry}
-          shareServices={shareServices}
-          readingServices={recordReadingServices}
-          onReading={history.attach}
-          now={now}
-          onRemove={history.remove}
-          onClearAll={history.clearAll}
-          onClose={() => setShowingHistory(false)}
         />
       )}
       {sharing && (

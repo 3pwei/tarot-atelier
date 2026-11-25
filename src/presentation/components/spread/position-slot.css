@@ -1,9 +1,9 @@
 /* A position on the board: its frame, number, handles, rotation and the cards dealt to it. */
 
-/* Frames and numbers belong to arranging; in play only the cards show. A
-   focused position still shows its number for keyboard users. */
+/* In play the frames are printed faintly on the page, so the spread shows
+   where its cards will fall; arranging inks them in. */
 .spread-board:not([data-arranging]) .spread-slot__frame {
-  opacity: 0;
+  opacity: 0.6;
 }
 
 .spread-slot {
@@ -50,9 +50,8 @@
   left: 50%;
   width: calc(var(--slot-h) * 1.25);
   aspect-ratio: 1;
-  border: 1px dashed rgba(230, 197, 122, 0.75);
+  border: 1px dashed var(--table-line);
   border-radius: 50%;
-  box-shadow: 0 0 1.4rem rgba(230, 197, 122, 0.25);
   content: "";
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -68,10 +67,10 @@
   top: 50%;
   left: 50%;
   padding: 0.15rem 0.5rem;
-  border: 1px solid rgba(251, 234, 184, 0.8);
+  border: 1px solid var(--table-ink);
   border-radius: 999px;
-  color: #1a1206;
-  background: var(--color-gold);
+  color: var(--book-paper);
+  background: var(--table-ink);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -84,26 +83,20 @@
   display: grid;
   inset: 0;
   place-items: center;
-  border: 1px dashed rgba(230, 197, 122, 0.55);
+  border: 1.5px dashed var(--table-line);
   border-radius: 6% / 4%;
-  background: radial-gradient(
-    circle at 50% 45%,
-    rgba(230, 197, 122, 0.1),
-    rgba(6, 5, 14, 0.35) 75%
-  );
-  box-shadow: inset 0 0 0 0.35cqw rgba(6, 5, 14, 0.4);
-  color: var(--color-gold);
+  background: color-mix(in srgb, var(--table-ink) 5%, transparent);
+  color: var(--table-ink);
 }
 
 /* The position's number, as a faint watermark in the middle of the frame,
    upright whatever the position's rotation. */
 .spread-slot__number {
-  font-family: var(--font-display);
-  font-size: calc(var(--slot-w) * 0.6);
+  font-family: var(--book-serif);
+  font-size: calc(var(--slot-w) * 0.5);
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
   line-height: 1;
-  opacity: 0.32;
+  opacity: 0.45;
   transform: rotate(calc(var(--rot) * -1));
   user-select: none;
 }
@@ -114,8 +107,9 @@
   z-index: 2;
   top: calc(100% + 0.3rem);
   left: 50%;
-  color: var(--color-moon);
-  font-size: clamp(0.7rem, calc(var(--slot-w) * 0.24), 0.95rem);
+  color: var(--table-ink);
+  font-family: var(--book-text);
+  font-size: clamp(0.8rem, calc(var(--slot-w) * 0.26), 1rem);
   letter-spacing: 0.08em;
   line-height: 1.2;
   white-space: nowrap;
@@ -125,16 +119,16 @@
 }
 
 .spread-slot[data-missing-question] .spread-slot__frame {
-  border-color: rgba(255, 154, 60, 0.75);
-  color: #ffb877;
+  border-color: var(--control-warning);
+  color: var(--control-warning);
 }
 
 .spread-slot[data-selected] .spread-slot__frame,
 .spread-slot[data-selected] .spread-slot__cards {
   border-radius: 6% / 4%;
   box-shadow:
-    0 0 0 2px rgba(230, 197, 122, 0.9),
-    0 0 1.6rem rgba(230, 197, 122, 0.45);
+    0 0 0 2px var(--table-ink),
+    0 0.4rem 1rem color-mix(in srgb, var(--table-ink) 30%, transparent);
 }
 
 /* The position's own control: an invisible button over the whole frame, for
@@ -162,11 +156,12 @@
   aspect-ratio: 1;
   padding: 0;
   place-items: center;
-  border: 1px solid rgba(251, 234, 184, 0.8);
+  border: 1px solid var(--table-ink);
   border-radius: 50%;
-  color: var(--color-gold);
-  background: rgba(14, 11, 30, 0.92);
-  box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.5);
+  color: var(--table-ink);
+  background: var(--book-paper);
+  box-shadow: 0 0.3rem 0.8rem
+    color-mix(in srgb, var(--table-ink) 35%, transparent);
   font-size: max(1rem, calc(var(--slot-w) * 0.18));
   transform: translate(40%, 40%) rotate(calc(var(--rot) * -1));
   cursor: grab;
@@ -174,14 +169,14 @@
 }
 
 .spread-slot[data-rotating] .spread-slot__rotate {
-  color: #1a1206;
-  background: var(--color-gold);
+  color: var(--book-paper);
+  background: var(--table-ink);
   cursor: grabbing;
 }
 
 .spread-slot__rotate:hover {
-  color: #1a1206;
-  background: var(--color-gold);
+  color: var(--book-paper);
+  background: var(--table-ink);
 }
 
 .spread-slot__rotate:focus-visible {
@@ -236,7 +231,8 @@
 }
 
 .spread-slot .drawn-card__body {
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.45);
+  /* Lit from the top-left like everything on the desk. */
+  box-shadow: 2px 6px 12px rgba(40, 18, 2, 0.35);
 }
 
 @media (max-width: 48rem) {

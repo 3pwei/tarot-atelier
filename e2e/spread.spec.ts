@@ -179,10 +179,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   await expect(page.getByText("牌陣已完成")).toBeVisible();
 
   // Moving a drawn position keeps its card: no redraw.
-  const remaining = await page
-    .locator(".draw-status > span")
-    .last()
-    .textContent();
+  const remaining = await page.getByText(/^剩餘 \d+ 張$/u).textContent();
   const drawnName = await page
     .getByRole("button", { name: /^牌位 1 主牌：/u })
     .getAttribute("aria-label");
@@ -197,9 +194,7 @@ test("cards land exactly on moved, rotated positions of a zoomed table", async (
   await expect(
     page.getByRole("button", { name: drawnName ?? "" }),
   ).toBeVisible();
-  await expect(page.locator(".draw-status > span").last()).toHaveText(
-    remaining ?? "",
-  );
+  await expect(page.getByText(/^剩餘 \d+ 張$/u)).toHaveText(remaining ?? "");
 
   // Confirming returns the cards and opens editing at once.
   await arrange(page);
@@ -513,11 +508,15 @@ test("during play, dragging or holding a position never moves or rotates it", as
 test("position numbers stay out of the way of dealt cards during play", async ({
   page,
 }) => {
-  // In play the numbers live only in the hidden frames.
-  await expect(slot(page, 1).locator(".spread-slot__frame")).toHaveCSS(
-    "opacity",
-    "0",
-  );
+  // In play the numbers live only in the faintly printed frames, which the
+  // dealt cards cover.
+  expect(
+    Number(
+      await slot(page, 1)
+        .locator(".spread-slot__frame")
+        .evaluate((node) => getComputedStyle(node).opacity),
+    ),
+  ).toBeLessThan(1);
 
   await deckPile(page).click();
   await pickAll(page, 3);
@@ -559,13 +558,11 @@ test("the table looks the same while shuffling and dealing, except for the cards
 }) => {
   const board = page.locator(".spread-board");
   const ornament = board.locator(".table-ornament");
-  const light = page.locator(".draw-status__light");
   // Read once, without retrying, so an effect that stops later still fails.
   const animationOf = (target: Locator) =>
     target.evaluate((element) => getComputedStyle(element).animationName);
   const expectStill = async () => {
     expect(await animationOf(ornament)).toBe("none");
-    expect(await animationOf(light)).toBe("none");
   };
   const sizeOf = async () => {
     const box = await board.boundingBox();
@@ -790,7 +787,7 @@ test("a library saved before short names gives the built-ins theirs after a relo
   await expect(slot(page, 2).locator(".spread-slot__name")).toHaveCount(0);
 });
 
-test("in play the table steps back and hides frames and numbers; arranging shows them", async ({
+test("in play the table steps back and prints its frames faintly; arranging inks them in", async ({
   page,
 }) => {
   const table = page.locator(".spread-board__table");
@@ -798,9 +795,9 @@ test("in play the table steps back and hides frames and numbers; arranging shows
   await expect
     .poll(() => table.evaluate((node) => getComputedStyle(node).transform))
     .toContain("0.7");
-  expect(await frame.evaluate((node) => getComputedStyle(node).opacity)).toBe(
-    "0",
-  );
+  expect(
+    Number(await frame.evaluate((node) => getComputedStyle(node).opacity)),
+  ).toBeLessThan(1);
   await page.getByRole("button", { name: "編輯牌陣" }).click();
   await expect
     .poll(() => table.evaluate((node) => getComputedStyle(node).transform))

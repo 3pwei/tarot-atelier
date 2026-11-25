@@ -3,6 +3,7 @@ import { answerReadings } from "./support/readingEndpoint";
 import {
   askMainQuestion,
   deckPile,
+  openReading,
   pickAll,
   reveal,
   openChapter,
@@ -28,6 +29,7 @@ test("paints a share image of the finished table and downloads it where sharing 
   await pickAll(page, 3);
   for (const index of [1, 2, 3]) await reveal(page, index);
   await expect(page.getByText("牌陣已完成")).toBeVisible();
+  await openReading(page);
   const panel = page.locator(".reading-panel");
   await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();

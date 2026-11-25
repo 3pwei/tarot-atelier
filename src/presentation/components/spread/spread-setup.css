@@ -4,6 +4,5 @@
   position: relative;
   z-index: 5;
   display: grid;
-  gap: 0.9rem;
-  padding: 0.5rem clamp(1rem, 3vw, 2rem) 0;
+  gap: 16px;
 }

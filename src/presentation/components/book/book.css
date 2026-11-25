@@ -344,6 +344,29 @@
   }
 }
 
+/* A chapter's table is printed on the page itself, in the page's ink. */
+.book-chapter-table {
+  /* The running head, title, question and controls above the table, and
+     the hint below it, share the screen with it. */
+  --table-screen-margin: 25rem;
+  margin-top: var(--book-space-2);
+  color: var(--book-ink);
+  font-family: var(--book-text);
+}
+
+/* On a phone the table itself bleeds to the page's edges, so it keeps its
+   width: narrower, the positions crowd the pack and Chrome's touch
+   adjustment catches one finger of a pinch on a position. */
+.book-chapter-table .draw-table__stage {
+  margin-inline: calc(var(--book-page-inline) * -1);
+}
+
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
+  .book-chapter-table .draw-table__stage {
+    margin-inline: 0;
+  }
+}
+
 /* ---- frontispiece ---- */
 .book-frontispiece {
   position: relative;

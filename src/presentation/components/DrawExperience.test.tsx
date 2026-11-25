@@ -133,6 +133,19 @@ function reveal(index: number, role = "主牌") {
   );
 }
 
+/** Once every card is revealed, the reading opens from "Card Reading". */
+function openReading() {
+  fireEvent.click(screen.getByRole("button", { name: "看解讀" }));
+}
+
+/** The history as the table stored it. */
+function storedRecords(storage: MemoryStorage): readonly {
+  readonly mainQuestion: string;
+  readonly reading?: unknown;
+}[] {
+  return JSON.parse(storage.value ?? '{"records":[]}').records;
+}
+
 function slot(index: number): HTMLElement {
   const element = document.querySelector<HTMLElement>(
     `[data-index='${index}']`,
@@ -297,20 +310,31 @@ describe("DrawExperience spread table", () => {
     await screen.findByText("牌陣已完成");
   });
 
-  it("reads the finished spread offline, labelled as a sample", async () => {
+  it("offers the reading only once every card is revealed", async () => {
     renderTable();
     await ready();
     // An empty table has nothing unrevealed, but nothing to read either.
-    expect(
-      screen.getByRole("button", { name: "翻開所有牌後即可解讀" }),
-    ).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "看解讀" })).toBeNull();
     await shuffleAndPick();
-    expect(
-      screen.getByRole("button", { name: "翻開所有牌後即可解讀" }),
-    ).toBeDisabled();
+    reveal(1);
+    expect(screen.queryByRole("button", { name: "看解讀" })).toBeNull();
+    [2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+    expect(screen.queryByRole("region", { name: "解讀" })).toBeNull();
+
+    openReading();
+    expect(screen.getByRole("region", { name: "解讀" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "看解讀" })).toBeNull();
+  });
+
+  it("reads the finished spread offline, labelled as a sample", async () => {
+    renderTable();
+    await ready();
+    await shuffleAndPick();
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
 
+    openReading();
     fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
     expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
@@ -327,22 +351,16 @@ describe("DrawExperience spread table", () => {
     reveal(3);
     await screen.findByText("牌陣已完成");
 
-    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
-    const panel = screen.getByRole("dialog", { name: /歷史紀錄/u });
-    const entries = within(panel).getAllByRole("listitem");
-    expect(entries).toHaveLength(1);
-    expect(entries[0]).toHaveTextContent("這份新工作適合我嗎？");
-    expect(entries[0]).toHaveTextContent("今天 02:10");
-    expect(entries[0]).toHaveTextContent("未解讀");
-    fireEvent.click(within(panel).getByRole("button", { name: "關閉" }));
+    const [recorded] = storedRecords(historyStorage);
+    expect(storedRecords(historyStorage)).toHaveLength(1);
+    expect(recorded?.mainQuestion).toBe("這份新工作適合我嗎？");
+    expect(recorded?.reading).toBeUndefined();
 
+    openReading();
     fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     await screen.findByText("全局關聯");
-    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
-    const reopened = screen.getByRole("dialog", { name: /歷史紀錄/u });
-    expect(within(reopened).getAllByRole("listitem")).toHaveLength(1);
-    expect(within(reopened).getByText("已解讀")).toBeInTheDocument();
-    expect(JSON.parse(historyStorage.value ?? "{}").records).toHaveLength(1);
+    expect(storedRecords(historyStorage)).toHaveLength(1);
+    expect(storedRecords(historyStorage)[0]?.reading).toBeDefined();
   });
 
   it("shares the finished table with its current reading", async () => {
@@ -351,6 +369,7 @@ describe("DrawExperience spread table", () => {
     await shuffleAndPick();
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
+    openReading();
     fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     await screen.findByText("全局關聯");
 
@@ -365,59 +384,13 @@ describe("DrawExperience spread table", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("shares a round from the history, inside the same panel", async () => {
-    const { share } = renderTable();
-    await ready("這份新工作適合我嗎？");
-    await shuffleAndPick();
-    [1, 2, 3].forEach((index) => reveal(index));
-    await screen.findByText("牌陣已完成");
-
-    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
-    const panel = screen.getByRole("dialog", { name: /歷史紀錄/u });
-    fireEvent.click(
-      within(panel).getByRole("button", { name: /這份新工作適合我嗎/u }),
-    );
-    fireEvent.click(within(panel).getByRole("button", { name: "分享" }));
-    expect(screen.getAllByRole("dialog")).toHaveLength(1);
-    await screen.findByAltText("要分享的圖卡預覽");
-    fireEvent.click(screen.getByRole("button", { name: "複製文字" }));
-    await screen.findByText("已複製文字。");
-    expect(share.sharer.copyText.mock.calls[0]?.[0]).toContain(
-      "主問題：這份新工作適合我嗎？",
-    );
-    fireEvent.click(screen.getByRole("button", { name: "‹ 返回" }));
-    expect(
-      screen.getByRole("button", { name: "刪除這筆" }),
-    ).toBeInTheDocument();
-  });
-
-  it("keeps a deleted record deleted after a reload", async () => {
-    const historyStorage = new MemoryStorage();
-    const first = renderTable({ historyStorage });
-    await ready();
-    await shuffleAndPick();
-    [1, 2, 3].forEach((index) => reveal(index));
-    await screen.findByText("牌陣已完成");
-
-    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
-    fireEvent.click(screen.getByRole("button", { name: /這段時間的方向？/u }));
-    fireEvent.click(screen.getByRole("button", { name: "刪除這筆" }));
-    fireEvent.click(screen.getByRole("button", { name: "刪除" }));
-    expect(historyStorage.value).toBeNull();
-    first.unmount();
-
-    renderTable({ historyStorage });
-    await screen.findByText("請先輸入這次想問的主問題");
-    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
-    expect(screen.getByText(/還沒有紀錄/u)).toBeInTheDocument();
-  });
-
   it("clears the reading when the table starts over, so it never sits under new cards", async () => {
     renderTable();
     await ready();
     await shuffleAndPick();
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
+    openReading();
     fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     await screen.findByText("全局關聯");
 
@@ -429,7 +402,9 @@ describe("DrawExperience spread table", () => {
     await shuffleAndPick();
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
+    // The new round's reading waits to be asked for again.
     expect(screen.queryByText("全局關聯")).toBeNull();
+    openReading();
     expect(screen.getByRole("button", { name: "產生解讀" })).toBeEnabled();
   });
 
@@ -805,12 +780,7 @@ describe("DrawExperience spread table", () => {
     expect(document.querySelectorAll("[data-draw-card]")).toHaveLength(0);
     expect(document.querySelectorAll("[data-slot]")).toHaveLength(3);
     expect(screen.getByText("剩餘 78 張")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "歷史紀錄" }));
-    const panel = screen.getByRole("dialog", { name: /歷史紀錄/u });
-    expect(within(panel).getAllByRole("listitem")[0]).toHaveTextContent(
-      "今年的重心？",
-    );
+    expect(storedRecords(historyStorage)[0]?.mainQuestion).toBe("今年的重心？");
   });
 
   it("starts from the default spread at once when the library is unreadable", async () => {

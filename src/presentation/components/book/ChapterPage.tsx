@@ -42,7 +42,7 @@ export function ChapterPage({ entry, templateId, onBack }: ChapterPageProps) {
         title={entry.title}
         language={entry.titleLanguage}
       />
-      <div className="book-plate">
+      <div className="book-chapter-table">
         <DrawExperience
           templateId={templateId}
           onUnfinishedChange={handleUnfinished}

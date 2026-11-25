@@ -4,7 +4,7 @@
    the cascade order: keep it here, not in component imports, so development
    and production builds agree. */
 @import "../presentation/components/draw/draw-table.css";
-@import "../presentation/components/draw/table-status-bar.css";
+@import "../presentation/components/draw/table-hint.css";
 @import "../presentation/components/draw/deck-stack.css";
 @import "../presentation/components/draw/table-deck.css";
 @import "../presentation/components/draw/vortex.css";
