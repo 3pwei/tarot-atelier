@@ -101,8 +101,9 @@ export function usePageTurns({
       place,
       shown: turn ? state.shown : place,
       turn,
-      // The pages a turn lays underneath are already in place: no fade.
-      arrival: turn ? "turned" : "swapped",
+      // A turn leaves the page beneath untouched, arrival included:
+      // restyling it would repaint the whole book in the turn's first frame.
+      arrival: turn ? state.arrival : "swapped",
     });
   }
 
