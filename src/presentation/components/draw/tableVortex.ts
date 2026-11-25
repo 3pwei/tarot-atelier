@@ -52,8 +52,8 @@ export const VORTEX_TIERS: readonly VortexTier[] = Object.freeze([
 ]);
 
 /**
- * The opening before the first card leaves: the table dims, the pack draws a
- * breath of light and a ring of light spreads out from it.
+ * The opening before the first card leaves: the pack draws a breath of light
+ * and a ring of light spreads out from it.
  */
 export const VORTEX_RITUAL_MS = 900;
 
