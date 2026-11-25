@@ -34,49 +34,39 @@ function renderTurns(options: Partial<PageTurnsOptions> = {}) {
 }
 
 describe("usePageTurns turnLeaf", () => {
-  it("turns one leaf over the place shown, and settles once it lands", async () => {
+  it("turns one leaf over the place shown, until it lands", async () => {
     const { result } = renderTurns();
-    let settled = false;
-    act(() => {
-      void result.current.turnLeaf("forward").then(() => {
-        settled = true;
-      });
-    });
+    act(() => result.current.turnLeaf("forward"));
 
     expect(result.current.turn).toMatchObject({
       plan: { kind: "single", direction: "forward" },
       from: PLACE,
       to: PLACE,
     });
-    expect(settled).toBe(false);
+    expect(result.current.leafTurning).toBe(true);
 
     await act(async () => {
       vi.advanceTimersByTime(SINGLE_TURN_MS + TURN_GRACE_MS);
     });
     expect(result.current.turn).toBeUndefined();
+    expect(result.current.leafTurning).toBe(false);
     expect(result.current.shown).toEqual(PLACE);
-    expect(settled).toBe(true);
   });
 
-  it("settles when the leaf's animations report it has finished", async () => {
+  it("lands when the leaf's animations report it has finished", () => {
     const { result } = renderTurns();
-    let settled = false;
-    act(() => {
-      void result.current.turnLeaf("back").then(() => {
-        settled = true;
-      });
-    });
+    act(() => result.current.turnLeaf("back"));
     const leaf = result.current.turn;
     if (!leaf) throw new Error("no leaf turning");
 
-    await act(async () => result.current.finishTurn(leaf));
-    expect(result.current.turn).toBeUndefined();
-    expect(settled).toBe(true);
+    act(() => result.current.finishTurn(leaf));
+    expect(result.current.leafTurning).toBe(false);
   });
 
-  it("settles at once, with no leaf, under reduced motion", async () => {
+  it("turns no leaf under reduced motion", () => {
     const { result } = renderTurns({ reducedMotion: true });
-    await act(() => result.current.turnLeaf("forward"));
+    act(() => result.current.turnLeaf("forward"));
     expect(result.current.turn).toBeUndefined();
+    expect(result.current.leafTurning).toBe(false);
   });
 });

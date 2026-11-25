@@ -70,15 +70,16 @@ export function AtelierBook() {
   const reducedMotion = useMotionMode() === "reduced";
   const { pageSound } = useAtelierServices();
   const sound = useSoundPreference();
-  const { shown, turn, arrival, finishTurn, turnLeaf } = usePageTurns({
-    place,
-    turned,
-    entries,
-    facingPages,
-    reducedMotion,
-    sound: pageSound,
-    soundOn: sound.pageSounds,
-  });
+  const { shown, turn, arrival, finishTurn, turnLeaf, leafTurning } =
+    usePageTurns({
+      place,
+      turned,
+      entries,
+      facingPages,
+      reducedMotion,
+      sound: pageSound,
+      soundOn: sound.pageSounds,
+    });
   const lost =
     entries !== undefined && isEntryPlace(place) && !entryFor(place, entries);
   const root = useRef<HTMLElement>(null);
@@ -130,6 +131,7 @@ export function AtelierBook() {
     },
     back: () => turnTo(placeBefore(place)),
     turnLeaf,
+    leafTurning,
     sound: { on: sound.pageSounds, onToggle: sound.toggle },
   };
 
@@ -281,7 +283,8 @@ interface PageActions {
   readonly open: (book: DOMRect) => void;
   readonly back: () => void;
   /** Turns one leaf within the page shown (see `usePageTurns`). */
-  readonly turnLeaf: (direction: TurnDirection) => Promise<void>;
+  readonly turnLeaf: (direction: TurnDirection) => void;
+  readonly leafTurning: boolean;
   readonly sound: { readonly on: boolean; readonly onToggle: () => void };
 }
 
@@ -316,7 +319,7 @@ function PlacePages({
   facingPages,
   spreadRef: spread,
 }: PlacePagesProps) {
-  const { turnTo, open, back, turnLeaf, sound } = actions;
+  const { turnTo, open, back, turnLeaf, leafTurning, sound } = actions;
   const entry = entries && entryFor(place, entries);
   switch (place.kind) {
     case "cover":
@@ -346,6 +349,7 @@ function PlacePages({
               templateId={place.templateId}
               layout={facingPages ? "facing-pages" : "single-page"}
               turnLeaf={turnLeaf}
+              leafTurning={leafTurning}
               onBack={back}
             />
           </div>

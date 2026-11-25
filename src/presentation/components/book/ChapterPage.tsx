@@ -21,7 +21,9 @@ interface ChapterPageProps {
   readonly templateId: string;
   readonly layout: TableLayout;
   /** Turns one leaf within the chapter, between its table and reading. */
-  readonly turnLeaf: (direction: TurnDirection) => Promise<void>;
+  readonly turnLeaf: (direction: TurnDirection) => void;
+  /** That leaf is turning: the pages keep what they show until it lands. */
+  readonly leafTurning: boolean;
   readonly onBack: () => void;
 }
 
@@ -36,13 +38,17 @@ export function ChapterPage({
   templateId,
   layout,
   turnLeaf,
+  leafTurning,
   onBack,
 }: ChapterPageProps) {
   const titleId = useId();
   const [unfinished, setUnfinished] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  // Which spread of the reading lies open; none means the table.
+  // Which spread of the reading the reader turned to (none means the
+  // table), and which the pages show: the same, once the leaf has landed.
+  const [turnedTo, setTurnedTo] = useState<number>();
   const [readingPage, setReadingPage] = useState<number>();
+  if (!leafTurning && readingPage !== turnedTo) setReadingPage(turnedTo);
   const handleUnfinished = useCallback(
     (value: boolean) => setUnfinished(value),
     [],
@@ -51,10 +57,10 @@ export function ChapterPage({
 
   const showReadingPage = useCallback(
     (next: number | undefined) => {
-      const direction = (next ?? -1) > (readingPage ?? -1) ? "forward" : "back";
-      void turnLeaf(direction).then(() => setReadingPage(next));
+      turnLeaf((next ?? -1) > (turnedTo ?? -1) ? "forward" : "back");
+      setTurnedTo(next);
     },
-    [readingPage, turnLeaf],
+    [turnedTo, turnLeaf],
   );
 
   const reading = layout === "facing-pages" && readingPage !== undefined;

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestServices } from "@/composition/testing/createTestServices";
 import { chapter } from "@/presentation/components/book/bookPlace";
@@ -39,28 +40,38 @@ beforeEach(() => {
   );
 });
 
-/** A chapter on facing pages, whose leaf turns land when `land` is called. */
+/**
+ * A chapter on facing pages in a book whose leaf turns land when `land` is
+ * called, recording each turn's direction.
+ */
 function renderChapter() {
   const turns: TurnDirection[] = [];
-  let landing: (() => void) | undefined;
-  const turnLeaf = vi.fn((direction: TurnDirection) => {
-    turns.push(direction);
-    return new Promise<void>((resolve) => {
-      landing = resolve;
-    });
-  });
-  render(
-    <AtelierServicesProvider services={createTestServices()}>
+  let landLeaf: (() => void) | undefined;
+
+  function Book() {
+    const [leafTurning, setLeafTurning] = useState(false);
+    landLeaf = () => setLeafTurning(false);
+    return (
       <ChapterPage
         entry={ENTRY}
         templateId="three-card"
         layout="facing-pages"
-        turnLeaf={turnLeaf}
+        turnLeaf={(direction) => {
+          turns.push(direction);
+          setLeafTurning(true);
+        }}
+        leafTurning={leafTurning}
         onBack={vi.fn()}
       />
+    );
+  }
+
+  render(
+    <AtelierServicesProvider services={createTestServices()}>
+      <Book />
     </AtelierServicesProvider>,
   );
-  const land = () => act(async () => landing?.());
+  const land = () => act(() => landLeaf?.());
   return { turns, land };
 }
 
@@ -68,11 +79,11 @@ async function finishTable() {
   await ready();
   await shuffleAndPick();
   [1, 2, 3].forEach((index) => reveal(index));
-  // Revealing waits for each card to land; a busy test machine is slower.
   await screen.findByText("牌陣已完成", undefined, { timeout: 5000 });
 }
 
-describe("ChapterPage on facing pages", () => {
+// Each test plays a whole round on the table first.
+describe("ChapterPage on facing pages", { timeout: 15_000 }, () => {
   it("turns a leaf forward to the reading, and shows it once the leaf lands", async () => {
     const { turns, land } = renderChapter();
     await finishTable();
@@ -81,7 +92,7 @@ describe("ChapterPage on facing pages", () => {
     expect(turns).toEqual(["forward"]);
     // The table stays until the leaf has landed over it.
     expect(screen.queryByRole("heading", { name: "Card Reading" })).toBeNull();
-    await land();
+    land();
     expect(screen.getByRole("heading", { name: "Card Reading" })).toHaveFocus();
     expect(screen.getByText(/The Three Cards · Card Reading/u)).toBeVisible();
   });
@@ -90,11 +101,11 @@ describe("ChapterPage on facing pages", () => {
     const { turns, land } = renderChapter();
     await finishTable();
     openReading();
-    await land();
+    land();
 
     fireEvent.click(screen.getByRole("button", { name: "回到牌陣" }));
     expect(turns).toEqual(["forward", "back"]);
-    await land();
+    land();
     expect(screen.queryByRole("heading", { name: "Card Reading" })).toBeNull();
     expect(
       screen.getByRole("heading", { name: "The Three Cards" }),

@@ -45,11 +45,15 @@ export interface PageTurns {
   readonly finishTurn: (turn: ActiveTurn) => void;
   /**
    * Turns one leaf within the place shown, as a chapter does between its
-   * table and its reading: the place stays, and the promise settles once the
-   * leaf has landed (at once with reduced motion, or mid-turn), when the
-   * page beneath may change.
+   * table and its reading. The place stays; nothing turns with reduced
+   * motion or while another turn plays.
    */
-  readonly turnLeaf: (direction: TurnDirection) => Promise<void>;
+  readonly turnLeaf: (direction: TurnDirection) => void;
+  /**
+   * A leaf is turning within the place shown. The page keeps what it showed
+   * until this ends, then changes in the same frame the leaf is lifted away.
+   */
+  readonly leafTurning: boolean;
 }
 
 /**
@@ -139,39 +143,25 @@ export function usePageTurns({
     [],
   );
 
-  // Turns within a place settle when they stop being the turn in progress.
-  const leafLandings = useRef(new Map<ActiveTurn, () => void>());
+  const reduced = useRef(reducedMotion);
   useEffect(() => {
-    if (!turn) return;
-    const landings = leafLandings.current;
-    return () => {
-      landings.get(turn)?.();
-      landings.delete(turn);
-    };
-  }, [turn]);
-
-  const latest = useRef({ state, reducedMotion });
-  useEffect(() => {
-    latest.current = { state, reducedMotion };
+    reduced.current = reducedMotion;
   });
-  const turnLeaf = useCallback(
-    (direction: TurnDirection) =>
-      new Promise<void>((settle) => {
-        const { state: current, reducedMotion: still } = latest.current;
-        if (still || current.turn) {
-          settle();
-          return;
-        }
-        const leaf: ActiveTurn = {
-          plan: { kind: "single", direction },
-          from: current.shown,
-          to: current.shown,
-        };
-        leafLandings.current.set(leaf, settle);
-        setState((now) => (now.turn ? now : { ...now, turn: leaf }));
-      }),
-    [],
-  );
+  const turnLeaf = useCallback((direction: TurnDirection) => {
+    if (reduced.current) return;
+    setState((now) =>
+      now.turn
+        ? now
+        : {
+            ...now,
+            turn: {
+              plan: { kind: "single", direction },
+              from: now.shown,
+              to: now.shown,
+            },
+          },
+    );
+  }, []);
 
   return {
     shown: state.shown,
@@ -179,6 +169,7 @@ export function usePageTurns({
     arrival: state.arrival,
     finishTurn,
     turnLeaf,
+    leafTurning: turn !== undefined && samePlace(turn.from, turn.to),
   };
 }
 
