@@ -37,7 +37,16 @@
   margin-left: auto;
 }
 
+/* The reading's type, in one face (the book's text face, which has one
+   weight) and three sizes: section headings, small labels, body text.
+   Every text style below reads these, so the whole reading stays one
+   specification. */
 .reading-panel[data-layout="pages"] {
+  --reading-heading-size: 16px;
+  --reading-label-size: 12px;
+  --reading-body-size: 14px;
+  --reading-leading: 1.55;
+  --reading-label-tracking: 0.06em;
   display: block;
   margin: 0;
   padding: 0;
@@ -46,8 +55,18 @@
   box-shadow: none;
   color: var(--book-ink);
   font-family: var(--book-text);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: var(--reading-body-size);
+  line-height: var(--reading-leading);
+}
+
+/* The night panel's faces, weights and colours give way to the page's. */
+.reading-panel[data-layout="pages"] .reading-result *,
+.reading-panel[data-layout="pages"]
+  :is(.reading-panel__head, .reading-actions)
+  * {
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .reading-panel[data-layout="pages"] .book-title {
@@ -74,6 +93,26 @@
   clip-path: inset(50%);
 }
 
+/* ---- Labels: small, soft ink ---- */
+
+.reading-panel[data-layout="pages"]
+  :is(
+    .reading-badge,
+    .reading-disclaimer,
+    .reading-professional,
+    .reading-fallback,
+    .reading-stale,
+    .reading-status,
+    .reading-section__question,
+    .reading-section__title small,
+    .reading-card h4
+  ) {
+  color: var(--book-ink-soft);
+  font-size: var(--reading-label-size);
+  letter-spacing: var(--reading-label-tracking);
+  line-height: var(--reading-leading);
+}
+
 .reading-panel[data-layout="pages"]
   :is(
     .reading-disclaimer,
@@ -83,9 +122,115 @@
     .reading-status
   ) {
   margin: 0 0 8px;
-  color: var(--book-ink-soft);
-  font-size: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
 }
+
+.reading-panel[data-layout="pages"] .reading-badge {
+  display: inline-block;
+  padding: 1px 10px;
+  border: 1px solid var(--control-line-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--control-text);
+}
+
+.reading-panel[data-layout="pages"] .reading-card h4 {
+  display: block;
+  margin: 4px 0 0;
+  break-after: avoid;
+}
+
+/* ---- Headings: a position, or a whole-reading section ---- */
+
+.reading-panel[data-layout="pages"] .reading-section__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  min-height: 0;
+  margin: 0 0 2px;
+  padding: 0;
+  break-after: avoid;
+}
+
+.reading-panel[data-layout="pages"]
+  :is(.reading-section__title, .reading-index) {
+  color: var(--book-ink);
+  font-size: var(--reading-heading-size);
+  line-height: var(--reading-leading);
+}
+
+.reading-panel[data-layout="pages"] .reading-section__title small {
+  margin-left: 8px;
+}
+
+.reading-panel[data-layout="pages"] .reading-index {
+  display: inline;
+  width: auto;
+  aspect-ratio: auto;
+  background: none;
+}
+
+.reading-panel[data-layout="pages"] .reading-index::after {
+  content: ".";
+}
+
+.reading-panel[data-layout="pages"] .reading-section__question {
+  flex-basis: 100%;
+}
+
+/* ---- Body: every paragraph and list item alike ---- */
+
+.reading-panel[data-layout="pages"]
+  :is(
+    .reading-section__body,
+    .reading-card p,
+    .reading-list,
+    .reading-list li
+  ) {
+  margin: 0;
+  padding: 0;
+  color: var(--book-ink);
+  font-size: var(--reading-body-size);
+  line-height: var(--reading-leading);
+  text-align: justify;
+}
+
+/* A list reads as paragraphs set flush, like the rest of the body. */
+.reading-panel[data-layout="pages"] .reading-list {
+  display: block;
+  list-style: none;
+}
+
+/* ---- Layout of the parts ---- */
+
+.reading-panel[data-layout="pages"] .reading-result {
+  display: block;
+}
+
+.reading-panel[data-layout="pages"] .reading-section {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.reading-panel[data-layout="pages"] .reading-card {
+  display: block;
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.reading-panel[data-layout="pages"] .reading-card--jumper {
+  padding: 0 0 0 8px;
+  border-left: 1px solid var(--control-line-strong);
+}
+
+/* ---- Actions ---- */
 
 .reading-panel[data-layout="pages"] .reading-actions {
   display: flex;
@@ -95,156 +240,26 @@
   margin: 0 0 12px;
 }
 
-.reading-panel[data-layout="pages"] .reading-generate {
+.reading-panel[data-layout="pages"]
+  :is(.reading-generate, .reading-actions .ghost-action) {
   width: auto;
   min-height: 32px;
-  box-shadow: none;
-  font-weight: 400;
-  letter-spacing: 0.06em;
   padding: 4px 16px;
   border: 1px solid var(--control-line-strong);
   border-radius: 999px;
-  color: var(--book-ink);
+  color: var(--control-text);
   background: var(--control-fill);
-  font: inherit;
+  box-shadow: none;
+  font-size: var(--reading-body-size);
   cursor: pointer;
+}
+
+.reading-panel[data-layout="pages"] .reading-generate:hover:not(:disabled) {
+  background: var(--control-field-fill);
+  filter: none;
 }
 
 .reading-panel[data-layout="pages"] .reading-generate:disabled {
   cursor: not-allowed;
   opacity: 0.5;
-}
-
-.reading-panel[data-layout="pages"] .reading-result {
-  display: block;
-}
-
-.reading-panel[data-layout="pages"] .reading-section {
-  margin: 0 0 10px;
-  padding: 0;
-  border: 0;
-  background: none;
-}
-
-.reading-panel[data-layout="pages"] .reading-section__summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 8px;
-  margin: 0 0 2px;
-  break-after: avoid;
-  color: var(--book-ink);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.reading-panel[data-layout="pages"] .reading-index {
-  color: var(--book-ink-soft);
-  font-family: var(--book-serif);
-  font-weight: 400;
-}
-
-.reading-panel[data-layout="pages"] .reading-section__title small {
-  margin-left: 6px;
-  color: var(--book-ink-soft);
-  font-size: 12px;
-  font-weight: 400;
-}
-
-.reading-panel[data-layout="pages"] .reading-section__question {
-  flex-basis: 100%;
-  color: var(--book-ink-soft);
-  font-size: 12.5px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-.reading-panel[data-layout="pages"] .reading-card {
-  margin: 0 0 4px;
-  padding: 0;
-  border: 0;
-  background: none;
-}
-
-.reading-panel[data-layout="pages"] .reading-card h4 {
-  margin: 0;
-  color: var(--book-ink-soft);
-  font-size: 12px;
-  font-weight: 600;
-  break-after: avoid;
-}
-
-.reading-panel[data-layout="pages"]
-  :is(.reading-card p, .reading-section__body) {
-  margin: 0;
-  padding: 0;
-  text-align: justify;
-}
-
-.reading-panel[data-layout="pages"] .reading-list {
-  gap: 0;
-  margin: 0;
-  padding: 0 0 0 1.2em;
-}
-
-.reading-panel[data-layout="pages"] .reading-badge {
-  display: inline-block;
-  padding: 1px 10px;
-  border: 1px solid var(--control-line-strong);
-  border-radius: 999px;
-  color: var(--control-text);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-}
-
-/* Printed in the page's own ink: the night panel's moonlight colours, gold
-   badges and loose leading give way to the book's close setting. */
-.reading-panel[data-layout="pages"]
-  :is(
-    .reading-section__title,
-    .reading-section__body,
-    .reading-card p,
-    .reading-list,
-    .reading-list li
-  ) {
-  color: var(--book-ink);
-  font-size: inherit;
-  line-height: inherit;
-}
-
-.reading-panel[data-layout="pages"] .reading-section__title {
-  font-size: 15px;
-}
-
-.reading-panel[data-layout="pages"] .reading-index {
-  display: inline;
-  width: auto;
-  aspect-ratio: auto;
-  background: none;
-  font-size: inherit;
-}
-
-.reading-panel[data-layout="pages"] .reading-index::after {
-  content: ".";
-}
-
-.reading-panel[data-layout="pages"] .reading-card--jumper {
-  margin-left: 0;
-  padding: 0 0 0 8px;
-  border-left: 1px solid var(--control-line-strong);
-  background: none;
-}
-
-.reading-panel[data-layout="pages"] .reading-generate:hover:not(:disabled) {
-  background: var(--control-field-fill);
-  transform: none;
-}
-
-.reading-panel[data-layout="pages"] .reading-actions .ghost-action {
-  min-height: 32px;
-  padding: 4px 14px;
-  border-color: var(--control-line);
-  color: var(--control-text);
-  font-size: inherit;
 }
