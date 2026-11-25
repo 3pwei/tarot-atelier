@@ -1,0 +1,26 @@
+/** Every word the book itself shows or reads aloud, in one place. */
+export const BOOK_COPY = {
+  bookLabel: "Tarot Atelier 魔法書",
+  openCover: "Tap to open",
+  openCoverLabel: "打開魔法書",
+  coverAlt: "皮革封面的魔法書：Tarot Atelier，中央壓著 milespapa 的金色標誌",
+  frontispieceAlt:
+    "扉頁插畫：巫師站在高塔上，舉著望遠鏡看星座與月亮；緞帶寫著 The Book of Starry Tarot",
+  toContents: "Contents ›",
+  toContentsLabel: "翻到目錄",
+  disclaimer: "僅供娛樂與自我反思",
+  contentsTitle: "Contents",
+  contentsHead: "Contents",
+  spreadsSection: "— Spreads —",
+  appendixSection: "— Appendix —",
+  contentsHint: "點一下亮起，再點一下翻到這一章",
+  contentsLoading: "正在翻開目錄…",
+  entryLabel: (title: string, page: number) => `${title}，第 ${page} 頁`,
+  back: "‹ Back",
+  backLabel: "回到目錄",
+  leaveTitle: "離開這一章？",
+  leaveMessage: "牌桌上還有沒翻完的牌或正在編輯的牌陣，離開後不會保留。",
+  leaveConfirm: "離開",
+  codexHeading: "The Codex of Cards",
+  recordsHeading: "The Records",
+} as const;

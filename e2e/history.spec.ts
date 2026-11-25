@@ -6,6 +6,7 @@ import {
   deckPile,
   pickAll,
   reveal,
+  openChapter,
 } from "./support/spreadTable";
 
 // Deals and burns three cards; software-rendered CI browsers need headroom.
@@ -17,7 +18,7 @@ test("keeps a finished round with its reading, and deletes it on request", async
   page,
 }, testInfo) => {
   await answerReadings(page, { kind: "reading" });
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page, "這份新工作適合我嗎？");
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
   await deckPile(page).click();
@@ -73,7 +74,7 @@ test("reads a recorded round again from the history", async ({
   page,
 }, testInfo) => {
   await answerReadings(page, { kind: "reading" });
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page, "這份新工作適合我嗎？");
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
   await deckPile(page).click();

@@ -40,12 +40,12 @@ Templates store a layout: each position's question, coordinates and rotation. Th
 | 五張十字 | 5         | Centre, then left, right, top and bottom                                                                                         |
 | 圓環     | 8         | Clockwise from twelve o'clock                                                                                                    |
 
-- During play, every spread in the library, built-in or saved, is a choice above the table (「選擇牌陣」); one tap lays it out, until cards are dealt. Saving, deleting and the blank table stay in 「編輯牌陣」.
+- Every spread in the library, built-in or saved, is a chapter of the book; its chapter opens with the table laid out for it ([ADR 0010](decisions/0010-the-site-is-a-book.md)). Saving, deleting, applying another template and the blank table stay in 「編輯牌陣」.
 - 「儲存目前牌陣」 saves the table under a 1–30 character name. Saving again under the same name updates that template. The library holds up to 30.
 - Leaving 「編輯牌陣」 with layout changes that are not saved asks first (「牌陣還沒儲存」, 「確定離開」／「取消」, focus on cancel). The changes are compared with the library's version of the template the table came from, or with the table as it was when editing began when there is none (a blank table, or a template deleted meanwhile). Leaving anyway restores that version and keeps the main question. Applying a template, starting blank or saving sets a new version to compare with. The rules live in `presentation/components/spread/editBaseline.ts` and `matchesLayout` in `domain/spread/templates.ts`.
 - Every template can be deleted, built-ins included, after an inline confirmation. Deleting never changes the table.
 - 「還原預設範例」 appears when a built-in is missing and puts the missing ones back first, keeping saved ones.
-- 「空白牌桌」 starts from an empty table. A fresh reading and 「清除本次牌陣」 start from the first template in the library, or a blank table when the library is empty.
+- 「空白牌桌」 starts from an empty table. A fresh reading and 「清除本次牌陣」 start from the chapter's template, else the first template in the library, or a blank table when the library is empty.
 
 The circle uses eight positions because twelve cards on a 3:2 table overlap at readable sizes; blank and saved spreads can still reach twelve.
 
@@ -63,7 +63,7 @@ The circle uses eight positions because twelve cards on a 3:2 table overlap at r
 
 ## Persistence
 
-The table itself is not stored. Every visit, a reload included, starts from the library's first template with no main question and a full pile, so an earlier round never reappears ([ADR 0008](./decisions/0008-fresh-table-on-every-visit.md)). A finished round is kept in the reading history instead ([ADR 0006](./decisions/0006-reading-history-on-the-device.md)), and a layout worth keeping is saved to the library.
+The table itself is not stored. Every visit, a reload included, starts from the chapter's template with no main question and a full pile, so an earlier round never reappears ([ADR 0008](./decisions/0008-fresh-table-on-every-visit.md)). A finished round is kept in the reading history instead ([ADR 0006](./decisions/0006-reading-history-on-the-device.md)), and a layout worth keeping is saved to the library.
 
 Earlier versions kept the table under `tarot-atelier:spread-session`. That key is only cleared now (`RetiredTableStorage`), so an old copy does not linger on the device.
 

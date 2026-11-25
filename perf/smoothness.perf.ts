@@ -26,10 +26,12 @@ const WHEEL_SETTLE_MS = 1_000;
 /** Long enough for a chosen card to land. */
 const FLIGHT_SETTLE_MS = 1_200;
 
+/** The first chapter, where the table is; the book opens straight to it. */
 async function openHome(page: Page) {
   await preparePage(page);
-  await page.goto("/");
+  await page.goto("/#spread-three-card");
   await page.waitForLoadState("networkidle");
+  await expect(page.locator("[data-slot]").first()).toBeVisible();
 }
 
 test("home page at rest and scrolling", async ({ page }, testInfo) => {
@@ -143,6 +145,9 @@ function canvasTransform(page: Page): Promise<string> {
 }
 
 async function scrollToBottom(page: Page) {
+  // The page scrolls inside the book's sheet, so the wheel must be over it.
+  const viewport = page.viewportSize();
+  if (viewport) await page.mouse.move(viewport.width / 2, viewport.height / 2);
   for (let step = 0; step < SCROLL_STEPS; step += 1) {
     await page.mouse.wheel(0, 400);
     await page.waitForTimeout(SCROLL_STEP_PAUSE_MS);

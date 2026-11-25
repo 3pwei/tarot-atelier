@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="520" viewBox="0 0 340 520">
+<defs>
+<filter id="leather" x="0" y="0" width="100%" height="100%">
+ <feTurbulence type="fractalNoise" baseFrequency=".02 .03" numOctaves="3" seed="7" result="n"/>
+ <feColorMatrix in="n" type="matrix" values="0 0 0 0 .12  0 0 0 0 .05  0 0 0 0 .02  0 0 0 -1.1 .75" result="blot"/>
+ <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="3" result="g"/>
+ <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .5 -.1" result="grain"/>
+ <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="blot"/><feMergeNode in="grain"/></feMerge>
+</filter>
+<filter id="tool"><feGaussianBlur in="SourceAlpha" stdDeviation=".6" result="b"/><feOffset dx="0" dy="1.2" result="o"/><feFlood flood-color="#1a0800" flood-opacity=".9"/><feComposite in2="o" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="worn"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="11"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 1.5"/><feComposite in="SourceGraphic" operator="in"/></filter>
+<linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d88f"/><stop offset=".5" stop-color="#c99a45"/><stop offset="1" stop-color="#8a6224"/></linearGradient>
+<radialGradient id="lea" cx=".55" cy=".45" r=".8"><stop offset="0" stop-color="#5a2a14"/><stop offset=".7" stop-color="#3b1909"/><stop offset="1" stop-color="#1c0903"/></radialGradient>
+<filter id="foil" x="-20%" y="-20%" width="140%" height="140%">
+ <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="b"/>
+ <feDiffuseLighting in="b" surfaceScale="5" diffuseConstant="1.15" lighting-color="#ffffff" result="dif"><feDistantLight azimuth="225" elevation="42"/></feDiffuseLighting>
+ <feComposite in="dif" in2="SourceAlpha" operator="in" result="difIn"/>
+ <feBlend in="SourceGraphic" in2="difIn" mode="multiply" result="shaded"/>
+ <feSpecularLighting in="b" surfaceScale="5" specularConstant="1.2" specularExponent="22" lighting-color="#fff4cc" result="spec"><feDistantLight azimuth="225" elevation="48"/></feSpecularLighting>
+ <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>
+ <feComposite in="shaded" in2="specIn" operator="arithmetic" k2="1" k3="1" result="lit"/>
+ <feOffset in="SourceAlpha" dx="1.6" dy="2.4" result="o"/><feGaussianBlur in="o" stdDeviation="1.8" result="ob"/>
+ <feFlood flood-color="#0d0300" flood-opacity=".85"/><feComposite in2="ob" operator="in" result="drop"/>
+ <feMorphology in="SourceAlpha" operator="dilate" radius="1.6" result="rim"/><feGaussianBlur in="rim" stdDeviation="1" result="rimb"/>
+ <feFlood flood-color="#120400" flood-opacity=".55"/><feComposite in2="rimb" operator="in" result="press"/>
+ <feMerge><feMergeNode in="press"/><feMergeNode in="drop"/><feMergeNode in="lit"/></feMerge>
+</filter>
+<linearGradient id="foilg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe7a6"/><stop offset=".35" stop-color="#d9ac52"/><stop offset=".6" stop-color="#f2d084"/><stop offset="1" stop-color="#8f6524"/></linearGradient>
+<filter id="deboss" x="-20%" y="-20%" width="140%" height="140%">
+ <feComponentTransfer in="SourceAlpha" result="inv"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
+ <feOffset in="inv" dx="1.6" dy="2.2" result="io"/><feGaussianBlur in="io" stdDeviation="1.4" result="iob"/>
+ <feFlood flood-color="#0e0300" flood-opacity=".9"/><feComposite in2="iob" operator="in" result="ish"/>
+ <feComposite in="ish" in2="SourceAlpha" operator="in" result="inner"/>
+ <feOffset in="SourceAlpha" dx=".9" dy="1.2" result="lo"/><feGaussianBlur in="lo" stdDeviation=".7" result="lob"/>
+ <feComposite in="lob" in2="SourceAlpha" operator="out" result="lip"/>
+ <feFlood flood-color="#c98f63" flood-opacity=".45"/><feComposite in2="lip" operator="in" result="lit"/>
+ <feMerge><feMergeNode in="lit"/><feMergeNode in="SourceGraphic"/><feMergeNode in="inner"/></feMerge>
+</filter>
+<filter id="innerOnly" x="-20%" y="-20%" width="140%" height="140%">
+ <feComponentTransfer in="SourceAlpha" result="inv"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer>
+ <feOffset in="inv" dx="1.4" dy="2" result="io"/><feGaussianBlur in="io" stdDeviation="1.2" result="iob"/>
+ <feFlood flood-color="#0e0300" flood-opacity=".5"/><feComposite in2="iob" operator="in" result="ish"/>
+ <feComposite in="ish" in2="SourceAlpha" operator="in"/>
+</filter>
+<filter id="wornGold" x="0" y="0" width="100%" height="100%">
+ <feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="3" seed="21" result="n"/>
+ <feColorMatrix in="n" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.4 2.2" result="m"/>
+ <feComposite in="SourceGraphic" in2="m" operator="in"/>
+</filter>
+<linearGradient id="mutedGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e3c27a"/><stop offset=".5" stop-color="#b48a45"/><stop offset="1" stop-color="#7c5a26"/></linearGradient>
+</defs>
+<rect width="340" height="520" rx="10" fill="url(#lea)" filter="url(#leather)"/>
+<!-- spine hinge -->
+<rect x="0" y="0" width="26" height="520" fill="#1e0703" opacity=".45"/>
+<path d="M27 0V520" stroke="#140402" stroke-width="2" opacity=".7"/>
+<g fill="none" stroke="url(#gold)" filter="url(#tool)"><g filter="url(#worn)">
+ <rect x="44" y="22" width="276" height="476" stroke-width="2.2"/>
+ <rect x="52" y="30" width="260" height="460" stroke-width=".9"/>
+ <g id="c" stroke-width="1.4"><path d="M52 30 q22 4 26 26 M52 30 q4 22 26 26"/><circle cx="66" cy="44" r="3" fill="#d9b464"/><path d="M78 56 l6 6"/></g>
+ <use href="#c" transform="translate(364 0) scale(-1 1)"/>
+ <use href="#c" transform="translate(0 520) scale(1 -1)"/>
+ <use href="#c" transform="translate(364 520) scale(-1 -1)"/>
+ <!-- emblem -->
+ <circle cx="182" cy="232" r="62" stroke-width="1.6"/>
+ <circle cx="182" cy="232" r="54" stroke-width=".8"/>
+ <g stroke-width="1.1">
+  <path d="M182 160v-12M182 304v12M110 232h-12M254 232h12M131 181l-8-8M233 181l8-8M131 283l-8 8M233 283l8 8"/>
+ </g>
+ <path d="M122 388 H160 M204 388 H242" stroke-width="1"/><path d="M182 382 l6 6 -6 6 -6 -6z" fill="url(#gold)" stroke-width=".6"/>
+</g></g>
+<g filter="url(#tool)"><g>
+ <text x="182" y="364" text-anchor="middle" font-family="Pinyon Script" font-size="50" fill="url(#gold)">Tarot Atelier</text>
+ <text x="182" y="420" text-anchor="middle" font-family="IM Fell English" font-size="12" letter-spacing="4" fill="url(#gold)">LIBER · ARCANORUM</text>
+</g></g>
+<g filter="url(#deboss)"><path transform="translate(143.0 203.4) scale(0.4845)" d="M80.1 90.0 L80.0 90.9 L80.5 91.6 L82.5 92.9 L84.6 94.9 L86.4 95.9 L89.4 98.6 L91.6 100.0 L93.5 101.9 L96.5 103.9 L98.2 105.6 L100.8 107.1 L102.1 108.5 L102.5 108.6 L102.9 108.2 L102.8 106.1 L101.9 103.9 L101.9 101.1 L100.9 98.8 L100.9 96.1 L99.9 93.5 L99.8 90.2 L99.0 88.9 L98.8 87.4 L97.6 86.1 L95.4 85.2 L94.4 85.2 L92.8 86.0 L90.9 86.1 L89.8 86.9 L87.4 87.1 L86.2 87.9 L84.4 88.0 L83.0 88.9 L81.4 89.0ZM2.1 7.4 L1.9 8.4 L1.0 9.4 L0.9 10.8 L0.0 12.1 L0.0 108.2 L2.2 112.8 L5.2 115.8 L9.5 117.9 L32.9 118.0 L34.8 117.8 L36.5 116.6 L37.6 115.1 L38.5 112.6 L38.4 58.6 L38.9 58.1 L39.9 58.5 L47.4 64.9 L50.4 66.9 L53.2 69.6 L55.5 71.0 L57.2 72.8 L60.4 74.9 L62.2 76.8 L65.0 78.8 L65.5 78.8 L69.5 76.0 L70.5 75.8 L71.4 74.9 L75.5 72.8 L76.2 72.0 L78.8 70.8 L79.4 70.1 L80.6 69.8 L81.2 69.0 L82.5 68.5 L84.4 67.1 L85.6 66.8 L86.5 65.9 L90.4 63.9 L91.2 63.0 L92.4 62.6 L94.6 61.0 L95.4 60.9 L96.2 60.0 L97.4 59.6 L104.2 55.0 L121.1 45.0 L123.8 43.8 L125.2 44.0 L126.2 45.1 L126.5 46.5 L124.1 62.2 L123.2 66.1 L123.0 69.4 L122.2 72.5 L122.0 75.8 L121.2 79.0 L120.9 83.1 L120.2 85.4 L120.0 89.0 L119.2 92.1 L118.9 96.0 L116.4 110.1 L116.1 113.2 L115.1 117.0 L115.2 117.5 L115.6 117.8 L149.8 117.6 L152.8 116.6 L156.1 114.6 L159.6 110.1 L160.6 107.8 L160.9 106.0 L161.0 15.0 L160.6 11.9 L158.6 7.5 L156.9 5.2 L154.2 3.1 L150.8 1.2 L147.5 0.4 L142.2 0.2 L138.2 1.2 L134.0 3.4 L82.1 45.4 L81.4 45.4 L80.4 44.9 L78.5 43.0 L75.5 41.0 L69.6 36.1 L66.5 34.0 L64.5 32.1 L61.4 30.0 L59.6 28.2 L57.4 26.9 L55.6 25.1 L52.5 23.0 L50.8 21.2 L48.6 20.0 L45.6 17.2 L43.4 15.9 L41.6 14.1 L38.2 11.9 L36.5 10.1 L34.4 8.9 L31.4 6.1 L29.5 5.0 L27.5 3.2 L26.6 3.0 L25.5 2.0 L24.4 1.8 L23.5 1.0 L22.2 1.0 L20.1 0.0 L12.8 0.0 L11.1 0.9 L9.5 1.1 L8.5 2.0 L7.5 2.2 L6.2 3.1Z" fill="#2c1006" fill-opacity=".72" fill-rule="evenodd"/></g>
+<path transform="translate(143.0 203.4) scale(0.4845)" d="M80.1 90.0 L80.0 90.9 L80.5 91.6 L82.5 92.9 L84.6 94.9 L86.4 95.9 L89.4 98.6 L91.6 100.0 L93.5 101.9 L96.5 103.9 L98.2 105.6 L100.8 107.1 L102.1 108.5 L102.5 108.6 L102.9 108.2 L102.8 106.1 L101.9 103.9 L101.9 101.1 L100.9 98.8 L100.9 96.1 L99.9 93.5 L99.8 90.2 L99.0 88.9 L98.8 87.4 L97.6 86.1 L95.4 85.2 L94.4 85.2 L92.8 86.0 L90.9 86.1 L89.8 86.9 L87.4 87.1 L86.2 87.9 L84.4 88.0 L83.0 88.9 L81.4 89.0ZM2.1 7.4 L1.9 8.4 L1.0 9.4 L0.9 10.8 L0.0 12.1 L0.0 108.2 L2.2 112.8 L5.2 115.8 L9.5 117.9 L32.9 118.0 L34.8 117.8 L36.5 116.6 L37.6 115.1 L38.5 112.6 L38.4 58.6 L38.9 58.1 L39.9 58.5 L47.4 64.9 L50.4 66.9 L53.2 69.6 L55.5 71.0 L57.2 72.8 L60.4 74.9 L62.2 76.8 L65.0 78.8 L65.5 78.8 L69.5 76.0 L70.5 75.8 L71.4 74.9 L75.5 72.8 L76.2 72.0 L78.8 70.8 L79.4 70.1 L80.6 69.8 L81.2 69.0 L82.5 68.5 L84.4 67.1 L85.6 66.8 L86.5 65.9 L90.4 63.9 L91.2 63.0 L92.4 62.6 L94.6 61.0 L95.4 60.9 L96.2 60.0 L97.4 59.6 L104.2 55.0 L121.1 45.0 L123.8 43.8 L125.2 44.0 L126.2 45.1 L126.5 46.5 L124.1 62.2 L123.2 66.1 L123.0 69.4 L122.2 72.5 L122.0 75.8 L121.2 79.0 L120.9 83.1 L120.2 85.4 L120.0 89.0 L119.2 92.1 L118.9 96.0 L116.4 110.1 L116.1 113.2 L115.1 117.0 L115.2 117.5 L115.6 117.8 L149.8 117.6 L152.8 116.6 L156.1 114.6 L159.6 110.1 L160.6 107.8 L160.9 106.0 L161.0 15.0 L160.6 11.9 L158.6 7.5 L156.9 5.2 L154.2 3.1 L150.8 1.2 L147.5 0.4 L142.2 0.2 L138.2 1.2 L134.0 3.4 L82.1 45.4 L81.4 45.4 L80.4 44.9 L78.5 43.0 L75.5 41.0 L69.6 36.1 L66.5 34.0 L64.5 32.1 L61.4 30.0 L59.6 28.2 L57.4 26.9 L55.6 25.1 L52.5 23.0 L50.8 21.2 L48.6 20.0 L45.6 17.2 L43.4 15.9 L41.6 14.1 L38.2 11.9 L36.5 10.1 L34.4 8.9 L31.4 6.1 L29.5 5.0 L27.5 3.2 L26.6 3.0 L25.5 2.0 L24.4 1.8 L23.5 1.0 L22.2 1.0 L20.1 0.0 L12.8 0.0 L11.1 0.9 L9.5 1.1 L8.5 2.0 L7.5 2.2 L6.2 3.1Z" fill="url(#gold)" fill-rule="evenodd" opacity="1" filter="url(#wornGold)"/>
+<path transform="translate(143.0 203.4) scale(0.4845)" d="M80.1 90.0 L80.0 90.9 L80.5 91.6 L82.5 92.9 L84.6 94.9 L86.4 95.9 L89.4 98.6 L91.6 100.0 L93.5 101.9 L96.5 103.9 L98.2 105.6 L100.8 107.1 L102.1 108.5 L102.5 108.6 L102.9 108.2 L102.8 106.1 L101.9 103.9 L101.9 101.1 L100.9 98.8 L100.9 96.1 L99.9 93.5 L99.8 90.2 L99.0 88.9 L98.8 87.4 L97.6 86.1 L95.4 85.2 L94.4 85.2 L92.8 86.0 L90.9 86.1 L89.8 86.9 L87.4 87.1 L86.2 87.9 L84.4 88.0 L83.0 88.9 L81.4 89.0ZM2.1 7.4 L1.9 8.4 L1.0 9.4 L0.9 10.8 L0.0 12.1 L0.0 108.2 L2.2 112.8 L5.2 115.8 L9.5 117.9 L32.9 118.0 L34.8 117.8 L36.5 116.6 L37.6 115.1 L38.5 112.6 L38.4 58.6 L38.9 58.1 L39.9 58.5 L47.4 64.9 L50.4 66.9 L53.2 69.6 L55.5 71.0 L57.2 72.8 L60.4 74.9 L62.2 76.8 L65.0 78.8 L65.5 78.8 L69.5 76.0 L70.5 75.8 L71.4 74.9 L75.5 72.8 L76.2 72.0 L78.8 70.8 L79.4 70.1 L80.6 69.8 L81.2 69.0 L82.5 68.5 L84.4 67.1 L85.6 66.8 L86.5 65.9 L90.4 63.9 L91.2 63.0 L92.4 62.6 L94.6 61.0 L95.4 60.9 L96.2 60.0 L97.4 59.6 L104.2 55.0 L121.1 45.0 L123.8 43.8 L125.2 44.0 L126.2 45.1 L126.5 46.5 L124.1 62.2 L123.2 66.1 L123.0 69.4 L122.2 72.5 L122.0 75.8 L121.2 79.0 L120.9 83.1 L120.2 85.4 L120.0 89.0 L119.2 92.1 L118.9 96.0 L116.4 110.1 L116.1 113.2 L115.1 117.0 L115.2 117.5 L115.6 117.8 L149.8 117.6 L152.8 116.6 L156.1 114.6 L159.6 110.1 L160.6 107.8 L160.9 106.0 L161.0 15.0 L160.6 11.9 L158.6 7.5 L156.9 5.2 L154.2 3.1 L150.8 1.2 L147.5 0.4 L142.2 0.2 L138.2 1.2 L134.0 3.4 L82.1 45.4 L81.4 45.4 L80.4 44.9 L78.5 43.0 L75.5 41.0 L69.6 36.1 L66.5 34.0 L64.5 32.1 L61.4 30.0 L59.6 28.2 L57.4 26.9 L55.6 25.1 L52.5 23.0 L50.8 21.2 L48.6 20.0 L45.6 17.2 L43.4 15.9 L41.6 14.1 L38.2 11.9 L36.5 10.1 L34.4 8.9 L31.4 6.1 L29.5 5.0 L27.5 3.2 L26.6 3.0 L25.5 2.0 L24.4 1.8 L23.5 1.0 L22.2 1.0 L20.1 0.0 L12.8 0.0 L11.1 0.9 L9.5 1.1 L8.5 2.0 L7.5 2.2 L6.2 3.1Z" fill="#000" fill-rule="evenodd" filter="url(#innerOnly)"/>
+<!-- scuffed edges -->
+<rect x="1" y="1" width="338" height="518" rx="10" fill="none" stroke="#120302" stroke-width="5" opacity=".6"/>
+</svg>

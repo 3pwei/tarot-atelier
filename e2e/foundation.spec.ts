@@ -1,13 +1,18 @@
 import { expect, test } from "@playwright/test";
-import { askMainQuestion, deckPile, pickAll } from "./support/spreadTable";
+import {
+  askMainQuestion,
+  deckPile,
+  openChapter,
+  pickAll,
+} from "./support/spreadTable";
 
 test("deck library exposes 78 definitions and has no horizontal overflow", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#codex");
 
   await expect(
-    page.getByRole("heading", { name: /鋪開你的牌桌/u }),
+    page.getByRole("heading", { name: "The Codex of Cards" }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "卡牌庫" })).toBeVisible();
   await expect(page.getByText("78 張定義")).toBeVisible();
@@ -30,7 +35,7 @@ test("draw experience supports keyboard shuffle, choosing, and burn reveal", asy
 }) => {
   // Burns three or more cards in turn.
   test.slow();
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page);
   // Holding the space bar on the deck shuffles until it is let go.
   const deck = page.getByRole("button", { name: "按住牌堆洗牌" });
@@ -65,7 +70,7 @@ test("draw experience supports keyboard shuffle, choosing, and burn reveal", asy
 test("pointer reveal burns away the card back from the touched point", async ({
   page,
 }) => {
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page);
   await deckPile(page).click();
   await pickAll(page, 3);

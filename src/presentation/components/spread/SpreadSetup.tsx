@@ -1,7 +1,6 @@
 import type { Dispatch } from "react";
 import type { TemplateLibrary } from "@/domain/spread/templates";
 import type { SpreadAction } from "@/presentation/components/spread/spreadState";
-import { SpreadPicker } from "@/presentation/components/spread/SpreadPicker";
 import { SpreadToolbar } from "@/presentation/components/spread/SpreadToolbar";
 import { TemplateShelf } from "@/presentation/components/spread/TemplateShelf";
 
@@ -23,8 +22,9 @@ interface SpreadSetupProps {
 }
 
 /**
- * Above the board: in play, pick a spread; while arranging, manage the
- * template library. The toolbar is the same in both.
+ * Above the board: while arranging, manage the template library. In play the
+ * spread is the chapter's, chosen from the book's contents. The toolbar is the
+ * same in both.
  */
 export function SpreadSetup({
   library,
@@ -45,7 +45,7 @@ export function SpreadSetup({
     dispatch({ type: "apply-template", templateId });
   return (
     <div className="spread-setup">
-      {arranging ? (
+      {arranging && (
         <TemplateShelf
           library={library}
           activeTemplateId={activeTemplateId}
@@ -59,15 +59,6 @@ export function SpreadSetup({
           }
           onRestore={() => dispatch({ type: "restore-templates" })}
         />
-      ) : (
-        <section className="template-shelf" aria-label="選擇牌陣">
-          <SpreadPicker
-            library={library}
-            activeTemplateId={activeTemplateId}
-            disabled={drawn || layoutLocked}
-            onApply={apply}
-          />
-        </section>
       )}
       <SpreadToolbar
         positionCount={positionCount}

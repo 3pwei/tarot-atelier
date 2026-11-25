@@ -45,6 +45,8 @@ function renderTable(
     readonly templateStorage?: MemoryStorage;
     readonly historyStorage?: MemoryStorage;
     readonly share?: ReturnType<typeof fakeShareServices>;
+    readonly templateId?: string;
+    readonly onUnfinishedChange?: (unfinished: boolean) => void;
   } = {},
 ) {
   const retiredTableStorage =
@@ -64,6 +66,10 @@ function renderTable(
         randomSource={options.random ?? (() => 0.9)}
         createId={idFactory()}
         now={() => new Date(2026, 10, 20, 2, 10)}
+        {...(options.templateId ? { templateId: options.templateId } : {})}
+        {...(options.onUnfinishedChange
+          ? { onUnfinishedChange: options.onUnfinishedChange }
+          : {})}
       />
     </AtelierServicesProvider>,
   );
@@ -860,54 +866,48 @@ describe("DrawExperience spread table", () => {
     expect(position).not.toHaveAttribute("data-selected");
   });
 
-  it("lays out any spread in the library straight from play, without editing", async () => {
-    renderTable();
+  it("starts from the chapter's spread, with no spread picker in play", async () => {
+    renderTable({ templateId: "circle" });
     await ready();
-    const picker = screen.getByRole("region", { name: "選擇牌陣" });
-    for (const name of ["經典三張", "五張十字", "圓環"]) {
-      expect(within(picker).getByRole("button", { name })).toBeEnabled();
-    }
-    // Deleting spreads belongs to editing.
-    expect(
-      within(picker).queryByRole("button", { name: /^刪除牌陣/u }),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(within(picker).getByRole("button", { name: "圓環" }));
     expect(document.querySelectorAll("[data-slot]")).toHaveLength(8);
+    // The book's contents choose the spread; the table offers no other.
     expect(
-      within(picker).getByRole("button", { name: "圓環", pressed: true }),
-    ).toBeInTheDocument();
+      screen.queryByRole("region", { name: "選擇牌陣" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("offers every saved spread as a choice, and locks choosing once cards are dealt", async () => {
-    renderTable();
+  it("tells the book when leaving would lose cards that are not all revealed", async () => {
+    const heard: boolean[] = [];
+    renderTable({ onUnfinishedChange: (unfinished) => heard.push(unfinished) });
     await ready();
-    arrange();
-    fireEvent.click(screen.getByRole("button", { name: "儲存目前牌陣" }));
-    fireEvent.change(screen.getByLabelText("牌陣名稱"), {
-      target: { value: "我的三張" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "儲存" }));
-    finishArranging();
-
-    const picker = screen.getByRole("region", { name: "選擇牌陣" });
-    expect(
-      within(picker).getByRole("button", { name: "我的三張" }),
-    ).toBeInTheDocument();
+    expect(heard.at(-1)).toBe(false);
 
     await shuffleAndPick();
-    expect(within(picker).getByRole("button", { name: "圓環" })).toBeDisabled();
+    expect(heard.at(-1)).toBe(true);
+  });
+
+  it("tells the book while a layout is being edited", async () => {
+    const heard: boolean[] = [];
+    renderTable({ onUnfinishedChange: (unfinished) => heard.push(unfinished) });
+    await ready();
+    arrange();
+    expect(heard.at(-1)).toBe(true);
+    finishArranging();
+    expect(heard.at(-1)).toBe(false);
   });
 
   it("draws cards 1.5 times larger when the spread has room, smaller when it has not", async () => {
-    renderTable();
-    await ready();
     const canvas = () =>
       document.querySelector<HTMLElement>(".spread-board__canvas");
+    const roomy = renderTable();
+    await ready();
     expect(canvas()?.style.getPropertyValue("--slot-w")).toBe(
       `${LARGEST_SLOT_WIDTH_CQW}cqw`,
     );
-    fireEvent.click(screen.getByRole("button", { name: "五張十字" }));
+    roomy.unmount();
+
+    renderTable({ templateId: "five-card" });
+    await ready();
     expect(canvas()?.style.getPropertyValue("--slot-w")).toBe(
       `${STANDARD_SLOT_WIDTH_CQW}cqw`,
     );

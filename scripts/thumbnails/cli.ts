@@ -11,6 +11,7 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { chromium, type Page } from "@playwright/test";
+import { pngToWebp } from "../images/webp.ts";
 import { startExportServer } from "../site/exportServer.ts";
 import { run } from "../site/process.ts";
 import { site } from "../site/siteConfig.ts";
@@ -69,24 +70,8 @@ async function captureBack(
   return { back: BACK_FILE_NAME, backSmall: BACK_SMALL_FILE_NAME };
 }
 
-async function toWebp(page: Page, png: Buffer, scale = 1): Promise<Buffer> {
-  const dataUrl = await page.evaluate(
-    async ({ base64, quality, scale }) => {
-      const image = new Image();
-      image.src = `data:image/png;base64,${base64}`;
-      await image.decode();
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(image.naturalWidth * scale);
-      canvas.height = Math.round(image.naturalHeight * scale);
-      canvas
-        .getContext("2d")
-        ?.drawImage(image, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL("image/webp", quality);
-    },
-    { base64: png.toString("base64"), quality: WEBP_QUALITY, scale },
-  );
-  const [, base64 = ""] = dataUrl.split(",");
-  return Buffer.from(base64, "base64");
+function toWebp(page: Page, png: Buffer, scale = 1): Promise<Buffer> {
+  return pngToWebp(page, png, WEBP_QUALITY, scale);
 }
 
 async function capture(page: Page, outputDir: string) {

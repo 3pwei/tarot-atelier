@@ -8,6 +8,7 @@ import {
   reveal,
   slot,
   zoomTableIn,
+  openChapter,
 } from "./support/spreadTable";
 
 // Each test deals and burns several cards; software-rendered CI browsers need headroom.
@@ -134,7 +135,7 @@ async function saveAndFinishArranging(page: Page, name: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page);
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
 });
@@ -343,7 +344,14 @@ test("named templates are saved, deleted and restored across reloads", async ({
   ).toHaveCount(0);
   await page.waitForTimeout(400);
 
+  // The deleted spread's chapter is gone: the book opens at the contents.
   await page.reload();
+  await expect(
+    page.getByRole("button", { name: /^The Three Cards，/u }),
+  ).toHaveCount(0);
+  const saved = page.getByRole("button", { name: /^斜放三張，/u });
+  await saved.click();
+  await saved.click();
   await arrange(page);
   await expect(
     page.getByRole("button", { name: "經典三張", exact: true }),
@@ -621,13 +629,12 @@ test("chosen cards fly in, land visible and each position leaves the tab order a
   }
 });
 
-test("spreads are chosen straight from play, and there are no zoom buttons", async ({
+test("each chapter lays out its own spread, and there are no zoom buttons", async ({
   page,
 }) => {
-  const picker = page.getByRole("region", { name: "選擇牌陣" });
-  await picker.getByRole("button", { name: "圓環", exact: true }).click();
+  await openChapter(page, "circle");
   await expect(page.locator("[data-slot]")).toHaveCount(8);
-  await picker.getByRole("button", { name: "五張十字", exact: true }).click();
+  await openChapter(page, "five-card");
   await expect(page.locator("[data-slot]")).toHaveCount(5);
   await expect(page.getByRole("button", { name: "放大牌桌" })).toHaveCount(0);
   await expect(page.getByRole("group", { name: "牌桌縮放" })).toHaveCount(0);
@@ -701,14 +708,8 @@ test("while arranging, a mouse gets zoom buttons in the table's top-right corner
 test("the single-card spread lays one position that answers the main question", async ({
   page,
 }) => {
-  const picker = page.getByRole("region", { name: "選擇牌陣" });
-  await expect(picker.getByRole("button")).toHaveText([
-    /經典三張/u,
-    /單張指引/u,
-    /五張十字/u,
-    /圓環/u,
-  ]);
-  await picker.getByRole("button", { name: "單張指引", exact: true }).click();
+  await openChapter(page, "single-card");
+  await askMainQuestion(page);
   await expect(page.locator("[data-slot]")).toHaveCount(1);
   await expect(page.getByText("這個問題的答案是什麼？")).toBeVisible();
 
@@ -739,11 +740,15 @@ test("a library saved before the single-card spread gets it after a reload", asy
       }),
     );
   });
+  // That library has no three-card spread: its chapter link opens the contents.
   await page.reload();
-  const picker = page.getByRole("region", { name: "選擇牌陣" });
-  await expect(picker.getByRole("button")).toHaveText([
-    /單張指引/u,
+  await expect(page).toHaveURL(/#contents$/u);
+  const entries = page.getByRole("button", { name: /，第 \d+ 頁$/u });
+  await expect(entries).toHaveText([
+    /The Single Card/u,
     /我的牌陣/u,
+    /The Codex/u,
+    /The Records/u,
   ]);
 });
 

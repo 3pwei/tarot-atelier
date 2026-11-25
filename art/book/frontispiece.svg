@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="288" height="628" viewBox="6 6 288 628" fill="none" stroke="#3a2614" stroke-linecap="round" stroke-linejoin="round">
+<defs>
+<clipPath id="inframe"><rect x="14" y="14" width="272" height="612"/></clipPath>
+<pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#3a2614" stroke-width=".7" opacity=".55"/></pattern>
+<pattern id="hatch2" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)"><line x1="0" y1="0" x2="0" y2="3" stroke="#3a2614" stroke-width=".6" opacity=".45"/></pattern>
+<pattern id="sky" width="6" height="6" patternUnits="userSpaceOnUse"><line x1="0" y1="3" x2="6" y2="3" stroke="#3a2614" stroke-width=".35" opacity=".25"/></pattern>
+
+<filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="3" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="2.6"/></filter>
+<filter id="wash" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".012 .03" numOctaves="4" seed="9" result="n"/>
+<feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.9 -.55" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in" result="w"/><feGaussianBlur in="w" stdDeviation="1.4"/></filter>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 .3 0 0 0 0 .2 0 0 0 0 .1 0 0 0 .35 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+<radialGradient id="moonglow"><stop offset="0" stop-color="#f6e2a6" stop-opacity=".85"/><stop offset=".45" stop-color="#e9c97a" stop-opacity=".35"/><stop offset="1" stop-color="#e9c97a" stop-opacity="0"/></radialGradient>
+<linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f2a5a" stop-opacity=".85"/><stop offset=".55" stop-color="#3b3f78" stop-opacity=".55"/><stop offset="1" stop-color="#7a6a8a" stop-opacity=".15"/></linearGradient>
+<linearGradient id="hillwash" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55603a" stop-opacity=".55"/><stop offset="1" stop-color="#2f3520" stop-opacity=".7"/></linearGradient>
+<linearGradient id="stonewash" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d9c08e" stop-opacity=".9"/><stop offset=".6" stop-color="#b9955e" stop-opacity=".85"/><stop offset="1" stop-color="#7d5d35" stop-opacity=".9"/></linearGradient>
+<pattern id="cross" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M0 5L5 0M0 0L5 5" stroke="#3a2614" stroke-width=".5" opacity=".5"/></pattern>
+</defs>
+<g filter="url(#wash)">
+<rect x="14" y="14" width="272" height="470" fill="url(#night)"/>
+<circle cx="250" cy="120" r="70" fill="url(#moonglow)" stroke="none" clip-path="url(#inframe)"/>
+<path d="M14 520 Q70 470 130 486 Q190 502 230 476 Q262 462 286 474 V626 H14z" fill="url(#hillwash)"/>
+<ellipse cx="150" cy="590" rx="120" ry="20" fill="#8a3a2a" opacity=".35"/>
+</g>
+<g fill="#f7e7b8" opacity=".9"><circle cx="104" cy="80" r="0.6"/><circle cx="39" cy="234" r="1.0"/><circle cx="172" cy="384" r="0.8"/><circle cx="30" cy="193" r="0.6"/><circle cx="83" cy="240" r="0.6"/><circle cx="235" cy="70" r="0.8"/><circle cx="184" cy="253" r="0.6"/><circle cx="170" cy="179" r="0.8"/><circle cx="32" cy="363" r="1.0"/><circle cx="129" cy="236" r="1.0"/><circle cx="166" cy="293" r="0.6"/><circle cx="171" cy="276" r="1.0"/><circle cx="45" cy="305" r="0.6"/><circle cx="181" cy="219" r="1.3"/><circle cx="222" cy="206" r="1.3"/><circle cx="114" cy="119" r="0.8"/><circle cx="202" cy="118" r="1.0"/><circle cx="157" cy="370" r="1.3"/><circle cx="95" cy="412" r="0.6"/><circle cx="153" cy="86" r="1.0"/><circle cx="60" cy="216" r="0.6"/><circle cx="270" cy="51" r="1.0"/><circle cx="108" cy="160" r="1.3"/><circle cx="171" cy="202" r="0.6"/><circle cx="266" cy="210" r="0.6"/><circle cx="36" cy="301" r="1.3"/><circle cx="94" cy="174" r="1.0"/><circle cx="26" cy="205" r="0.8"/><circle cx="179" cy="217" r="0.8"/><circle cx="220" cy="72" r="0.8"/><circle cx="123" cy="387" r="1.3"/><circle cx="41" cy="200" r="1.0"/><circle cx="250" cy="348" r="1.0"/><circle cx="204" cy="415" r="1.3"/><circle cx="269" cy="80" r="0.8"/><circle cx="59" cy="283" r="0.6"/><circle cx="146" cy="256" r="1.0"/><circle cx="93" cy="78" r="1.0"/><circle cx="179" cy="147" r="0.8"/><circle cx="200" cy="226" r="0.6"/><circle cx="139" cy="368" r="1.3"/><circle cx="123" cy="178" r="1.3"/><circle cx="185" cy="45" r="0.6"/><circle cx="276" cy="196" r="0.6"/><circle cx="108" cy="41" r="0.6"/><circle cx="167" cy="235" r="1.0"/><circle cx="180" cy="48" r="0.8"/><circle cx="180" cy="79" r="1.0"/><circle cx="268" cy="261" r="1.3"/><circle cx="52" cy="360" r="1.3"/><circle cx="145" cy="145" r="0.8"/><circle cx="47" cy="157" r="1.0"/><circle cx="144" cy="297" r="0.6"/><circle cx="73" cy="401" r="1.0"/><circle cx="58" cy="237" r="0.6"/><circle cx="217" cy="139" r="0.6"/><circle cx="201" cy="124" r="1.0"/><circle cx="256" cy="162" r="0.8"/><circle cx="158" cy="332" r="1.0"/><circle cx="185" cy="265" r="0.8"/><circle cx="230" cy="347" r="0.8"/><circle cx="72" cy="217" r="0.6"/><circle cx="277" cy="336" r="1.3"/><circle cx="87" cy="297" r="1.0"/><circle cx="136" cy="395" r="1.0"/><circle cx="268" cy="166" r="0.8"/><circle cx="47" cy="208" r="1.0"/><circle cx="73" cy="270" r="0.6"/><circle cx="145" cy="281" r="0.6"/><circle cx="237" cy="68" r="1.3"/></g>
+<g filter="url(#rough)">
+<!-- frame -->
+<rect x="8" y="8" width="284" height="624" stroke-width="2.2"/>
+<rect x="14" y="14" width="272" height="612" stroke-width=".8"/>
+<g stroke-width="1"><path d="M14 30 Q22 22 30 14"/><path d="M270 14 Q278 22 286 30"/><path d="M14 610 Q22 618 30 626"/><path d="M270 626 Q278 618 286 610"/></g>
+<!-- sky -->
+<rect x="14" y="14" width="272" height="430" fill="url(#sky)" stroke="none"/>
+<g transform="translate(0 30) scale(1 1.25)"><!-- moon -->
+<path d="M236 46 a26 26 0 1 0 22 40 a21 21 0 1 1 -22 -40z" fill="#f8e7b4" stroke-width="1.6"/>
+<path d="M234 62 q4 2 3 6 M228 80 q3 1 2 4" stroke-width=".8"/>
+<!-- constellation (seven stars) -->
+<g stroke-width=".8" stroke-dasharray="2 2.5"><path d="M42 58 L66 50 L88 62 L104 78 L132 74 L140 100 L112 106 L104 78"/></g>
+<g fill="#e9c66a" stroke="#3a2614" stroke-width=".6">
+<circle cx="42" cy="58" r="2.6"/><circle cx="66" cy="50" r="2.2"/><circle cx="88" cy="62" r="2.4"/><circle cx="104" cy="78" r="2.4"/><circle cx="132" cy="74" r="2.2"/><circle cx="140" cy="100" r="2.6"/><circle cx="112" cy="106" r="2.2"/>
+</g>
+<!-- a second small constellation -->
+<g stroke-width=".7" stroke-dasharray="2 2.5"><path d="M176 30 L196 40 L188 60 L206 70"/></g>
+<g fill="#e9c66a" stroke="#3a2614" stroke-width=".6"><circle cx="176" cy="30" r="1.8"/><circle cx="196" cy="40" r="2"/><circle cx="188" cy="60" r="1.6"/><circle cx="206" cy="70" r="2"/></g>
+<!-- twinkling stars -->
+<g stroke-width="1.1">
+<path d="M160 120 v12 M154 126 h12"/><path d="M62 132 v9 M57.5 136.5 h9"/><path d="M262 150 v10 M257 155 h10"/><path d="M28 196 v8 M24 200 h8"/><path d="M214 118 v7 M210.5 121.5 h7"/><path d="M40 100 v6 M37 103 h6"/>
+</g>
+<g fill="#4a3220" stroke="none"><circle cx="150" cy="40" r="1"/><circle cx="118" cy="30" r="1.2"/><circle cx="270" cy="110" r="1"/><circle cx="24" cy="150" r="1"/><circle cx="246" cy="200" r="1.1"/><circle cx="182" cy="96" r="1"/><circle cx="78" cy="170" r="1"/></g>
+</g>
+<!-- hills -->
+<path d="M14 520 Q70 470 130 486 Q190 502 230 476 Q262 462 286 474 V626 H14z" fill="url(#hatch2)" stroke-width="1.4"/>
+<path d="M14 556 Q90 528 160 542 Q230 556 286 534" stroke-width="1"/>
+<g transform="translate(150 500) scale(1.55) translate(-206 -300)"><!-- tower -->
+<path d="M176 300 L186 168 H226 L236 300z" fill="url(#stonewash)" stroke-width="1.8"/>
+<path d="M218 168 L236 300 H224 L212 168z" fill="url(#cross)" stroke="none"/>
+<path d="M206 168 L206 300" stroke="none"/>
+<path d="M214 168 L236 300 H222 L210 168z" fill="url(#hatch)" stroke="none"/>
+<g stroke-width=".7" opacity=".8"><path d="M184 190 H228 M182 214 H230 M180 238 H232 M178 262 H234 M177 284 H235"/>
+<path d="M198 168 V190 M214 190 V214 M196 214 V238 M220 238 V262 M200 262 V284 M216 284 V300"/></g>
+<path d="M200 300 V276 a6 6 0 0 1 12 0 V300" fill="#4a3220" stroke-width="1"/>
+<rect x="200" y="222" width="10" height="14" rx="5" fill="#e8a23a"/>
+<!-- balcony -->
+<path d="M178 168 H234 L230 160 H182z" fill="#f3e3bf" stroke-width="1.5"/>
+<g stroke-width="1"><path d="M182 160 V150 M190 160 V150 M198 160 V150 M214 160 V150 M222 160 V150 M230 160 V150 M180 150 H232"/></g>
+<!-- wizard -->
+<path d="M196 152 L204 118 L214 152z" fill="#2b2d63" stroke-width="1"/>
+<circle cx="205" cy="112" r="5.5" fill="#f3e3bf" stroke-width="1.2"/>
+<path d="M197 110 Q206 104 214 110 L205 74 Q203 90 197 110z" fill="#2b2d63" stroke-width="1"/>
+<path d="M194 111 Q205 116 217 110" stroke-width="1.6"/>
+<g fill="#e9c66a" stroke="none"><circle cx="205" cy="94" r="1.3"/><circle cx="203" cy="102" r="1.1"/><circle cx="207" cy="86" r=".9"/></g>
+<path d="M205 74 Q210 70 214 74" stroke-width="1"/>
+<!-- beard -->
+<path d="M201 115 Q205 128 209 115" fill="#f3e3bf" stroke-width=".9"/>
+<!-- telescope: raised to the eye, aimed up-left at the stars -->
+<path d="M210 123 Q202 122 196 116" stroke="#2b2d63" stroke-width="4.2"/>
+<path d="M210 123 Q202 122 196 116" stroke-width=".9" fill="none"/>
+<path d="M214 125 Q196 118 182 102" stroke="#2b2d63" stroke-width="4.2"/>
+<path d="M214 125 Q196 118 182 102" stroke-width=".9" fill="none"/>
+<path d="M201 110 L168 88" stroke-width="5"/>
+<path d="M201 110 L168 88" stroke="#c9963e" stroke-width="2.8"/>
+<path d="M201 110 L196 107" stroke="#7a5a22" stroke-width="2.4"/>
+<path d="M170 89.5 l3-4 M186 100 l3-4" stroke-width="1.1"/>
+<path d="M156 80 L170 89" stroke-width="7.4"/>
+<path d="M156 80 L170 89" stroke="#b07f2e" stroke-width="4.6"/>
+<path d="M157.5 79 L155 82.5" stroke="#f3e3bf" stroke-width="1.2"/>
+<circle cx="195" cy="115" r="2" fill="#f3e3bf" stroke-width=".7"/>
+<circle cx="182" cy="102" r="2" fill="#f3e3bf" stroke-width=".7"/>
+</g>
+<!-- banner -->
+<path d="M52 578 H248 L238 590 L248 602 H52 L62 590z" fill="#9b3b2a" stroke-width="1.4"/>
+<text x="150" y="597" text-anchor="middle" font-family="Pinyon Script" font-size="19" fill="#f6e3bd" stroke="none">The Book of Starry Tarot</text>
+</g>
+<rect x="8" y="8" width="284" height="624" fill="#000" filter="url(#grain)" opacity=".9"/>
+</svg>

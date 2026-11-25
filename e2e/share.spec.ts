@@ -5,6 +5,7 @@ import {
   deckPile,
   pickAll,
   reveal,
+  openChapter,
 } from "./support/spreadTable";
 
 // Deals and burns three cards; software-rendered CI browsers need headroom.
@@ -20,7 +21,7 @@ test("paints a share image of the finished table and downloads it where sharing 
     Object.defineProperty(navigator, "canShare", { value: undefined });
   });
   await answerReadings(page, { kind: "reading" });
-  await page.goto("/");
+  await openChapter(page);
   await askMainQuestion(page, "這份新工作適合我嗎？");
   await page.locator(".spread-board").scrollIntoViewIfNeeded();
   await deckPile(page).click();

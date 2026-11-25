@@ -11,14 +11,10 @@
 
 The visual language combines midnight lacquer, restrained gold foil, moonlit typography, radial celestial geometry, and soft purple atmosphere. Decorative effects must never reduce form readability or obscure focus.
 
-## Placeholder asset register
+## Retired placeholders
 
-| Asset                                  | Author                                                            | License / source                           | Status               |
-| -------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------ | -------------------- |
-| `/public/brand/tarot-atelier-mark.svg` | Tarot Atelier project, generated specifically for this repository | Original project asset; no external source | Phase 00 placeholder |
-| `/public/art/stardust-field.svg`       | Tarot Atelier project, generated specifically for this repository | Original project asset; no external source | Phase 00 placeholder |
-
-Neither asset is final card art. No third-party tarot illustration is included.
+The Phase 00 brand mark and stardust field were removed in Phase 09, when the
+home page became the book. No third-party tarot illustration is included.
 
 ## Phase 01 procedural card system
 
@@ -64,3 +60,24 @@ illustrations; no third-party artwork, font glyph art or traced imagery is used.
 ## Motion
 
 Motion begins subtly and must respect `prefers-reduced-motion`. Scene effects are decorative, skip-safe, pointer-inert, and separable from future asynchronous interpretation tasks.
+
+## Phase 09 the magic book
+
+The site opens as an old spell book lying on a candle-lit desk. The light
+comes from beyond the top-left corner (the side a right hand writes away
+from), so every shadow falls softly to the lower right. The candle itself is
+never drawn.
+
+The painted surfaces are SVG under `art/book/`, published as WebP under
+`public/book/` by `pnpm book-art`; the site never runs their SVG filters, so
+pages turn without repainting them.
+
+| Asset                                              | Author                                                             | License / source                                         | Status                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------- | ----------------------------------------------- |
+| `art/book/cover.svg`                               | Tarot Atelier project, drawn in code for this repository           | Original project asset                                   | Phase 09 art                                    |
+| Milespapa mark on the cover                        | Milespapa (the site owner); traced from the owner's own logo image | Owner's brand, used with permission                      | Replace with the original vector when available |
+| `art/book/frontispiece.svg`                        | Tarot Atelier project, drawn in code for this repository           | Original project asset                                   | Phase 09 art                                    |
+| `art/book/desk-portrait.svg`, `desk-landscape.svg` | Tarot Atelier project, generated in code for this repository       | Original project asset                                   | Phase 09 art                                    |
+| Pinyon Script                                      | The PinyonScript Project Authors (Sorkin Type; Nicole Fally)       | SIL Open Font License 1.1, `@fontsource/pinyon-script`   | Phase 09 font                                   |
+| IM Fell English                                    | Igino Marini (Google Fonts release)                                | SIL Open Font License 1.1, `@fontsource/im-fell-english` | Phase 09 font                                   |
+| 芫荽 Iansui                                        | The Iansui Project Authors (But Ko), from Fontworks Klee One       | SIL Open Font License 1.1, `@fontsource/iansui`          | Phase 09 font                                   |
