@@ -50,6 +50,7 @@ function toPositionRequest(position: DrawnPosition): ReadingPositionRequest {
   const { primary, jumper } = position.drawResult;
   return {
     index: position.index,
+    ...(position.name.trim() ? { name: position.name.trim() } : {}),
     question: position.question.trim(),
     x: position.x,
     y: position.y,

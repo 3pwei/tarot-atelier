@@ -2,9 +2,11 @@ import {
   clampCoordinate,
   countCharacters,
   createSpread,
+  normalizePositionName,
   normalizeRotation,
 } from "@/domain/spread/spread";
 import {
+  MAX_POSITION_NAME_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_SAVED_TEMPLATES,
   MAX_SPREAD_POSITIONS,
@@ -14,6 +16,8 @@ import {
 
 /** A layout of positions with their questions, ready to start a reading. */
 export interface TemplatePosition {
+  /** Short name, trimmed; empty when the position has none. */
+  readonly name: string;
   readonly question: string;
   readonly x: number;
   readonly y: number;
@@ -48,15 +52,15 @@ export type LibraryUpdate =
     }
   | { readonly ok: false; readonly code: TemplateRuleCode };
 
-const CIRCLE_QUESTIONS = [
-  "此刻的核心能量是什麼？",
-  "我正在追求什麼？",
-  "我需要放下什麼？",
-  "身邊的人如何影響這件事？",
-  "我還沒看見的面向是什麼？",
-  "我能依靠的資源是什麼？",
-  "接下來需要留意什麼？",
-  "這個循環會帶我走向哪裡？",
+const CIRCLE_POSITIONS = [
+  { name: "核心", question: "此刻的核心能量是什麼？" },
+  { name: "追求", question: "我正在追求什麼？" },
+  { name: "放下", question: "我需要放下什麼？" },
+  { name: "他人", question: "身邊的人如何影響這件事？" },
+  { name: "未見", question: "我還沒看見的面向是什麼？" },
+  { name: "資源", question: "我能依靠的資源是什麼？" },
+  { name: "留意", question: "接下來需要留意什麼？" },
+  { name: "走向", question: "這個循環會帶我走向哪裡？" },
 ] as const;
 
 /** Centre and radii of the circle template, in table-relative units. */
@@ -64,11 +68,12 @@ const CIRCLE_CENTER = { x: 0.5, y: 0.5 } as const;
 const CIRCLE_RADIUS = { x: 0.4, y: 0.48 } as const;
 
 function circlePositions(): readonly TemplatePosition[] {
-  return CIRCLE_QUESTIONS.map((question, order) => {
+  return CIRCLE_POSITIONS.map(({ name, question }, order) => {
     // Start at twelve o'clock and go clockwise.
-    const angle = (order / CIRCLE_QUESTIONS.length) * Math.PI * 2 - Math.PI / 2;
+    const angle = (order / CIRCLE_POSITIONS.length) * Math.PI * 2 - Math.PI / 2;
     const round = (value: number) => Number(value.toFixed(4));
     return {
+      name,
       question,
       x: round(CIRCLE_CENTER.x + Math.cos(angle) * CIRCLE_RADIUS.x),
       y: round(CIRCLE_CENTER.y + Math.sin(angle) * CIRCLE_RADIUS.y),
@@ -86,9 +91,27 @@ export const BUILT_IN_TEMPLATES: TemplateLibrary = Object.freeze([
     name: "經典三張",
     builtIn: true,
     positions: [
-      { question: "這件事的過去與起因是什麼？", x: 0.16, y: 0.5, rotation: 0 },
-      { question: "現在的狀態是什麼？", x: 0.5, y: 0.5, rotation: 0 },
-      { question: "接下來可能的走向是什麼？", x: 0.84, y: 0.5, rotation: 0 },
+      {
+        name: "過去",
+        question: "這件事的過去與起因是什麼？",
+        x: 0.16,
+        y: 0.5,
+        rotation: 0,
+      },
+      {
+        name: "現在",
+        question: "現在的狀態是什麼？",
+        x: 0.5,
+        y: 0.5,
+        rotation: 0,
+      },
+      {
+        name: "未來",
+        question: "接下來可能的走向是什麼？",
+        x: 0.84,
+        y: 0.5,
+        rotation: 0,
+      },
     ],
   },
   {
@@ -96,7 +119,13 @@ export const BUILT_IN_TEMPLATES: TemplateLibrary = Object.freeze([
     name: "單張指引",
     builtIn: true,
     positions: [
-      { question: "這個問題的答案是什麼？", x: 0.5, y: 0.5, rotation: 0 },
+      {
+        name: "指引",
+        question: "這個問題的答案是什麼？",
+        x: 0.5,
+        y: 0.5,
+        rotation: 0,
+      },
     ],
   },
   {
@@ -104,11 +133,41 @@ export const BUILT_IN_TEMPLATES: TemplateLibrary = Object.freeze([
     name: "五張十字",
     builtIn: true,
     positions: [
-      { question: "我現在真正的處境是什麼？", x: 0.5, y: 0.5, rotation: 0 },
-      { question: "什麼正在阻礙我？", x: 0.24, y: 0.5, rotation: 0 },
-      { question: "接下來的發展會是什麼？", x: 0.76, y: 0.5, rotation: 0 },
-      { question: "我意識到的目標是什麼？", x: 0.5, y: 0, rotation: 0 },
-      { question: "藏在底下的根源是什麼？", x: 0.5, y: 1, rotation: 0 },
+      {
+        name: "現況",
+        question: "我現在真正的處境是什麼？",
+        x: 0.5,
+        y: 0.5,
+        rotation: 0,
+      },
+      {
+        name: "阻礙",
+        question: "什麼正在阻礙我？",
+        x: 0.24,
+        y: 0.5,
+        rotation: 0,
+      },
+      {
+        name: "發展",
+        question: "接下來的發展會是什麼？",
+        x: 0.76,
+        y: 0.5,
+        rotation: 0,
+      },
+      {
+        name: "目標",
+        question: "我意識到的目標是什麼？",
+        x: 0.5,
+        y: 0,
+        rotation: 0,
+      },
+      {
+        name: "根源",
+        question: "藏在底下的根源是什麼？",
+        x: 0.5,
+        y: 1,
+        rotation: 0,
+      },
     ],
   },
   {
@@ -154,6 +213,7 @@ export function createSpreadFromLayout(options: {
     mainQuestion: options.mainQuestion,
     positions: options.layout.map((position) => ({
       id: options.createId(),
+      name: position.name,
       question: position.question,
       x: position.x,
       y: position.y,
@@ -164,7 +224,7 @@ export function createSpreadFromLayout(options: {
 
 /**
  * Whether the spread is laid out exactly as `layout`: the same positions in
- * the same order, with the same questions, places and angles. Drawn cards
+ * the same order, with the same names, questions, places and angles. Drawn cards
  * and the main question are not part of a layout.
  */
 export function matchesLayout(
@@ -177,6 +237,7 @@ export function matchesLayout(
       const expected = layout[order];
       return (
         expected !== undefined &&
+        position.name.trim() === expected.name &&
         position.question === expected.question &&
         position.x === expected.x &&
         position.y === expected.y &&
@@ -241,6 +302,7 @@ export function saveTemplate(
     positions: Object.freeze(
       options.spread.positions.map((position) =>
         Object.freeze({
+          name: position.name.trim(),
           question: position.question,
           x: position.x,
           y: position.y,
@@ -301,7 +363,7 @@ export function restoreBuiltIns(library: TemplateLibrary): TemplateLibrary {
  * Version of the stored template library. Bump it whenever the stored shape
  * or the built-ins people should be given change, and register a migration.
  */
-export const TEMPLATE_LIBRARY_VERSION = 2;
+export const TEMPLATE_LIBRARY_VERSION = 3;
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
 
@@ -322,8 +384,11 @@ function isUnit(value: unknown): value is number {
 
 function readTemplatePosition(value: unknown): TemplatePosition | undefined {
   if (!isRecord(value)) return undefined;
-  const { question, x, y, rotation } = value;
+  const { name, question, x, y, rotation } = value;
   if (
+    typeof name !== "string" ||
+    name !== normalizePositionName(name).trim() ||
+    countCharacters(name) > MAX_POSITION_NAME_LENGTH ||
     typeof question !== "string" ||
     countCharacters(question) > MAX_QUESTION_LENGTH ||
     !isUnit(x) ||
@@ -334,6 +399,7 @@ function readTemplatePosition(value: unknown): TemplatePosition | undefined {
     return undefined;
   }
   return Object.freeze({
+    name,
     question,
     x: clampCoordinate(x),
     y: clampCoordinate(y),
@@ -367,19 +433,34 @@ function readTemplate(value: unknown): SpreadTemplate | undefined {
 /**
  * Parses an untrusted stored library. Any malformed template makes the whole
  * value unreadable, so a partly broken store never silently loses entries.
+ * Older versions are upgraded step by step before they are read.
  */
 export function parseTemplateLibrary(
   raw: unknown,
 ): TemplateLibrary | undefined {
   if (!isRecord(raw)) return undefined;
   const version = raw.schemaVersion;
-  const migrate =
-    typeof version === "number" ? LIBRARY_MIGRATIONS[version] : undefined;
-  if (version !== TEMPLATE_LIBRARY_VERSION && !migrate) {
+  if (
+    typeof version !== "number" ||
+    !Number.isInteger(version) ||
+    version < 1 ||
+    version > TEMPLATE_LIBRARY_VERSION
+  ) {
     return undefined;
   }
-  const library = readLibrary(raw.templates);
-  return library && migrate ? migrate(library) : library;
+  return readLibrary(upgradeTemplates(raw.templates, version));
+}
+
+/** Upgrades the stored templates of version `from` to the current version. */
+function upgradeTemplates(templates: unknown, from: number): unknown {
+  if (!Array.isArray(templates)) return templates;
+  let upgraded: readonly unknown[] = templates;
+  for (let version = from; version < TEMPLATE_LIBRARY_VERSION; version += 1) {
+    const step = LIBRARY_UPGRADES[version];
+    if (!step) return undefined;
+    upgraded = step(upgraded);
+  }
+  return upgraded;
 }
 
 /**
@@ -388,28 +469,65 @@ export function parseTemplateLibrary(
  * (otherwise first), unless a template already uses its id or name or the
  * library is full. A v2 library without it means it was deleted, and stays so.
  */
-function addSingleCard(library: TemplateLibrary): TemplateLibrary {
+function addSingleCard(templates: readonly unknown[]): readonly unknown[] {
   const single = BUILT_IN_TEMPLATES.find(
     (template) => template.id === SINGLE_CARD_ID,
   );
   if (
     !single ||
-    library.length >= MAX_SAVED_TEMPLATES ||
-    library.some(
-      (template) => template.id === single.id || template.name === single.name,
+    templates.length >= MAX_SAVED_TEMPLATES ||
+    templates.some(
+      (template) =>
+        isRecord(template) &&
+        (template.id === single.id || template.name === single.name),
     )
   ) {
-    return library;
+    return templates;
   }
-  const after = library.findIndex((template) => template.id === "three-card");
+  const after = templates.findIndex(
+    (template) => isRecord(template) && template.id === "three-card",
+  );
   const at = after + 1;
-  return Object.freeze([...library.slice(0, at), single, ...library.slice(at)]);
+  return [...templates.slice(0, at), single, ...templates.slice(at)];
 }
 
-/** Upgrades a library read at version `n` (the key) to the current one. */
-const LIBRARY_MIGRATIONS: Readonly<
-  Record<number, (library: TemplateLibrary) => TemplateLibrary>
-> = Object.freeze({ 1: addSingleCard });
+/**
+ * v2 → v3: positions gained short names. A built-in's position keeps the
+ * name it ships with when its question is still the built-in's question in
+ * the same place; every other position starts unnamed.
+ */
+function nameStoredPositions(
+  templates: readonly unknown[],
+): readonly unknown[] {
+  return templates.map((template) => {
+    if (!isRecord(template) || !Array.isArray(template.positions)) {
+      return template;
+    }
+    const builtIn = BUILT_IN_TEMPLATES.find(
+      (candidate) => candidate.id === template.id,
+    );
+    const positions: readonly unknown[] = template.positions;
+    return {
+      ...template,
+      positions: positions.map((position, order) => {
+        if (!isRecord(position) || "name" in position) return position;
+        const shipped = builtIn?.positions[order];
+        const name =
+          template.builtIn === true &&
+          shipped !== undefined &&
+          shipped.question === position.question
+            ? shipped.name
+            : "";
+        return { ...position, name };
+      }),
+    };
+  });
+}
+
+/** Upgrades stored templates of version `n` (the key) to version `n + 1`. */
+const LIBRARY_UPGRADES: Readonly<
+  Record<number, (templates: readonly unknown[]) => readonly unknown[]>
+> = Object.freeze({ 1: addSingleCard, 2: nameStoredPositions });
 
 function readLibrary(templates: unknown): TemplateLibrary | undefined {
   if (!Array.isArray(templates) || templates.length > MAX_SAVED_TEMPLATES) {

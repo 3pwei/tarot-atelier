@@ -16,6 +16,7 @@ import {
   reorderPosition,
   rotatePosition,
   setMainQuestion,
+  setPositionName,
   setPositionQuestion,
   suggestPlacement,
   type SpreadUpdate,
@@ -100,6 +101,11 @@ export type SpreadAction =
       readonly type: "question";
       readonly positionId: string;
       readonly text: string;
+    }
+  | {
+      readonly type: "position-name";
+      readonly positionId: string;
+      readonly name: string;
     }
   | { readonly type: "main-question"; readonly text: string }
   | {
@@ -418,6 +424,11 @@ export function createSpreadReducer(createId: CreateId) {
         return applyUpdate(
           state,
           setPositionQuestion(state.spread, action.positionId, action.text),
+        );
+      case "position-name":
+        return applyUpdate(
+          state,
+          setPositionName(state.spread, action.positionId, action.name),
         );
       case "main-question":
         return { ...state, spread: setMainQuestion(state.spread, action.text) };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSpread } from "@/domain/spread/spread";
+import { createSpread, setPositionName } from "@/domain/spread/spread";
 import {
   BUILT_IN_TEMPLATES,
   createBlankSpread,
@@ -12,6 +12,7 @@ import {
   restoreBuiltIns,
   saveTemplate,
   serializeTemplateLibrary,
+  TEMPLATE_LIBRARY_VERSION,
   type TemplateLibrary,
 } from "@/domain/spread/templates";
 import { isSpreadReady } from "@/domain/spread/spread";
@@ -20,6 +21,13 @@ import {
   MAX_SPREAD_POSITIONS,
   type Spread,
 } from "@/domain/spread/types";
+
+/** A stored position as written before positions had short names. */
+function withoutName(position: object): object {
+  return Object.fromEntries(
+    Object.entries(position).filter(([key]) => key !== "name"),
+  );
+}
 
 function counter(prefix = "id") {
   let next = 0;
@@ -89,8 +97,8 @@ describe("saving templates", () => {
     expect(template.name).toBe("我的 每週回顧");
     expect(template.builtIn).toBe(false);
     expect(template.positions).toEqual([
-      { question: "", x: 0, y: 0.4, rotation: 0 },
-      { question: "問題 1", x: 0.1, y: 0.4, rotation: 45 },
+      { name: "", question: "", x: 0, y: 0.4, rotation: 0 },
+      { name: "", question: "問題 1", x: 0.1, y: 0.4, rotation: 45 },
     ]);
     expect(library).toHaveLength(BUILT_IN_TEMPLATES.length + 1);
 
@@ -257,7 +265,10 @@ describe("template library storage", () => {
 
   it.each([
     ["no version", { templates: [] }],
-    ["a future version", { schemaVersion: 3, templates: [] }],
+    [
+      "a future version",
+      { schemaVersion: TEMPLATE_LIBRARY_VERSION + 1, templates: [] },
+    ],
     [
       "a bad name",
       { schemaVersion: 1, templates: [{ ...BUILT_IN_TEMPLATES[0], name: "" }] },
@@ -383,5 +394,108 @@ describe("creating a spread from a layout", () => {
     });
 
     expect(spread.templateId).toBeUndefined();
+  });
+});
+
+describe("position names", () => {
+  it("names every built-in position", () => {
+    expect(
+      BUILT_IN_TEMPLATES.map((template) =>
+        template.positions.map((position) => position.name),
+      ),
+    ).toEqual([
+      ["過去", "現在", "未來"],
+      ["指引"],
+      ["現況", "阻礙", "發展", "目標", "根源"],
+      ["核心", "追求", "放下", "他人", "未見", "資源", "留意", "走向"],
+    ]);
+  });
+
+  it("carries a template's names onto the table", () => {
+    const spread = createSpreadFromTemplate({
+      template: BUILT_IN_TEMPLATES[0]!,
+      createId: counter(),
+    });
+    expect(spread.positions.map((position) => position.name)).toEqual([
+      "過去",
+      "現在",
+      "未來",
+    ]);
+  });
+
+  it("saves names trimmed, and counts them as part of the layout", () => {
+    const spread = spreadWith(2);
+    const renamed = setPositionName(spread, "p1", " 近況 ");
+    if (!renamed.ok) throw new Error("rename failed");
+    const { template } = save(BUILT_IN_TEMPLATES, "有名字", renamed.spread);
+    expect(template.positions.map((position) => position.name)).toEqual([
+      "",
+      "近況",
+    ]);
+    expect(matchesLayout(renamed.spread, template.positions)).toBe(true);
+    expect(matchesLayout(spread, template.positions)).toBe(false);
+  });
+});
+
+describe("a library saved before position names (v2)", () => {
+  const unnamed = (library: TemplateLibrary) =>
+    library.map((template) => ({
+      ...template,
+      positions: template.positions.map(withoutName),
+    }));
+  const v2 = (templates: readonly unknown[]) => ({
+    schemaVersion: 2,
+    templates,
+  });
+
+  it("gives the built-ins their names and leaves the reader's own unnamed", () => {
+    const { library } = save(BUILT_IN_TEMPLATES, "我的");
+    const upgraded = parseTemplateLibrary(v2(unnamed(library)));
+    expect(upgraded).toEqual(library);
+    expect(upgraded?.at(-1)?.positions.map((p) => p.name)).toEqual(["", ""]);
+  });
+
+  it("leaves a built-in position unnamed once its question was changed", () => {
+    const [threeCard] = unnamed(BUILT_IN_TEMPLATES);
+    const edited = {
+      ...threeCard!,
+      positions: threeCard!.positions.map((position, order) =>
+        order === 1 ? { ...position, question: "我現在的心情？" } : position,
+      ),
+    };
+    expect(
+      parseTemplateLibrary(v2([edited]))?.[0]?.positions.map((p) => p.name),
+    ).toEqual(["過去", "", "未來"]);
+  });
+
+  it("upgrades a v1 library through both steps", () => {
+    const withoutSingle = unnamed(
+      BUILT_IN_TEMPLATES.filter((template) => template.id !== "single-card"),
+    );
+    expect(
+      parseTemplateLibrary({ schemaVersion: 1, templates: withoutSingle }),
+    ).toEqual(BUILT_IN_TEMPLATES);
+  });
+
+  it("rejects a current library whose names are missing or too long", () => {
+    const [threeCard] = BUILT_IN_TEMPLATES;
+    const named = (name: string) => ({
+      schemaVersion: TEMPLATE_LIBRARY_VERSION,
+      templates: [
+        {
+          ...threeCard!,
+          positions: [{ ...threeCard!.positions[0]!, name }],
+        },
+      ],
+    });
+    expect(
+      parseTemplateLibrary({
+        schemaVersion: TEMPLATE_LIBRARY_VERSION,
+        templates: unnamed([threeCard!]),
+      }),
+    ).toBeUndefined();
+    expect(parseTemplateLibrary(named("五個字太長"))).toBeUndefined();
+    expect(parseTemplateLibrary(named(" 過去"))).toBeUndefined();
+    expect(parseTemplateLibrary(named("過去"))).toBeDefined();
   });
 });

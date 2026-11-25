@@ -52,3 +52,15 @@ export function detectPositionRole(question: string): PositionRole {
   );
   return match ? match[0] : "unknown";
 }
+
+/**
+ * A position's role, read first from its short name, which says it most
+ * plainly ("過去"), then from its question.
+ */
+export function positionRoleOf(position: {
+  readonly name?: string;
+  readonly question: string;
+}): PositionRole {
+  const named = position.name ? detectPositionRole(position.name) : "unknown";
+  return named === "unknown" ? detectPositionRole(position.question) : named;
+}

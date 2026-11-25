@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { countCharacters, isQuestionValid } from "@/domain/spread/spread";
 import {
+  MAX_POSITION_NAME_LENGTH,
   MAX_QUESTION_LENGTH,
   type SpreadPosition,
   type TablePoint,
@@ -19,6 +20,7 @@ interface PositionInspectorProps {
   /** Rotation and position fields appear only while arranging the table. */
   readonly arrangeable: boolean;
   readonly onQuestion: (text: string) => void;
+  readonly onName: (name: string) => void;
   readonly onRotate: (degrees: number) => void;
   readonly onMove: (point: TablePoint) => void;
   readonly onReorder: (index: number) => void;
@@ -41,6 +43,7 @@ export function PositionInspector({
   locked,
   arrangeable,
   onQuestion,
+  onName,
   onRotate,
   onMove,
   onReorder,
@@ -48,6 +51,7 @@ export function PositionInspector({
   onClose,
 }: PositionInspectorProps) {
   const baseId = useId();
+  const nameId = `${baseId}-name`;
   const questionId = `${baseId}-question`;
   const errorId = `${baseId}-error`;
   const valid = isQuestionValid(position.question);
@@ -69,6 +73,20 @@ export function PositionInspector({
           完成
         </button>
       </header>
+
+      <label className="field" htmlFor={nameId}>
+        <span>
+          短名 <em>選填，最多 {MAX_POSITION_NAME_LENGTH} 字</em>
+        </span>
+        <input
+          id={nameId}
+          type="text"
+          value={position.name}
+          placeholder="例如：過去"
+          autoComplete="off"
+          onChange={(event) => onName(event.target.value)}
+        />
+      </label>
 
       <label className="field" htmlFor={questionId}>
         <span>

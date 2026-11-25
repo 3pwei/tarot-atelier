@@ -1,11 +1,13 @@
 import { z } from "zod";
 import {
   MAX_MAIN_QUESTION_LENGTH,
+  MAX_POSITION_NAME_LENGTH,
   MAX_QUESTION_LENGTH,
   MAX_SPREAD_POSITIONS,
 } from "@/domain/spread/types";
 import { countCharacters } from "@/domain/spread/spread";
 import {
+  READABLE_READING_SCHEMA_VERSIONS,
   READING_FALLBACK_REASONS,
   READING_SCHEMA_VERSION,
   type ReadingRequest,
@@ -37,10 +39,16 @@ const id = z.string().min(1).max(MAX_ID_LENGTH);
 const orientation = z.enum(["upright", "reversed"]);
 const coordinate = z.number().min(0).max(1);
 
+/** Reads any readable version as the current one; the shapes are the same. */
+const schemaVersion = z
+  .enum(READABLE_READING_SCHEMA_VERSIONS)
+  .transform(() => READING_SCHEMA_VERSION);
+
 const cardRef = z.strictObject({ id, orientation });
 
 const positionRequest = z.strictObject({
   index: z.number().int().min(1).max(MAX_SPREAD_POSITIONS),
+  name: nonBlankText(MAX_POSITION_NAME_LENGTH).optional(),
   question: nonBlankText(MAX_QUESTION_LENGTH),
   x: coordinate,
   y: coordinate,
@@ -54,7 +62,7 @@ function isSequential(items: readonly { readonly index: number }[]): boolean {
 }
 
 export const readingRequestSchema = z.strictObject({
-  schemaVersion: z.literal(READING_SCHEMA_VERSION),
+  schemaVersion,
   deckId: id,
   mainQuestion: nonBlankText(MAX_MAIN_QUESTION_LENGTH).optional(),
   positions: z
@@ -88,7 +96,7 @@ const textList = z
   .max(MAX_LIST_ITEMS);
 
 export const readingResultSchema = z.strictObject({
-  schemaVersion: z.literal(READING_SCHEMA_VERSION),
+  schemaVersion,
   deckId: id,
   source: z.enum(["prewritten", "ai"]),
   positions: z

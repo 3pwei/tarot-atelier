@@ -15,6 +15,8 @@ export interface RecordedCard {
 /** A position as it was when the round was read; it never changes. */
 export interface RecordedPosition {
   readonly index: number;
+  /** The short name, trimmed; empty when the position had none. */
+  readonly name: string;
   readonly question: string;
   readonly x: number;
   readonly y: number;
@@ -80,6 +82,7 @@ export function recordRound(options: {
     if (!result) return [];
     const recorded: RecordedPosition = {
       index: position.index,
+      name: position.name.trim(),
       question: position.question,
       x: position.x,
       y: position.y,
@@ -161,6 +164,7 @@ export function recordedSpread(record: ReadingRecord): Spread | undefined {
     mainQuestion: record.mainQuestion,
     positions: record.positions.map((position) => ({
       id: `position-${position.index}`,
+      name: position.name,
       question: position.question,
       x: position.x,
       y: position.y,

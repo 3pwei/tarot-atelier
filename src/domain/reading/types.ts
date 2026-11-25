@@ -2,9 +2,20 @@ import type { Orientation } from "@/domain/deck/types";
 
 /**
  * Version of the request and result formats exchanged with a provider and
- * the reading endpoint. 1.1.0 added `ReadingResult.fallback`.
+ * the reading endpoint. 1.1.0 added `ReadingResult.fallback`; 1.2.0 added
+ * `ReadingPositionRequest.name`.
  */
-export const READING_SCHEMA_VERSION = "1.1.0" as const;
+export const READING_SCHEMA_VERSION = "1.2.0" as const;
+
+/**
+ * Versions still read and upgraded to the current one. A 1.1.0 request only
+ * lacks position names, and a 1.1.0 result is unchanged (readings kept in
+ * the history were written as 1.1.0).
+ */
+export const READABLE_READING_SCHEMA_VERSIONS = [
+  "1.1.0",
+  READING_SCHEMA_VERSION,
+] as const;
 
 export interface ReadingCardRef {
   readonly id: string;
@@ -14,6 +25,8 @@ export interface ReadingCardRef {
 /** One position as a provider sees it; the jumper never adds a position. */
 export interface ReadingPositionRequest {
   readonly index: number;
+  /** The position's short name, when it has one. */
+  readonly name?: string;
   readonly question: string;
   readonly x: number;
   readonly y: number;

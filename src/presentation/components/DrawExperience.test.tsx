@@ -471,6 +471,28 @@ describe("DrawExperience spread table", () => {
     expect(deckPile()).toBeEnabled();
   });
 
+  it("shows each position's short name, and lets it be renamed", async () => {
+    renderTable();
+    await ready();
+    const names = () =>
+      Array.from(document.querySelectorAll(".spread-slot__name")).map(
+        (name) => name.textContent,
+      );
+    expect(names()).toEqual(["過去", "現在", "未來"]);
+    expect(handle(1)).toHaveAccessibleName(/^牌位 1：過去，/u);
+
+    arrange();
+    fireEvent.click(handle(2));
+    fireEvent.change(screen.getByLabelText(/短名/u), {
+      target: { value: "此時此刻" },
+    });
+    expect(names()).toEqual(["過去", "此時此刻", "未來"]);
+    fireEvent.change(screen.getByLabelText(/短名/u), {
+      target: { value: "" },
+    });
+    expect(names()).toEqual(["過去", "未來"]);
+  });
+
   it("allows at most 12 positions and explains the limit", async () => {
     renderTable();
     await ready();

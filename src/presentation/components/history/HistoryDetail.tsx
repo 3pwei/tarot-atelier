@@ -92,6 +92,11 @@ export function HistoryDetail({
                 </span>
               ) : null}
               <span className="history-position__question">
+                {position.name && (
+                  <span className="history-position__position-name">
+                    {position.name}
+                  </span>
+                )}
                 {position.question}
               </span>
             </li>

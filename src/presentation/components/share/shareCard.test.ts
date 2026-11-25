@@ -111,6 +111,28 @@ describe("share card", () => {
     expect(text).toContain("1. 星星（正位）");
   });
 
+  it("keeps each position's short name, even with the questions hidden", () => {
+    const named: ReadingRecord = {
+      ...record(),
+      positions: record().positions.map((position) =>
+        position.index === 1 ? { ...position, name: "現況" } : position,
+      ),
+    };
+    const shown = shareText(
+      buildShareCard({ record: named, deck, siteUrl: SITE }),
+    );
+    expect(shown).toContain("1. 現況｜現在的我");
+    const hidden = shareText(
+      buildShareCard({
+        record: shareableRecord(named, "hidden"),
+        deck,
+        siteUrl: SITE,
+      }),
+    );
+    expect(hidden).toContain("1. 現況\n   星星（正位）");
+    expect(hidden).not.toContain("現在的我");
+  });
+
   it("names the image file by the local time of the round", () => {
     expect(shareFileName(new Date(2026, 10, 20, 2, 10).toISOString())).toBe(
       "tarot-atelier-20261120-0210.png",

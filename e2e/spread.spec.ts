@@ -752,6 +752,44 @@ test("a library saved before the single-card spread gets it after a reload", asy
   ]);
 });
 
+test("a library saved before short names gives the built-ins theirs after a reload", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "tarot-atelier:spread-templates",
+      JSON.stringify({
+        schemaVersion: 2,
+        templates: [
+          {
+            id: "three-card",
+            name: "經典三張",
+            builtIn: true,
+            positions: [
+              {
+                question: "這件事的過去與起因是什麼？",
+                x: 0.16,
+                y: 0.5,
+                rotation: 0,
+              },
+              { question: "我自己改過的問題", x: 0.5, y: 0.5, rotation: 0 },
+              {
+                question: "接下來可能的走向是什麼？",
+                x: 0.84,
+                y: 0.5,
+                rotation: 0,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+  await page.reload();
+  await expect(page.locator(".spread-slot__name")).toHaveText(["過去", "未來"]);
+  await expect(slot(page, 2).locator(".spread-slot__name")).toHaveCount(0);
+});
+
 test("in play the table steps back and hides frames and numbers; arranging shows them", async ({
   page,
 }) => {

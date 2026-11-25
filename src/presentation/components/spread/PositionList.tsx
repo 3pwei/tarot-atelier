@@ -1,6 +1,7 @@
 import type { Deck } from "@/domain/deck/deck";
 import type { CardInstance } from "@/domain/deck/types";
 import type { SpreadPosition } from "@/domain/spread/types";
+import { MISSING_QUESTION_LABEL } from "@/presentation/components/spread/positionLabels";
 
 interface PositionListProps {
   readonly positions: readonly SpreadPosition[];
@@ -83,7 +84,12 @@ export function PositionList({
               </span>
               <span className="position-list__body">
                 <span className="sr-only">牌位 {position.index}：</span>
-                <strong>{question || "尚未設定問題"}</strong>
+                {position.name.trim() && (
+                  <span className="position-list__name">
+                    {position.name.trim()}
+                  </span>
+                )}
+                <strong>{question || MISSING_QUESTION_LABEL}</strong>
                 <small>
                   {resultText(
                     position,

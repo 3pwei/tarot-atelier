@@ -27,6 +27,8 @@ export interface SharedCard {
 
 export interface SharedPosition {
   readonly index: number;
+  /** The position's short name; empty when it has none. */
+  readonly positionName: string;
   /** Empty when the player chose to hide their questions. */
   readonly question: string;
   readonly primary: SharedCard;
@@ -66,6 +68,7 @@ export function buildShareCard(options: {
     spreadName: record.spreadName ?? HISTORY_COPY.customSpread,
     positions: record.positions.map((position) => ({
       index: position.index,
+      positionName: position.name,
       question: position.question,
       primary: sharedCard(deck, position.primary),
       ...(position.jumper ? { jumper: sharedCard(deck, position.jumper) } : {}),
@@ -81,6 +84,13 @@ export function buildShareCard(options: {
   };
 }
 
+/** The position's short name and question, whichever it has, on one line. */
+export function positionCaption(position: SharedPosition): string {
+  return [position.positionName, position.question]
+    .filter((part) => part.length > 0)
+    .join("｜");
+}
+
 /** A card's name with its orientation, as read aloud on the table. */
 export function cardLabel(card: SharedCard): string {
   return `${card.name}（${ORIENTATION_LABELS[card.orientation]}）`;
@@ -93,13 +103,14 @@ export function shareText(card: ShareCard): string {
     lines.push(`${SHARE_COPY.mainQuestion}${card.mainQuestion}`);
   lines.push("");
   for (const position of card.positions) {
-    const heading = position.question
-      ? `${position.index}. ${position.question}`
+    const caption = positionCaption(position);
+    const heading = caption
+      ? `${position.index}. ${caption}`
       : `${position.index}.`;
     const jumper = position.jumper
       ? `＋${ROLE_LABELS.jumper} ${cardLabel(position.jumper)}`
       : "";
-    if (position.question) {
+    if (caption) {
       lines.push(heading, `   ${cardLabel(position.primary)}${jumper}`);
     } else {
       lines.push(`${heading} ${cardLabel(position.primary)}${jumper}`);

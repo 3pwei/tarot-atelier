@@ -1,6 +1,9 @@
 import { STANDARD_DECK_ID } from "@/domain/deck/builtinDecks";
 import type { DrawResult } from "@/domain/deck/draw";
-import type { ReadingResult } from "@/domain/reading/types";
+import {
+  READING_SCHEMA_VERSION,
+  type ReadingResult,
+} from "@/domain/reading/types";
 import { assignDraw, createSpread } from "@/domain/spread/spread";
 import type { Spread } from "@/domain/spread/types";
 
@@ -67,7 +70,7 @@ export function fixtureReading(synthesis = "整體的提醒。"): ReadingResult 
     interpretation: "保持期待。",
   };
   return {
-    schemaVersion: "1.1.0",
+    schemaVersion: READING_SCHEMA_VERSION,
     deckId: FIXTURE_DECK_ID,
     source: "prewritten",
     positions: [{ index: 1, question: "現在的我", primary: card }],

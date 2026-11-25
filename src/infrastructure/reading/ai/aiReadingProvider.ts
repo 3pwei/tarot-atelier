@@ -106,6 +106,7 @@ export class AiReadingProvider implements ReadingProvider {
       ...(request.mainQuestion ? { mainQuestion: request.mainQuestion } : {}),
       positions: reads.map(({ position, primary, jumper }) => ({
         index: position.index,
+        ...(position.name ? { name: position.name } : {}),
         question: position.question,
         card: promptCard(sources, primary),
         ...(jumper ? { jumper: promptCard(sources, jumper) } : {}),

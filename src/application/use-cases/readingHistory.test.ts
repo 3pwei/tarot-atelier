@@ -20,6 +20,13 @@ import {
   fixtureSpread,
 } from "@/domain/history/testing/historyFixtures";
 
+/** A stored position as written before positions had short names. */
+function withoutName(position: object): object {
+  return Object.fromEntries(
+    Object.entries(position).filter(([key]) => key !== "name"),
+  );
+}
+
 function record(): ReadingRecord {
   const created = recordRound({
     id: "r1",
@@ -123,5 +130,18 @@ describe("reading history persistence", () => {
       records: [{ ...good, secret: "x" }],
     });
     expect(parsed).toEqual({ ok: true, history: [] });
+  });
+
+  it("reads a history saved before position names, with its 1.1.0 readings", () => {
+    const [good] = withReading;
+    const v1 = {
+      ...good!,
+      positions: good!.positions.map(withoutName),
+      reading: { ...good!.reading!, schemaVersion: "1.1.0" },
+    };
+    expect(parseReadingHistory({ version: 1, records: [v1] })).toEqual({
+      ok: true,
+      history: withReading,
+    });
   });
 });

@@ -27,7 +27,8 @@ export function captureEditBaseline(spread: Spread): EditBaseline {
     ...(spread.templateId !== undefined
       ? { templateId: spread.templateId }
       : {}),
-    layout: spread.positions.map(({ question, x, y, rotation }) => ({
+    layout: spread.positions.map(({ name, question, x, y, rotation }) => ({
+      name: name.trim(),
       question,
       x,
       y,

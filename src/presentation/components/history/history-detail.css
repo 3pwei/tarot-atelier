@@ -85,6 +85,11 @@
   line-height: 1.4;
 }
 
+.history-position__position-name {
+  margin-inline-end: 0.4em;
+  color: var(--color-gold);
+}
+
 .history-detail__reading {
   display: grid;
   gap: 0.75rem;

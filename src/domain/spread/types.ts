@@ -8,6 +8,12 @@ export const MAX_SPREAD_POSITIONS = 12;
 export const MIN_QUESTION_LENGTH = 1;
 export const MAX_QUESTION_LENGTH = 300;
 
+/**
+ * A position's short name (過去, 現在…) is at most four characters. It may
+ * be empty: the position is then known by its number alone.
+ */
+export const MAX_POSITION_NAME_LENGTH = 4;
+
 /** The optional overall question shares the per-position length ceiling. */
 export const MAX_MAIN_QUESTION_LENGTH = MAX_QUESTION_LENGTH;
 
@@ -24,6 +30,8 @@ export const MAX_SAVED_TEMPLATES = 30;
 export interface SpreadPosition {
   readonly id: string;
   readonly index: number;
+  /** Up to `MAX_POSITION_NAME_LENGTH` characters; empty when unnamed. */
+  readonly name: string;
   readonly question: string;
   readonly x: number;
   readonly y: number;
