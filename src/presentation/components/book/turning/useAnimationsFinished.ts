@@ -3,6 +3,13 @@
 import { useEffect, useRef, type RefObject } from "react";
 
 /**
+ * Which animations end it: every one inside `root` (`subtree`), or only the
+ * root's own (`root`), for a scene that is over once it has faded away even
+ * while what it faded keeps settling unseen.
+ */
+export type FinishedBy = "subtree" | "root";
+
+/**
  * Calls `onFinished` once every CSS animation inside `root` has played out.
  * A turn's first frame can take a while to build on a slow machine, and its
  * animations only start then, so a timer started on mount would cut them
@@ -13,6 +20,7 @@ export function useAnimationsFinished(
   root: RefObject<HTMLElement | null>,
   durationMs: number,
   onFinished: () => void,
+  finishedBy: FinishedBy = "subtree",
 ): void {
   const callback = useRef(onFinished);
   useEffect(() => {
@@ -33,7 +41,9 @@ export function useAnimationsFinished(
         window.clearTimeout(timer);
       };
     }
-    const animations = element.getAnimations({ subtree: true });
+    const animations = element.getAnimations({
+      subtree: finishedBy === "subtree",
+    });
     Promise.all(animations.map((animation) => animation.finished)).then(
       finish,
       // Cancelled because the turn ended another way: nothing to do.
@@ -42,5 +52,5 @@ export function useAnimationsFinished(
     return () => {
       live = false;
     };
-  }, [root, durationMs]);
+  }, [root, durationMs, finishedBy]);
 }
