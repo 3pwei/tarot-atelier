@@ -1,7 +1,8 @@
 "use client";
 
 import { MAX_SPREAD_POSITIONS } from "@/domain/spread/types";
-import { HISTORY_COPY } from "@/presentation/components/history/historyLabels";
+import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
+import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
 
 interface SpreadToolbarProps {
   readonly positionCount: number;
@@ -14,9 +15,13 @@ interface SpreadToolbarProps {
   /** Starting over is allowed except while cards are washing or flying. */
   readonly canClear: boolean;
   readonly onClear: () => void;
-  readonly onOpenHistory: () => void;
 }
 
+/**
+ * Above the table: Edit on the left and Anew on the right, set as raised
+ * lettering like the book's other controls. Arranging adds a position and
+ * counts them.
+ */
 export function SpreadToolbar({
   positionCount,
   layoutLocked,
@@ -26,22 +31,23 @@ export function SpreadToolbar({
   onAdd,
   canClear,
   onClear,
-  onOpenHistory,
 }: SpreadToolbarProps) {
   const atLimit = positionCount >= MAX_SPREAD_POSITIONS;
 
   return (
     <div className="spread-toolbar">
       <div className="spread-toolbar__row">
-        <button
-          type="button"
-          className="ghost-action ghost-action--gold spread-toolbar__arrange"
-          aria-pressed={arranging}
+        <BookFloatButton
+          className="spread-toolbar__arrange"
+          label={arranging ? BOOK_COPY.doneEditingLabel : BOOK_COPY.editLabel}
+          pressed={arranging}
           disabled={!canToggleArrange}
-          onClick={onToggleArrange}
+          onPress={onToggleArrange}
         >
-          {arranging ? "結束編輯" : "編輯牌陣"}
-        </button>
+          <span lang="en">
+            {arranging ? BOOK_COPY.doneEditing : BOOK_COPY.edit}
+          </span>
+        </BookFloatButton>
         {arranging && (
           <>
             <button
@@ -62,27 +68,17 @@ export function SpreadToolbar({
           </>
         )}
 
-        {/* History and starting over are part of play, not of editing. */}
+        {/* Starting over is part of play, not of editing. */}
         {!arranging && (
-          <button
-            type="button"
-            className="ghost-action ghost-action--gold spread-toolbar__history"
-            onClick={onOpenHistory}
-          >
-            {HISTORY_COPY.open}
-          </button>
-        )}
-        {!arranging && (
-          <button
-            type="button"
-            className="icon-action spread-toolbar__restart"
-            aria-label="清除本次牌陣"
-            title="清除本次牌陣"
+          <BookFloatButton
+            className="spread-toolbar__restart"
+            label={BOOK_COPY.anewLabel}
             disabled={!canClear}
-            onClick={onClear}
+            onPress={onClear}
           >
+            <span lang="en">{BOOK_COPY.anew}</span>
             <RestartIcon />
-          </button>
+          </BookFloatButton>
         )}
       </div>
     </div>
@@ -93,9 +89,10 @@ export function SpreadToolbar({
 function RestartIcon() {
   return (
     <svg
+      className="spread-toolbar__restart-icon"
       viewBox="0 0 24 24"
-      width="18"
-      height="18"
+      width="16"
+      height="16"
       aria-hidden="true"
       focusable="false"
     >

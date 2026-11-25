@@ -4,6 +4,8 @@ import { answerReadings } from "./support/readingEndpoint";
 import {
   askMainQuestion,
   deckPile,
+  openReading,
+  openRecords,
   pickAll,
   reveal,
   openChapter,
@@ -25,6 +27,7 @@ test("keeps a finished round with its reading, and deletes it on request", async
   await pickAll(page, 3);
   for (const index of [1, 2, 3]) await reveal(page, index);
   await expect(page.getByText("牌陣已完成")).toBeVisible();
+  await openReading(page);
   await page
     .locator(".reading-panel")
     .getByRole("button", { name: "產生解讀" })
@@ -34,7 +37,7 @@ test("keeps a finished round with its reading, and deletes it on request", async
   // It survives a reload, which starts the table afresh.
   await page.reload();
   await expect(page.locator("[data-draw-card]")).toHaveCount(0);
-  await page.getByRole("button", { name: "歷史紀錄" }).click();
+  await openRecords(page);
   const panel = page.getByRole("dialog", { name: /歷史紀錄/u });
   const entries = panel.getByRole("listitem");
   await expect(entries).toHaveCount(1);
@@ -66,7 +69,7 @@ test("keeps a finished round with its reading, and deletes it on request", async
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
   await page.reload();
-  await page.getByRole("button", { name: "歷史紀錄" }).click();
+  await openRecords(page);
   await expect(page.getByText(/還沒有紀錄/u)).toBeVisible();
 });
 
@@ -83,7 +86,7 @@ test("reads a recorded round again from the history", async ({
   await expect(page.getByText("牌陣已完成")).toBeVisible();
 
   await hideDevOverlay(page);
-  await page.getByRole("button", { name: "歷史紀錄" }).click();
+  await openRecords(page);
   const panel = page.getByRole("dialog", { name: /歷史紀錄/u });
   await panel.getByRole("listitem").first().getByRole("button").click();
   await expect(panel.getByText("這次沒有產生解讀。")).toBeVisible();

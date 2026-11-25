@@ -90,7 +90,8 @@ export function PositionList({
                   </span>
                 )}
                 <strong>{question || MISSING_QUESTION_LABEL}</strong>
-                <small>
+                {/* Until a card lies there, the line is read aloud only. */}
+                <small className={position.drawResult ? undefined : "sr-only"}>
                   {resultText(
                     position,
                     deck,

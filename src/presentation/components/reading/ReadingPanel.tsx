@@ -45,7 +45,7 @@ export function ReadingPanel({
 
   return (
     <section
-      className="reading-panel"
+      className="reading-panel night-surface"
       aria-labelledby={titleId}
       aria-busy={loading || undefined}
     >

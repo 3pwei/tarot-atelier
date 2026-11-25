@@ -109,6 +109,7 @@ function heldRequester() {
 function renderDialog(
   entries: ReadingHistory = history,
   requester: ReadingRequester = prewritten(),
+  share = fakeShareServices(),
 ) {
   const handlers = {
     onRemove: vi.fn(),
@@ -120,7 +121,7 @@ function renderDialog(
     <HistoryDialog
       history={entries}
       registry={registry}
-      shareServices={fakeShareServices().services}
+      shareServices={share.services}
       readingServices={{ requester, source: "prewritten", createRequestId }}
       now={() => new Date(2026, 10, 20, 9, 0)}
       {...handlers}
@@ -230,6 +231,26 @@ describe("HistoryDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "‹ 返回" }));
     held.release();
     await waitFor(() => expect(onReading).toHaveBeenCalledOnce());
+  });
+
+  it("shares a round inside the same panel, and returns to it", async () => {
+    const share = fakeShareServices();
+    renderDialog(history, prewritten(), share);
+    fireEvent.click(
+      screen.getByRole("button", { name: /這份新工作適合我嗎/u }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "分享" }));
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    await screen.findByAltText("要分享的圖卡預覽");
+    fireEvent.click(screen.getByRole("button", { name: "複製文字" }));
+    await screen.findByText("已複製文字。");
+    expect(share.sharer.copyText.mock.calls[0]?.[0]).toContain(
+      "主問題：這份新工作適合我嗎？",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "‹ 返回" }));
+    expect(
+      screen.getByRole("button", { name: "刪除這筆" }),
+    ).toBeInTheDocument();
   });
 
   it("closes with Escape", () => {

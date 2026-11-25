@@ -18,18 +18,18 @@
   aspect-ratio: 1;
   padding: 0;
   place-items: center;
-  border: 1px solid rgba(230, 197, 122, 0.55);
+  border: 1px solid var(--table-line);
   border-radius: 50%;
-  color: var(--color-gold);
-  background: rgba(6, 5, 14, 0.8);
+  color: var(--table-ink);
+  background: var(--book-paper);
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
 }
 
 .board-zoom__button:hover:not(:disabled) {
-  color: #1a1206;
-  background: var(--color-gold);
+  color: var(--book-paper);
+  background: var(--table-ink);
 }
 
 .board-zoom__button:focus-visible {

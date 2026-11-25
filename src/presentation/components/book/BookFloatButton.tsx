@@ -7,6 +7,7 @@ interface BookFloatButtonProps {
   readonly className?: string;
   /** For a switch: whether it is on. */
   readonly pressed?: boolean;
+  readonly disabled?: boolean;
 }
 
 /** A control set as raised lettering: a heavy shadow, never a colour. */
@@ -16,6 +17,7 @@ export function BookFloatButton({
   onPress,
   className,
   pressed,
+  disabled,
 }: BookFloatButtonProps) {
   return (
     <button
@@ -23,6 +25,7 @@ export function BookFloatButton({
       className={className ? `book-float ${className}` : "book-float"}
       aria-label={label}
       aria-pressed={pressed}
+      disabled={disabled}
       onClick={onPress}
     >
       {children}

@@ -6,8 +6,6 @@ import { PositionList } from "@/presentation/components/spread/PositionList";
 import type { SpreadAction } from "@/presentation/components/spread/spreadState";
 import type { PositionHandlers } from "@/presentation/components/spread/usePositionHandlers";
 
-const PLAY_HINT =
-  "翻開的牌點一下可放大。要換牌陣範本、改牌位問題、新增或移動牌位，請按「編輯牌陣」。";
 const ARRANGE_HINT =
   "編輯牌陣中：點選牌位可改問題、排序或刪除；拖曳可移動；長按牌位後拖曳，或拖曳右下角的迴轉箭頭可旋轉；也可聚焦牌位後用方向鍵、數字鍵盤操作。完成後按「結束編輯」。";
 
@@ -24,7 +22,7 @@ interface SpreadDetailsProps {
   readonly dispatch: Dispatch<SpreadAction>;
 }
 
-/** Below the board: the selected position's editor or a hint, then every position. */
+/** Below the board: while arranging, the selected position's editor or how to arrange; then every position, as footnotes. */
 export function SpreadDetails({
   positions,
   deck,
@@ -61,9 +59,7 @@ export function SpreadDetails({
           onClose={() => handlers.select(undefined)}
         />
       ) : (
-        <p className="spread-details__hint">
-          {arranging ? ARRANGE_HINT : PLAY_HINT}
-        </p>
+        arranging && <p className="spread-details__hint">{ARRANGE_HINT}</p>
       )}
       <PositionList
         positions={positions}

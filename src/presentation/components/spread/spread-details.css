@@ -5,16 +5,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 1.25rem;
-  padding: 0 clamp(1rem, 3vw, 2rem) clamp(1rem, 2.6vw, 1.5rem);
+  gap: 16px;
 }
 
 .spread-details__hint {
   margin: 0;
-  padding: 1rem 1.1rem;
-  border: 1px dashed rgba(230, 197, 122, 0.22);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-soft);
+  padding: 8px 0;
+  color: var(--table-ink-soft);
+  font-family: var(--book-text);
   font-size: 0.85rem;
   line-height: 1.6;
 }

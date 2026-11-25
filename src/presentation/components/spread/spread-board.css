@@ -1,4 +1,4 @@
-/* The board: the cloth, its zoomed canvas and the field positions lie on. */
+/* The board: the page's printed table, its zoomed canvas and the field positions lie on. */
 
 /* The deck yields width to the table, where the cards now land. */
 .draw-experience {
@@ -7,7 +7,6 @@
 
 /* One table for everything: the deck, its wash and the wheel live on it. */
 .draw-table__stage.spread-stage {
-  --table-screen-margin: 6rem;
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
   min-height: 0;
@@ -22,20 +21,11 @@
      edge must not slide the whole table up. */
   overflow: clip;
   width: 100%;
-  /* The whole table, wheel included, stays on one screen on wide displays. */
-  max-width: calc((100svh - var(--table-screen-margin)) * 3 / 2);
+  /* The whole table, wheel included, stays on one screen on wide displays,
+     beside whatever surrounds it there (--table-screen-margin). */
+  max-width: calc((100svh - var(--table-screen-margin, 6rem)) * 3 / 2);
   margin-inline: auto;
   aspect-ratio: 3 / 2;
-  border: 1px solid rgba(230, 197, 122, 0.18);
-  border-radius: calc(var(--table-radius) - 0.4rem);
-  background:
-    radial-gradient(
-      ellipse 70% 60% at 50% 50%,
-      rgba(114, 84, 163, 0.22),
-      transparent 75%
-    ),
-    rgba(6, 5, 14, 0.45);
-  box-shadow: inset 0 0 3rem rgba(0, 0, 0, 0.55);
   /* Vertical swipes still scroll the page until the table is zoomed. */
   touch-action: pan-y;
   user-select: none;
@@ -75,7 +65,7 @@
   top: 50%;
   left: 50%;
   width: 62%;
-  color: rgba(230, 197, 122, 0.12);
+  color: var(--table-line-faint);
   transform: translate(-50%, -50%);
   pointer-events: none;
   /* Painted once on its own layer, so positions moving over it never
@@ -96,8 +86,8 @@
   left: 50%;
   width: min(80%, 22rem);
   margin: 0;
-  color: var(--color-ink-soft);
-  font-family: var(--font-display);
+  color: var(--table-ink-soft);
+  font-family: var(--book-text);
   font-size: clamp(0.85rem, 2.4cqw, 1.05rem);
   letter-spacing: 0.06em;
   text-align: center;
@@ -111,8 +101,8 @@
   position: absolute;
   z-index: 6;
   inset: 0.5rem;
-  border: 2px dashed rgba(230, 197, 122, 0.55);
-  border-radius: calc(var(--table-radius) - 0.9rem);
+  border: 1.5px dashed var(--table-line);
+  border-radius: 12px;
   content: "";
   pointer-events: none;
 }
@@ -123,8 +113,8 @@
   left: 50%;
   padding: 0.2rem 0.7rem;
   border-radius: 999px;
-  background: rgba(6, 5, 14, 0.8);
-  color: var(--color-gold);
+  background: var(--book-paper);
+  color: var(--table-ink);
   content: "編輯牌陣中";
   font-size: 0.78rem;
   letter-spacing: 0.12em;

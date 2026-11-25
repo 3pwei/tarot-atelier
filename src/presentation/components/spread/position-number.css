@@ -1,21 +1,21 @@
-/* A position's number in a gold circle, in the editor and the list alike. */
+/* A position's number, ringed in ink, in the editor and the footnotes alike. */
 
 .position-inspector__number,
 .position-list__number {
   display: inline-grid;
-  width: 1.8rem;
+  width: 1.7rem;
   aspect-ratio: 1;
   flex: none;
   place-items: center;
+  border: 1px solid var(--table-line);
   border-radius: 50%;
-  color: #1a1206;
-  background: linear-gradient(135deg, #fbeab8, #e6c57a 55%, #b98a42);
-  font-family: var(--font-display);
+  color: var(--table-ink);
+  font-family: var(--book-serif);
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
 }
 
 .position-list__item[data-missing-question] .position-list__number {
-  background: linear-gradient(135deg, #ffe0a8, #ff9a3c);
+  border-color: var(--control-warning);
+  color: var(--control-warning);
 }

@@ -11,9 +11,9 @@
   display: grid;
   gap: 0.9rem;
   padding: 1rem 1.1rem 1.1rem;
-  border: 1px solid rgba(230, 197, 122, 0.3);
+  border: 1px solid var(--control-line);
   border-radius: var(--radius-sm);
-  background: rgba(12, 10, 28, 0.72);
+  background: var(--control-fill);
 }
 
 .position-inspector__head {
@@ -28,8 +28,8 @@
   align-items: center;
   gap: 0.6rem;
   margin: 0;
-  color: var(--color-moon);
-  font-family: var(--font-display);
+  color: var(--control-text);
+  font-family: var(--book-text);
   font-size: 1.05rem;
   font-weight: 500;
 }
@@ -42,6 +42,6 @@
 
 .position-inspector__note {
   margin: 0;
-  color: rgba(207, 198, 220, 0.75);
+  color: var(--control-muted);
   font-size: 0.78rem;
 }

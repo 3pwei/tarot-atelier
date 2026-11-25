@@ -1,0 +1,49 @@
+/* Around the table on the page: the main question as a line to write on, the hint under the table, and the way to the reading. */
+
+.draw-table__question {
+  width: min(100%, 30rem);
+  margin: 0 auto 8px;
+}
+
+/* A line of ink to write on, not a box. */
+.draw-table__question .spread-main-question input {
+  min-height: 2.5rem;
+  padding: 8px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--table-line);
+  border-radius: 0;
+  color: var(--table-ink);
+  background: none;
+  font-family: var(--book-text);
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+.draw-table__question .spread-main-question input::placeholder {
+  color: color-mix(in srgb, var(--table-ink) 50%, transparent);
+}
+
+.draw-table__question .spread-main-question input:focus-visible {
+  border-bottom-color: var(--table-ink);
+  box-shadow: none;
+}
+
+.draw-table__question .spread-main-question small {
+  text-align: center;
+}
+
+.table-hint {
+  min-height: 1.5em;
+  margin: 8px 0 16px;
+  color: var(--table-ink-soft);
+  font-family: var(--book-text);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.draw-table__reading-cue {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 16px;
+}

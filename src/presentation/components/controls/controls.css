@@ -1,9 +1,48 @@
 /* Buttons and form fields shared by every part of the page: the table, dialogs, history, sharing and readings. */
 
+/* Their colours come from the surface they sit on: the night sky of the
+   dialogs and readings by default, or a book page. */
+:root,
+.night-surface {
+  --control-text: var(--color-moon);
+  --control-label: var(--color-ink-soft);
+  --control-muted: rgba(207, 198, 220, 0.62);
+  --control-line: rgba(230, 197, 122, 0.3);
+  --control-line-strong: rgba(230, 197, 122, 0.7);
+  --control-field-line: rgba(230, 197, 122, 0.26);
+  --control-fill: rgba(16, 13, 34, 0.7);
+  --control-field-fill: rgba(8, 8, 20, 0.62);
+  --control-accent: var(--color-gold);
+  --control-accent-line: rgba(230, 197, 122, 0.6);
+  --control-warning: #ffb877;
+  --control-danger-text: #ffc6b4;
+  --control-danger-line: rgba(255, 140, 110, 0.55);
+  --control-danger-fill: rgba(60, 18, 14, 0.5);
+  --control-danger-hover: rgba(90, 26, 18, 0.65);
+}
+
+.paper-surface {
+  --control-text: #3d2a18;
+  --control-label: #6b5238;
+  --control-muted: rgba(61, 42, 24, 0.6);
+  --control-line: rgba(61, 42, 24, 0.32);
+  --control-line-strong: rgba(61, 42, 24, 0.7);
+  --control-field-line: rgba(61, 42, 24, 0.3);
+  --control-fill: rgba(255, 249, 232, 0.4);
+  --control-field-fill: rgba(255, 250, 238, 0.55);
+  --control-accent: #5a3510;
+  --control-accent-line: rgba(61, 42, 24, 0.55);
+  --control-warning: #9a4a12;
+  --control-danger-text: #8a2a14;
+  --control-danger-line: rgba(138, 42, 20, 0.5);
+  --control-danger-fill: rgba(138, 42, 20, 0.06);
+  --control-danger-hover: rgba(138, 42, 20, 0.12);
+}
+
 .field {
   display: grid;
   gap: 0.35rem;
-  color: var(--color-ink-soft);
+  color: var(--control-label);
   font-size: 0.8rem;
   letter-spacing: 0.04em;
 }
@@ -15,7 +54,7 @@
 }
 
 .field em {
-  color: #ffb877;
+  color: var(--control-warning);
   font-size: 0.7rem;
   font-style: normal;
   letter-spacing: 0.12em;
@@ -27,10 +66,10 @@
   width: 100%;
   min-height: 2.6rem;
   padding: 0.55rem 0.8rem;
-  border: 1px solid rgba(230, 197, 122, 0.26);
+  border: 1px solid var(--control-field-line);
   border-radius: 0.7rem;
-  color: var(--color-moon);
-  background: rgba(8, 8, 20, 0.62);
+  color: var(--control-text);
+  background: var(--control-field-fill);
   font: inherit;
   font-size: 0.95rem;
   letter-spacing: 0.01em;
@@ -45,7 +84,7 @@
 .field input:focus-visible,
 .field textarea:focus-visible,
 .field select:focus-visible {
-  border-color: var(--color-gold);
+  border-color: var(--control-accent);
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -56,17 +95,17 @@
 }
 
 .field textarea[aria-invalid="true"] {
-  border-color: rgba(255, 154, 60, 0.75);
+  border-color: var(--control-warning);
 }
 
 .field small {
-  color: rgba(207, 198, 220, 0.62);
+  color: var(--control-muted);
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
 }
 
 .field small[data-invalid] {
-  color: #ffb877;
+  color: var(--control-warning);
 }
 
 .preset-chip,
@@ -75,10 +114,10 @@
 .icon-action {
   min-height: 2.4rem;
   padding: 0.4rem 1rem;
-  border: 1px solid rgba(230, 197, 122, 0.3);
+  border: 1px solid var(--control-line);
   border-radius: 999px;
-  color: var(--color-moon);
-  background: rgba(16, 13, 34, 0.7);
+  color: var(--control-text);
+  background: var(--control-fill);
   font: inherit;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
@@ -92,7 +131,7 @@
 .preset-chip:not(:disabled):hover,
 .ghost-action:not(:disabled):hover,
 .icon-action:not(:disabled):hover {
-  border-color: rgba(230, 197, 122, 0.7);
+  border-color: var(--control-line-strong);
   transform: translateY(-1px);
 }
 
@@ -104,8 +143,8 @@
 }
 
 .ghost-action--gold {
-  border-color: rgba(230, 197, 122, 0.6);
-  color: var(--color-gold);
+  border-color: var(--control-accent-line);
+  color: var(--control-accent);
 }
 
 .ghost-action--gold[data-full] {
@@ -113,14 +152,14 @@
 }
 
 .danger-action {
-  border-color: rgba(255, 140, 110, 0.55);
-  color: #ffc6b4;
-  background: rgba(60, 18, 14, 0.5);
+  border-color: var(--control-danger-line);
+  color: var(--control-danger-text);
+  background: var(--control-danger-fill);
 }
 
 .danger-action:not(:disabled):hover {
-  border-color: #ff9a7c;
-  background: rgba(90, 26, 18, 0.65);
+  border-color: var(--control-danger-text);
+  background: var(--control-danger-hover);
 }
 
 .icon-action {

@@ -18,7 +18,6 @@ interface SpreadSetupProps {
   readonly onToggleArrange: () => void;
   readonly onAdd: () => void;
   readonly onClear: () => void;
-  readonly onOpenHistory: () => void;
 }
 
 /**
@@ -39,7 +38,6 @@ export function SpreadSetup({
   onToggleArrange,
   onAdd,
   onClear,
-  onOpenHistory,
 }: SpreadSetupProps) {
   const apply = (templateId: string) =>
     dispatch({ type: "apply-template", templateId });
@@ -69,7 +67,6 @@ export function SpreadSetup({
         onAdd={onAdd}
         canClear={canClear}
         onClear={onClear}
-        onOpenHistory={onOpenHistory}
       />
     </div>
   );

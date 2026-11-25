@@ -77,6 +77,18 @@ export async function reveal(page: Page, index: number) {
   ).toHaveCount(count, { timeout: 20_000 });
 }
 
+/** Once every card is revealed, "Card Reading" opens the reading under the table. */
+export async function openReading(page: Page) {
+  await page.getByRole("button", { name: "看解讀" }).click();
+  await expect(page.locator(".reading-panel")).toBeVisible();
+}
+
+/** The records live in the book's appendix, not on the table. */
+export async function openRecords(page: Page) {
+  await page.goto("/#records");
+  await expect(page.getByRole("dialog", { name: /歷史紀錄/u })).toBeVisible();
+}
+
 /** Dealing needs a main question; asks one and waits until play can start. */
 export async function askMainQuestion(
   page: Page,
