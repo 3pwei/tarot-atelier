@@ -34,14 +34,17 @@
 .draw-table[data-layout="single-page"] .table-hint {
   order: 6;
 }
-.draw-table[data-layout="single-page"] .draw-table__reading-cue {
+/* The questions, then the way to the reading, and the reading last of all. */
+.draw-table[data-layout="single-page"] .spread-details {
   order: 7;
 }
-.draw-table[data-layout="single-page"] .reading-panel {
+.draw-table[data-layout="single-page"] .draw-table__reading-cue {
   order: 8;
+  margin: 16px 0 0;
 }
-.draw-table[data-layout="single-page"] .spread-details {
+.draw-table[data-layout="single-page"] .reading-panel {
   order: 9;
+  margin-top: 24px;
 }
 
 /* Facing pages (placed by the chapter page, see book.css): the play on the
