@@ -37,6 +37,7 @@ import { ArrangeConfirmDialog } from "@/presentation/components/spread/ArrangeCo
 import { TableHint } from "@/presentation/components/draw/TableHint";
 import { BookFloatButton } from "@/presentation/components/book/BookFloatButton";
 import { BOOK_COPY } from "@/presentation/components/book/bookCopy";
+import { SHARE_COPY } from "@/presentation/components/share/shareLabels";
 import { MainQuestionField } from "@/presentation/components/spread/MainQuestionField";
 import {
   SpreadBoard,
@@ -198,11 +199,23 @@ export function DrawExperience({
   // opens under the table.
   const readingPage =
     layout === "facing-pages" ? readingPages?.page : undefined;
+  // Opened on one page, the reading lies at the foot of the page: the view
+  // follows it there, and it takes the focus from the cue that opened it.
+  const readingPanel = useRef<HTMLElement>(null);
   const readingOpen =
     layout === "single-page" &&
     spreadRevealed &&
     roundKey !== undefined &&
     readingRound === roundKey;
+  useEffect(() => {
+    const panel = readingPanel.current;
+    if (!readingOpen || !panel) return;
+    panel.focus({ preventScroll: true });
+    panel.scrollIntoView?.({
+      behavior: motionMode === "animated" ? "smooth" : "auto",
+      block: "start",
+    });
+  }, [readingOpen, motionMode]);
   // One spread of the reading on facing pages, live or as a still copy.
   const readingOnPages = (
     page: number,
@@ -231,10 +244,13 @@ export function DrawExperience({
   );
   const showReadingPage = (page: number | undefined) =>
     readingPages?.show(page, printedSpread);
-  const openReading = () =>
-    layout === "facing-pages" && readingPages
-      ? showReadingPage(0)
-      : setReadingRound(roundKey);
+  // "Card Reading" reads the cards at once: there is no second button to
+  // press, unless this round already has a reading or one on the way.
+  const openReading = () => {
+    if (reading.state.status === "idle" && reading.build.ok) reading.generate();
+    if (layout === "facing-pages" && readingPages) showReadingPage(0);
+    else setReadingRound(roundKey);
+  };
 
   const unfinished = arranging || (filled > 0 && !spreadRevealed);
   // On facing pages the notes page has room for the question or for the
@@ -421,15 +437,20 @@ export function DrawExperience({
               {spreadRevealed && !arranging && !readingOpen && (
                 <div className="draw-table__reading-cue">
                   <BookFloatButton
+                    className="draw-table__reading-open"
                     label={BOOK_COPY.cardReadingLabel}
                     onPress={openReading}
                   >
                     <span lang="en">{BOOK_COPY.cardReading}</span>
                   </BookFloatButton>
+                  <BookFloatButton label={SHARE_COPY.open} onPress={shareRound}>
+                    <span lang="en">{BOOK_COPY.share}</span>
+                  </BookFloatButton>
                 </div>
               )}
               {readingOpen && (
                 <ReadingPanel
+                  ref={readingPanel}
                   session={reading}
                   revealed={spreadRevealed}
                   source={readingProvider.source}

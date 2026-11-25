@@ -87,7 +87,7 @@
 </g>
 <!-- banner -->
 <path d="M52 578 H248 L238 590 L248 602 H52 L62 590z" fill="#9b3b2a" stroke-width="1.4"/>
-<text x="150" y="597" text-anchor="middle" font-family="Pinyon Script" font-size="19" fill="#f6e3bd" stroke="none">The Book of Starry Tarot</text>
+<text x="150" y="597" text-anchor="middle" font-family="IM Fell English" font-size="15" letter-spacing="1" fill="#f6e3bd" stroke="none">The Book of Starry Tarot</text>
 </g>
 <rect x="8" y="8" width="284" height="624" fill="#000" filter="url(#grain)" opacity=".9"/>
 </svg>

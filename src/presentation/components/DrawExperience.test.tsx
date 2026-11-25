@@ -308,7 +308,7 @@ describe("DrawExperience spread table", () => {
     expect(screen.queryByRole("button", { name: "看解讀" })).toBeNull();
   });
 
-  it("reads the finished spread offline, labelled as a sample", async () => {
+  it("takes the focus to the reading it opens at the foot of the page", async () => {
     renderTable();
     await ready();
     await shuffleAndPick();
@@ -316,7 +316,17 @@ describe("DrawExperience spread table", () => {
     await screen.findByText("牌陣已完成");
 
     openReading();
-    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
+    expect(screen.getByRole("region", { name: "解讀" })).toHaveFocus();
+  });
+
+  it("reads the cards as soon as Card Reading is pressed, offline as a labelled sample", async () => {
+    renderTable();
+    await ready();
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+
+    openReading();
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
     expect(screen.getByText("範例解牌，不是 AI")).toBeInTheDocument();
     expect(document.querySelectorAll(".printed-reading__section")).toHaveLength(
@@ -340,10 +350,12 @@ describe("DrawExperience spread table", () => {
     expect(recorded?.reading).toBeUndefined();
 
     openReading();
-    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     await screen.findByText("全局關聯");
+    // The reading is stored once it has been read; the round stays one.
+    await waitFor(() =>
+      expect(storedRecords(historyStorage)[0]?.reading).toBeDefined(),
+    );
     expect(storedRecords(historyStorage)).toHaveLength(1);
-    expect(storedRecords(historyStorage)[0]?.reading).toBeDefined();
   });
 
   it("shares the finished table with its current reading", async () => {
@@ -353,7 +365,6 @@ describe("DrawExperience spread table", () => {
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
     openReading();
-    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     await screen.findByText("全局關聯");
 
     fireEvent.click(screen.getByRole("button", { name: "分享" }));
@@ -374,7 +385,6 @@ describe("DrawExperience spread table", () => {
     [1, 2, 3].forEach((index) => reveal(index));
     await screen.findByText("牌陣已完成");
     openReading();
-    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     await screen.findByText("全局關聯");
 
     fireEvent.click(screen.getByRole("button", { name: "清除本次牌陣" }));
@@ -388,7 +398,20 @@ describe("DrawExperience spread table", () => {
     // The new round's reading waits to be asked for again.
     expect(screen.queryByText("全局關聯")).toBeNull();
     openReading();
-    expect(screen.getByRole("button", { name: "產生解讀" })).toBeEnabled();
+    expect(await screen.findByText("全局關聯")).toBeInTheDocument();
+  });
+
+  it("offers sharing beside Card Reading once every card is revealed", async () => {
+    const { share } = renderTable();
+    await ready("這份新工作適合我嗎？");
+    await shuffleAndPick();
+    [1, 2, 3].forEach((index) => reveal(index));
+    await screen.findByText("牌陣已完成");
+
+    fireEvent.click(screen.getByRole("button", { name: "分享" }));
+    const dialog = screen.getByRole("dialog", { name: "分享這次的牌" });
+    await within(dialog).findByAltText("要分享的圖卡預覽");
+    expect(share.rendered.at(-1)?.positions).toHaveLength(3);
   });
 
   it("never shows players the jumper probability", async () => {
@@ -1057,7 +1080,6 @@ describe("DrawExperience on facing pages", () => {
 
     expect(screen.getByRole("heading", { name: "Card Reading" })).toBeVisible();
     expect(document.querySelector(".draw-table__play")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "產生解讀" }));
     expect(await screen.findByText("全局關聯")).toBeInTheDocument();
     // Printed, not folded: each position headed by its short name.
     expect(document.querySelector(".reading-panel details")).toBeNull();

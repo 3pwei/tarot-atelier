@@ -56,9 +56,13 @@
   line-height: 1.6;
 }
 
-.reading-panel .book-title {
+.reading-panel:focus {
+  outline: none;
+}
+
+.reading-panel .book-title:lang(en) {
   margin: 2px 0 4px;
-  font-size: 40px;
+  font-size: 34px;
 }
 
 .reading-panel .book-flourish {

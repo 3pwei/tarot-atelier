@@ -99,7 +99,7 @@ describe("toRoman", () => {
 });
 
 describe("titleLanguageOf", () => {
-  it("sets latin titles in the script face", () => {
+  it("sets latin titles in the English face", () => {
     expect(titleLanguageOf("The Three Cards")).toBe("en");
     expect(titleLanguageOf("Love & Work: 2026")).toBe("en");
   });

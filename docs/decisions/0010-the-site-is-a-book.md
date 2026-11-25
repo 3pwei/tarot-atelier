@@ -18,7 +18,7 @@ The owner asked for this in stages. This ADR covers the first: the book's shell 
 - **The table and codex keep their look for now**, on a dark plate inside the page, until their chapters are redrawn (the table since was: ADR 0013). The records open the existing history dialog.
 - **Painted surfaces are images.** The cover, frontispiece and desk are SVG under `art/book/`, published as WebP by `pnpm book-art`, so the site never runs their SVG filters. The torn page edge is a fixed CSS mask.
 - **The book's shadow is a box-shadow, never a filter.** A `drop-shadow` filter on the open book halved the table's frame rate on a 4× throttled desktop (shuffle 31 → 14 fps, wheel 53 → 26, drag 58 → 20), because every moving card re-rasterised the whole book. With a box-shadow the table matches master.
-- **Fonts are self-hosted** from `@fontsource` (Pinyon Script, IM Fell English, Iansui; all OFL 1.1), recorded in `docs/art-direction.md`.
+- **Fonts are self-hosted** from `@fontsource` (IM Fell English and Iansui; both OFL 1.1; Pinyon Script was dropped on 2026-11-25, when the owner asked for no script lettering), recorded in `docs/art-direction.md`.
 
 ## Consequences
 

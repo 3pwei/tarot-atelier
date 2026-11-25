@@ -56,10 +56,6 @@ export const BOOK_ART: readonly BookArtPiece[] = [
 /** Fonts the SVG lettering uses, as `[family, file under node_modules]`. */
 export const BOOK_ART_FONTS: readonly (readonly [string, string])[] = [
   [
-    "Pinyon Script",
-    "@fontsource/pinyon-script/files/pinyon-script-latin-400-normal.woff2",
-  ],
-  [
     "IM Fell English",
     "@fontsource/im-fell-english/files/im-fell-english-latin-400-normal.woff2",
   ],

@@ -71,7 +71,6 @@ test("Card Reading turns a leaf to the reading, which runs on to the next spread
     page.getByRole("heading", { name: "Card Reading" }),
   ).toBeFocused();
   await expect(page.locator(".spread-board")).toHaveCount(0);
-  await page.getByRole("button", { name: "產生解讀" }).click();
   await expect(page.getByText("範例解牌，不是 AI")).toBeVisible();
   await expectNoVerticalScroll(page);
 

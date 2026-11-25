@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, type ReactNode, type Ref } from "react";
 import type { ReadingSource } from "@/domain/reading/types";
 import {
   FAILURE_MESSAGES,
@@ -24,6 +24,8 @@ interface ReadingPanelProps {
   readonly onShare: () => void;
   /** The reading's title, printed first, as the page around it sets it. */
   readonly heading: ReactNode;
+  /** The panel itself, which can take the focus when it is turned to. */
+  readonly ref?: Ref<HTMLElement>;
 }
 
 /**
@@ -37,6 +39,7 @@ export function ReadingPanel({
   source,
   onShare,
   heading,
+  ref,
 }: ReadingPanelProps) {
   const titleId = useId();
   const { state, build, stale } = session;
@@ -46,6 +49,8 @@ export function ReadingPanel({
 
   return (
     <section
+      ref={ref}
+      tabIndex={-1}
       className="reading-panel paper-surface"
       aria-labelledby={titleId}
       aria-busy={loading || undefined}

@@ -57,7 +57,6 @@ test("reads a finished spread with AI through the site's own endpoint", async ({
 
   await expect(panel.getByRole("radio")).toHaveCount(0);
 
-  await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText("AI 解讀", { exact: true })).toBeVisible();
   const sections = panel.locator(READING_SECTIONS);
   await expect(sections).toHaveCount(3 + 3);
@@ -90,7 +89,6 @@ test("falls back to a labelled sample when today's AI readings are used up", asy
     reason: "daily-limit",
   });
 
-  await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText(/今天的 AI 解讀額度已用完/u)).toBeVisible();
   await expect(panel.getByText("範例解牌，不是 AI")).toBeVisible();
   const sections = panel.locator(READING_SECTIONS);
@@ -109,7 +107,6 @@ test("falls back to a labelled sample when the AI is unavailable", async ({
     reason: "unavailable",
   });
 
-  await panel.getByRole("button", { name: "產生解讀" }).click();
   await expect(panel.getByText(/AI 解讀暫時無法使用/u)).toBeVisible();
   await expect(panel.getByText("範例解牌，不是 AI")).toBeVisible();
 });
