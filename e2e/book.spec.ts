@@ -30,6 +30,23 @@ test("the book opens from its cover to the frontispiece and the contents", async
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 });
 
+test("on a phone, a tap anywhere on the frontispiece turns to the contents", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "With facing pages the contents is already open.");
+  await page.goto("/");
+  await page.getByRole("button", { name: "打開魔法書" }).click();
+  await expect(page.locator(".opening")).toHaveCount(0);
+
+  // The blank paper near the top, away from the plate and the button.
+  const plate = page.getByRole("img", { name: /巫師站在高塔上/u });
+  const paper = page.locator(".book-page", { has: plate });
+  await paper.click({ position: { x: 12, y: 12 } });
+  await expect(entry(page, "The Three Cards")).toBeVisible();
+  await expect(page).toHaveURL(/#contents$/u);
+});
+
 test("a contents entry glows on the first tap and turns on the second", async ({
   page,
 }) => {

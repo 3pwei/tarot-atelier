@@ -1,4 +1,4 @@
-import type { ReactNode, Ref } from "react";
+import type { MouseEvent, ReactNode, Ref } from "react";
 import type { PageLayout } from "@/presentation/components/book/pageLayout";
 
 export type PageSide = "left" | "right";
@@ -18,6 +18,11 @@ interface BookPageProps {
   readonly folio?: number;
   readonly children: ReactNode;
   readonly ref?: Ref<HTMLElement>;
+  /**
+   * A tap on the paper itself turns on. Controls on the page keep their own
+   * job, and stay the way to do it by keyboard or screen reader.
+   */
+  readonly onPaperPress?: () => void;
 }
 
 /** One sheet of paper: its content, then the page number at the foot. */
@@ -29,6 +34,7 @@ export function BookPage({
   folio,
   children,
   ref,
+  onPaperPress,
 }: BookPageProps) {
   return (
     <section
@@ -40,6 +46,7 @@ export function BookPage({
         (width === "spread" && layout === "facing-pages") || undefined
       }
       aria-labelledby={labelledBy}
+      onClick={onPaperPress && pressedPaper(onPaperPress)}
     >
       {children}
       {folio !== undefined && (
@@ -49,4 +56,15 @@ export function BookPage({
       )}
     </section>
   );
+}
+
+const CONTROLS = "button, a, input, select, textarea, label";
+
+/** Calls `onPress` for a click that lands on the paper, not on a control. */
+function pressedPaper(onPress: () => void) {
+  return (event: MouseEvent<HTMLElement>) => {
+    if (event.target instanceof Element && event.target.closest(CONTROLS))
+      return;
+    onPress();
+  };
 }

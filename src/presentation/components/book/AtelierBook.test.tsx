@@ -26,6 +26,23 @@ beforeEach(() => {
   );
 });
 
+/** Reduced motion, so turns land at once; facing pages only if asked. */
+function stubScreen({ facingPages }: { readonly facingPages: boolean }) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn((media: string) => ({
+      matches: media.includes("min-width") ? facingPages : true,
+      media,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+}
+
 function renderBook(templateStorage = new MemoryTextStorage()) {
   const services = createTestServices({ templateStorage });
   return render(
@@ -55,6 +72,27 @@ describe("AtelierBook", () => {
       await screen.findByRole("img", { name: /巫師站在高塔上/u }),
     ).toBeInTheDocument();
     expect(screen.getByText("僅供娛樂與自我反思")).toBeInTheDocument();
+  });
+
+  it("on a phone, a tap anywhere on the frontispiece turns to the contents", async () => {
+    stubScreen({ facingPages: false });
+    renderBook();
+    tap(screen.getByRole("button", { name: "打開魔法書" }));
+
+    tap(await screen.findByRole("img", { name: /巫師站在高塔上/u }));
+    expect(
+      await screen.findByRole("button", { name: /^The Cross，/u }),
+    ).toBeInTheDocument();
+    expect(window.location.hash).toBe("#contents");
+  });
+
+  it("with facing pages, where the contents is already open, a tap on the frontispiece turns nothing", async () => {
+    stubScreen({ facingPages: true });
+    renderBook();
+    tap(screen.getByRole("button", { name: "打開魔法書" }));
+
+    tap(await screen.findByRole("img", { name: /巫師站在高塔上/u }));
+    expect(window.location.hash).toBe("");
   });
 
   it("lists every spread as a chapter, then the codex and the records", async () => {
