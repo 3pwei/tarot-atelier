@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PageSound } from "@/application/ports/pageSound";
 import type { BookPlace } from "@/presentation/components/book/bookPlace";
 import { samePlace } from "@/presentation/components/book/bookPlace";
@@ -40,7 +40,15 @@ export interface PageTurns {
   readonly shown: BookPlace;
   readonly turn: ActiveTurn | undefined;
   readonly arrival: Arrival;
+  /** Lands `turn` once its animations have played out. */
+  readonly finishTurn: (turn: ActiveTurn) => void;
 }
+
+/**
+ * How long past its own length a turn waits for its animations to finish (a
+ * slow machine builds the first frame late) before it lands anyway.
+ */
+export const TURN_GRACE_MS = 1500;
 
 /** How long a turn lasts; zero means it simply swaps. */
 export function turnDurationMs(plan: TurnPlan): number {
@@ -58,8 +66,10 @@ export function turnDurationMs(plan: TurnPlan): number {
 }
 
 /**
- * Plays a turn whenever the reader moves, then shows the new place. Moving
- * again before a turn ends lands it at once; reduced motion never turns.
+ * Plays a turn whenever the reader moves, then shows the new place once the
+ * turn's animations report they have finished (`finishTurn`), or at the
+ * latest `TURN_GRACE_MS` after the turn should have ended. Reduced motion
+ * never turns.
  */
 export function usePageTurns({
   place,
@@ -70,12 +80,12 @@ export function usePageTurns({
   sound,
   soundOn,
 }: PageTurnsOptions): PageTurns {
-  const [state, setState] = useState<{
-    readonly place: BookPlace;
-    readonly shown: BookPlace;
-    readonly turn: ActiveTurn | undefined;
-    readonly arrival: Arrival;
-  }>({ place, shown: place, turn: undefined, arrival: "swapped" });
+  const [state, setState] = useState<TurnState>({
+    place,
+    shown: place,
+    turn: undefined,
+    arrival: "swapped",
+  });
 
   // A new place: decide the turn while rendering, so nothing flashes first.
   if (!samePlace(state.place, place)) {
@@ -109,19 +119,31 @@ export function usePageTurns({
     if (audible)
       player.play(turn.plan.kind === "single" ? "turn" : "riffle", duration);
     const timer = window.setTimeout(
-      () =>
-        setState((current) => ({
-          ...current,
-          shown: turn.to,
-          turn: undefined,
-          arrival: "turned",
-        })),
-      duration,
+      () => setState((current) => landed(current, turn)),
+      duration + TURN_GRACE_MS,
     );
     return () => window.clearTimeout(timer);
   }, [turn]);
 
-  return { shown: state.shown, turn, arrival: state.arrival };
+  const finishTurn = useCallback(
+    (finished: ActiveTurn) => setState((current) => landed(current, finished)),
+    [],
+  );
+
+  return { shown: state.shown, turn, arrival: state.arrival, finishTurn };
 }
 
 const NO_TURN: TurnPlan = Object.freeze({ kind: "none" });
+
+interface TurnState {
+  readonly place: BookPlace;
+  readonly shown: BookPlace;
+  readonly turn: ActiveTurn | undefined;
+  readonly arrival: Arrival;
+}
+
+/** Shows where `turn` led, if it is still the turn in progress. */
+function landed(state: TurnState, turn: ActiveTurn): TurnState {
+  if (state.turn !== turn) return state;
+  return { ...state, shown: turn.to, turn: undefined, arrival: "turned" };
+}
