@@ -89,7 +89,10 @@ test("falls back to a labelled sample when today's AI readings are used up", asy
     reason: "daily-limit",
   });
 
-  await expect(panel.getByText(/今天的 AI 解讀額度已用完/u)).toBeVisible();
+  const notice = panel.getByText(/今天的 AI 解讀額度已用完/u);
+  await expect(notice).toBeVisible();
+  // Printed in red ink, so a reader does not take the sample for AI.
+  await expect(notice).toHaveCSS("color", "rgb(143, 36, 22)");
   await expect(panel.getByText("範例解牌，不是 AI")).toBeVisible();
   const sections = panel.locator(READING_SECTIONS);
   await expect(sections).toHaveCount(3 + 3);

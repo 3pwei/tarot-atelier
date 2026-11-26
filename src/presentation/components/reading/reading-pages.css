@@ -122,6 +122,11 @@
   line-height: 1.6;
 }
 
+/* An example reading in place of AI says so in red, so it is not missed. */
+.reading-panel .reading-fallback {
+  color: var(--book-ink-alert);
+}
+
 /* The controls end the opening matter, ruled off from the reading. */
 .reading-panel .reading-actions {
   display: flex;
